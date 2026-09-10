@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 @SpringBootApplication
-public class ReactSpringSecurityJwtApplication implements CommandLineRunner {
+public class InSeekApplication implements CommandLineRunner {
 
     private final GestionnaireRepository gestionnaireRepository;
     private final EmprunteurRepository emprunteurRepository;
@@ -23,7 +23,7 @@ public class ReactSpringSecurityJwtApplication implements CommandLineRunner {
 
     private final PasswordEncoder passwordEncoder;
 
-    public ReactSpringSecurityJwtApplication(GestionnaireRepository gestionnaireRepository, EmprunteurRepository emprunteurRepository, PreposeRepository preposeRepository, UserAppRepository userAppRepository, PasswordEncoder passwordEncoder) {
+    public InSeekApplication(GestionnaireRepository gestionnaireRepository, EmprunteurRepository emprunteurRepository, PreposeRepository preposeRepository, UserAppRepository userAppRepository, PasswordEncoder passwordEncoder) {
         this.gestionnaireRepository = gestionnaireRepository;
         this.emprunteurRepository = emprunteurRepository;
         this.preposeRepository = preposeRepository;
@@ -32,7 +32,7 @@ public class ReactSpringSecurityJwtApplication implements CommandLineRunner {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(ReactSpringSecurityJwtApplication.class, args);
+        SpringApplication.run(InSeekApplication.class, args);
     }
 
     @Override

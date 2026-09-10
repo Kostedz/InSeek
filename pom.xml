@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.lacouf</groupId>
-    <artifactId>ReactSpringSecurityJwt</artifactId>
+    <artifactId>InSeek</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>ReactSpringSecurityJwt</name>
-    <description>ReactSpringSecurityJwt</description>
+    <name>InSeek</name>
+    <description>InSeek</description>
     <properties>
         <java.version>25</java.version>
     </properties>
