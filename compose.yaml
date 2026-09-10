@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: inseek-container
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: inseek
+      POSTGRES_USER: inseek
+      POSTGRES_PASSWORD: inseek
+
+    ports:
+      - "5432:5432"
