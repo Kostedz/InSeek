@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.lacouf</groupId>
-    <artifactId>ReactSpringSecurityJwt</artifactId>
+    <artifactId>InSeek</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>ReactSpringSecurityJwt</name>
-    <description>ReactSpringSecurityJwt</description>
+    <name>InSeek</name>
+    <description>InSeek</description>
     <properties>
         <java.version>25</java.version>
     </properties>
@@ -48,6 +48,10 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
@@ -66,6 +70,11 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
             <version>0.13.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
