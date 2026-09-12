@@ -1,10 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.model.*;
-import com.lacouf.rsbjwt.repository.EmprunteurRepository;
-import com.lacouf.rsbjwt.repository.GestionnaireRepository;
-import com.lacouf.rsbjwt.repository.PreposeRepository;
-import com.lacouf.rsbjwt.repository.UserAppRepository;
+import com.lacouf.rsbjwt.repository.*;
 import com.lacouf.rsbjwt.service.dto.*;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.security.exception.UserNotFoundException;
@@ -12,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -25,6 +23,8 @@ public class UserAppService {
     private final EmprunteurRepository emprunteurRepository;
     private final PreposeRepository preposeRepository;
     private final GestionnaireRepository gestionnaireRepository;
+    private final ProfesseurRepository professeurRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public String authenticateUser(LoginDTO loginDto) {
         Authentication authentication = authenticationManager.authenticate(
@@ -42,6 +42,7 @@ public class UserAppService {
             case EMPRUNTEUR -> getEmprunteurDto(user.getId());
             case PREPOSE -> getPreposeDto(user.getId());
             case GESTIONNAIRE -> getGestionnaireDto(user.getId());
+            case PROFESSEUR -> getProfesseurDto(user.getId());
         };
     }
 
@@ -65,4 +66,42 @@ public class UserAppService {
                 EmprunteurDto.create(emprunteurOptional.get()) :
                 EmprunteurDto.empty();
     }
-}
+
+    private ProfesseurDto getProfesseurDto(Long id) {
+        final Optional<Professeur> professeurOptional = professeurRepository.findById(id);
+        return professeurOptional.isPresent() ?
+                ProfesseurDto.create(professeurOptional.get()) :
+                ProfesseurDto.empty();
+    }
+
+    public ProfesseurDto registerProfesseur(ProfesseurRegisterDTO dto) {
+        
+        if (dto.getFirstName() == null || dto.getFirstName().isBlank()) {
+            throw new RuntimeException("Le prénom est obligatoire");
+        }
+        if (dto.getLastName() == null || dto.getLastName().isBlank()) {
+            throw new RuntimeException("Le nom est obligatoire");
+        }
+        if (dto.getEmail() == null || !dto.getEmail().matches("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$")) {
+            throw new RuntimeException("Le format du courriel est invalide");
+        }
+        if (dto.getPassword() == null || !dto.getPassword().matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$")) {
+            throw new RuntimeException("Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial");
+        }
+        if (!dto.getPassword().equals(dto.getConfirmPassword())) {
+            throw new RuntimeException("Les mots de passe ne correspondent pas");
+        }
+        if (userAppRepository.findUserAppByEmail(dto.getEmail()).isPresent()) {
+            throw new RuntimeException("Ce courriel est déjà associé à un compte");
+        }
+
+        Professeur professeur = Professeur.builder()
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .discipline(dto.getDiscipline())
+                .build();
+
+        return ProfesseurDto.create(professeurRepository.save(professeur));
+    }}
