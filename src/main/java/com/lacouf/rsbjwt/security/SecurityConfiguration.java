@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.security;
 
+import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UserAppRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,7 @@ public class SecurityConfiguration {
     private static final String EMPRUNTEUR_PATH = "/emprunteur/**";
     private static final String PREPOSE_PATH = "/prepose/**";
     private static final String GESTIONNAIRE_PATH = "/gestionnaire/**";
-
+    private static final String ETUDIANT_PATH = "/etudiant/**";
 
 
     @Bean
@@ -64,9 +65,10 @@ public class SecurityConfiguration {
                         .requestMatchers(H2_CONSOLE_PATH).permitAll() // Allow H2 console access
 
                         // Use Role enum names for authorities
-                        .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name())
+                        .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name(), Role.ETUDIANT.name())
                         .requestMatchers(EMPRUNTEUR_PATH).hasAuthority(Role.EMPRUNTEUR.name())
                         .requestMatchers(PREPOSE_PATH).hasAuthority(Role.PREPOSE.name())
+                        .requestMatchers(ETUDIANT_PATH).hasAuthority(Role.ETUDIANT.name())
                         .requestMatchers(GESTIONNAIRE_PATH).hasAuthority(Role.GESTIONNAIRE.name())
                         .anyRequest().authenticated() // Changed from denyAll() to authenticated() - more common, adjust if denyAll is strictly needed
                 )

@@ -1,9 +1,11 @@
 package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.service.UserAppService;
+import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.JWTAuthResponse;
 import com.lacouf.rsbjwt.service.dto.LoginDTO;
 import com.lacouf.rsbjwt.service.dto.UserDTO;
+import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 public class UserController {
 
 	private final UserAppService userService;
+	private final UtilisateurService utilisateurService;
 
 	@PostMapping("/login")
 	public ResponseEntity<JWTAuthResponse> authenticateUser(@RequestBody LoginDTO loginDto){
