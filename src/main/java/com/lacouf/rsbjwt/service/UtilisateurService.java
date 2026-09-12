@@ -3,10 +3,12 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.RegisterDTO;
+import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,13 +25,14 @@ public class UtilisateurService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public EtudiantDTO ajouterEtudiant(RegisterDTO utilisateurDTO) throws BadRequestException {
-        if (utilisateurDTO == null) {
-            throw new BadRequestException("Le DTO de l'utilisateur est null.");
+    public UtilisateurDTO inscription(RegisterDTO registerDTO) throws BadRequestException {
+        if (registerDTO == null) {
+            throw new BadRequestException("Le DTO d'inscription est null.");
         }
-        Etudiant user = (Etudiant) toEntity(utilisateurDTO);
-        utilisateurRepository.save(user);
-        return EtudiantDTO.of(user);
+
+        Utilisateur utilisateur = toEntity(registerDTO);
+        utilisateurRepository.save(utilisateur);
+        return toDTO(utilisateur);
     }
 
     @Transactional
@@ -42,12 +45,24 @@ public class UtilisateurService {
         return EtudiantDTO.of(etudiant);
     }
 
+    public UtilisateurDTO toDTO(Utilisateur utilisateur) throws BadRequestException {
+        if (utilisateur == null) {
+            return null;
+        }
+
+        if (utilisateur instanceof Etudiant etudiant) {
+            return EtudiantDTO.of(etudiant);
+        }
+
+        throw new BadRequestException("Type d'entité non pris en charge pour la conversion en DTO.");
+    }
+
     public Utilisateur toEntity(RegisterDTO registerDTO) throws BadRequestException {
         if (registerDTO == null) {
             return null;
         }
 
-        if (registerDTO.role().equals("ETUDIANT")) {
+        if (registerDTO.role() == Role.ETUDIANT) {
             return Etudiant.builder()
                     .nom(registerDTO.nom())
                     .prenom(registerDTO.prenom())
