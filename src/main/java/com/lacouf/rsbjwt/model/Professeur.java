@@ -21,8 +21,9 @@ public class Professeur extends UserApp {
     private Disciplines discipline;
 
     @Builder Professeur(
-            Long id, String firstName, String lastName, String email, String password){
+            Long id, String firstName, String lastName, String email, String password, Disciplines discipline){
         super(id, firstName, lastName, Credentials.builder().email(email).password(password).role(Role.PROFESSEUR).build());
+        this.discipline = discipline;
     }
 
 }
