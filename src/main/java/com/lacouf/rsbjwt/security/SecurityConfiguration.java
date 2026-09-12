@@ -1,6 +1,5 @@
 package com.lacouf.rsbjwt.security;
 
-import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UserAppRepository;
 import lombok.RequiredArgsConstructor;
