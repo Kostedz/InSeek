@@ -14,7 +14,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Etudiant extends Utilisateur {
 
-    @Column(nullable = false)
     private Disciplines discipline;
     
     @Builder
