@@ -3,10 +3,12 @@ package com.lacouf.rsbjwt.model.auth;
 import java.util.HashSet;
 import java.util.Set;
 
+//mettre profressuer ici
 public enum Role{
 	GESTIONNAIRE("ROLE_GESTIONNAIRE"),
 	PREPOSE("ROLE_PREPOSE"),
 	EMPRUNTEUR("ROLE_EMPRUNTEUR"),
+	PROFESSEUR("ROLE_PROFESSEUR"),
 	;
 
 	private final String string;
