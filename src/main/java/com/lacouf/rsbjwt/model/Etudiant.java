@@ -1,22 +1,25 @@
 package com.lacouf.rsbjwt.model;
 
+import com.lacouf.rsbjwt.model.auth.Credentials;
+import com.lacouf.rsbjwt.model.auth.Role;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Getter @Setter
+@NoArgsConstructor
 public class Etudiant extends Utilisateur {
 
+    @Column(nullable = false)
     private Disciplines discipline;
-
-    public Etudiant() {
-        super();
-    }
-
-    public Etudiant(String email, String password, String nom, String prenom, Disciplines discipline) {
-        super(email, password, nom, prenom);
+    
+    @Builder
+    public Etudiant(Long id, String nom, String prenom, Disciplines discipline, String email, String password) {
+        super(id, nom, prenom, Credentials.builder().email(email).password(password).role(Role.ETUDIANT).build());
         this.discipline = discipline;
     }
-
 }
