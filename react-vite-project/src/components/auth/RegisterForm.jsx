@@ -9,9 +9,13 @@ export default function RegisterForm() {
         nom: "",
         email: "",
         password: "",
+        confirmPassword: "",
         programme: "Informatique",
     });
-    const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [touched, setTouched] = useState({});
+    const [serverError, setServerError] = useState(null);
+
     const navigate = useNavigate();
 
     const programmes = [
@@ -21,18 +25,104 @@ export default function RegisterForm() {
         "Gestion de commerce",
     ];
 
+    const REGEX = {
+        name: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]{2,30}$/,
+        email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
+    };
+
+    const validateField = (name, value, currentFormData = formData) => {
+        let errorMsg = "";
+
+        switch (name) {
+            case "prenom":
+                if (!REGEX.name.test(value.trim())) {
+                    errorMsg = "Le prénom doit contenir entre 2 et 30 caractères alphabétiques.";
+                }
+                break;
+            case "nom":
+                if (!REGEX.name.test(value.trim())) {
+                    errorMsg = "Le nom doit contenir entre 2 et 30 caractères alphabétiques.";
+                }
+                break;
+            case "email":
+                if (!REGEX.email.test(value.trim())) {
+                    errorMsg = "Adresse courriel invalide. Example: example123@example.com";
+                }
+                break;
+            case "password":
+                if (!REGEX.password.test(value)) {
+                    errorMsg = "Au moins 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre et 1 symbole";
+                }
+                if (currentFormData.confirmPassword && value !== currentFormData.confirmPassword) {
+                    setFieldErrors((prev) => ({
+                        ...prev,
+                        confirmPassword: "Les mots de passe ne correspondent pas.",
+                    }));
+                } else if (currentFormData.confirmPassword) {
+                    setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
+                }
+                break;
+            case "confirmPassword":
+                if (value !== currentFormData.password) {
+                    errorMsg = "Les mots de passe ne correspondent pas.";
+                }
+                break;
+            default:
+                break;
+        }
+
+        setFieldErrors((prev) => ({ ...prev, [name]: errorMsg }));
+    };
+
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value.trim() });
+        const { name, value } = e.target;
+        const newFormData = { ...formData, [name]: value };
+        setFormData(newFormData);
+
+        if (touched[name]) {
+            validateField(name, value, newFormData);
+        }
+    };
+
+    const handleBlur = (e) => {
+        const { name, value } = e.target;
+        setTouched((prev) => ({ ...prev, [name]: true }));
+        validateField(name, value);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
+        setServerError(null);
+
+        const allTouched = {
+            prenom: true,
+            nom: true,
+            email: true,
+            password: true,
+            confirmPassword: true,
+        };
+        setTouched(allTouched);
+
+        validateField("prenom", formData.prenom);
+        validateField("nom", formData.nom);
+        validateField("email", formData.email);
+        validateField("password", formData.password);
+        validateField("confirmPassword", formData.confirmPassword);
+
+        const hasErrors =
+            !REGEX.name.test(formData.prenom.trim()) ||
+            !REGEX.name.test(formData.nom.trim()) ||
+            !REGEX.email.test(formData.email.trim()) ||
+            !REGEX.password.test(formData.password) ||
+            formData.password !== formData.confirmPassword;
+
+        if (hasErrors) return;
 
         const payload = {
-            prenom: formData.prenom,
-            nom: formData.nom,
-            email: formData.email.toLowerCase(),
+            prenom: formData.prenom.trim(),
+            nom: formData.nom.trim(),
+            email: formData.email.trim().toLowerCase(),
             password: formData.password,
             role,
             programme: role === "etudiant" || role === "professeur" ? formData.programme : null,
@@ -50,12 +140,14 @@ export default function RegisterForm() {
 
             if (!response.ok) {
                 switch (response.status) {
+                    case 400:
+                        throw new Error("Données invalides ou courriel déjà utilisé.");
                     case 401:
-                        throw new Error("Not authorized");
+                        throw new Error("Accès non autorisé.");
                     case 404:
-                        throw new Error("No server available");
+                        throw new Error("Serveur non disponible.");
                     default:
-                        throw new Error("Not ok");
+                        throw new Error("Erreur lors de l'inscription.");
                 }
             }
 
@@ -64,7 +156,7 @@ export default function RegisterForm() {
 
             const userResponse = await fetcher("user/me", {});
             if (!userResponse.ok) {
-                throw new Error("Failed to fetch user info");
+                throw new Error("Impossible de récupérer les informations de l'utilisateur.");
             }
 
             const userData = await userResponse.json();
@@ -80,8 +172,7 @@ export default function RegisterForm() {
                 navigate("/");
             }
         } catch (err) {
-            setError(err.message);
-            navigate("/error");
+            setServerError(err.message);
         }
     };
 
@@ -95,9 +186,9 @@ export default function RegisterForm() {
                 <div className="mb-5 sm:mb-6">
                     <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
                         {[
-                            { id: "etudiant", label: "Employeur" },
-                            { id: "professeur", label: "Étudiant" },
-                            { id: "employeur", label: "Professeur" },
+                            { id: "employeur", label: "Employeur" },
+                            { id: "etudiant", label: "Étudiant" },
+                            { id: "professeur", label: "Professeur" },
                         ].map((option) => (
                             <button
                                 key={option.id}
@@ -122,7 +213,7 @@ export default function RegisterForm() {
                     </div>
                 </div>
 
-                <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
+                <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
                     <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">Prénom</label>
                         <input
@@ -130,10 +221,17 @@ export default function RegisterForm() {
                             name="prenom"
                             value={formData.prenom}
                             onChange={handleChange}
-                            required
+                            onBlur={handleBlur}
                             placeholder="Pascal"
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
+                            className={`w-full rounded-lg border px-4 py-2 focus:outline-none ${
+                                touched.prenom && fieldErrors.prenom
+                                    ? "border-red-500 focus:border-red-500"
+                                    : "border-gray-300 focus:border-blue-500"
+                            }`}
                         />
+                        {touched.prenom && fieldErrors.prenom && (
+                            <p className="mt-1 text-xs text-red-600">{fieldErrors.prenom}</p>
+                        )}
                     </div>
 
                     <div>
@@ -143,10 +241,17 @@ export default function RegisterForm() {
                             name="nom"
                             value={formData.nom}
                             onChange={handleChange}
-                            required
+                            onBlur={handleBlur}
                             placeholder="Dupont"
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
+                            className={`w-full rounded-lg border px-4 py-2 focus:outline-none ${
+                                touched.nom && fieldErrors.nom
+                                    ? "border-red-500 focus:border-red-500"
+                                    : "border-gray-300 focus:border-blue-500"
+                            }`}
                         />
+                        {touched.nom && fieldErrors.nom && (
+                            <p className="mt-1 text-xs text-red-600">{fieldErrors.nom}</p>
+                        )}
                     </div>
 
                     <div>
@@ -158,10 +263,17 @@ export default function RegisterForm() {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            required
+                            onBlur={handleBlur}
                             placeholder="nom@exemple.com"
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base focus:border-blue-500 focus:outline-none sm:py-2 sm:text-sm"
+                            className={`w-full rounded-lg border px-4 py-2.5 text-base focus:outline-none sm:py-2 sm:text-sm ${
+                                touched.email && fieldErrors.email
+                                    ? "border-red-500 focus:border-red-500"
+                                    : "border-gray-300 focus:border-blue-500"
+                            }`}
                         />
+                        {touched.email && fieldErrors.email && (
+                            <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+                        )}
                     </div>
 
                     <div>
@@ -173,10 +285,39 @@ export default function RegisterForm() {
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            required
+                            onBlur={handleBlur}
                             placeholder="••••••••"
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base focus:border-blue-500 focus:outline-none sm:py-2 sm:text-sm"
+                            className={`w-full rounded-lg border px-4 py-2.5 text-base focus:outline-none sm:py-2 sm:text-sm ${
+                                touched.password && fieldErrors.password
+                                    ? "border-red-500 focus:border-red-500"
+                                    : "border-gray-300 focus:border-blue-500"
+                            }`}
                         />
+                        {touched.password && fieldErrors.password && (
+                            <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                            Confirmer le mot de passe
+                        </label>
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="••••••••"
+                            className={`w-full rounded-lg border px-4 py-2.5 text-base focus:outline-none sm:py-2 sm:text-sm ${
+                                touched.confirmPassword && fieldErrors.confirmPassword
+                                    ? "border-red-500 focus:border-red-500"
+                                    : "border-gray-300 focus:border-blue-500"
+                            }`}
+                        />
+                        {touched.confirmPassword && fieldErrors.confirmPassword && (
+                            <p className="mt-1 text-xs text-red-600">{fieldErrors.confirmPassword}</p>
+                        )}
                     </div>
 
                     {(role === "etudiant" || role === "professeur") && (
@@ -199,7 +340,11 @@ export default function RegisterForm() {
                         </div>
                     )}
 
-                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    {serverError && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-600">
+                            {serverError}
+                        </div>
+                    )}
 
                     <button
                         type="submit"
@@ -212,4 +357,3 @@ export default function RegisterForm() {
         </div>
     );
 }
-
