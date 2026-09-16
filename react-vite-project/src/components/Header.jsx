@@ -1,57 +1,102 @@
-import React from "react";
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 
 function Header({user}) {
-    // Function to format role for display (remove ROLE_ prefix and capitalize)
-    const formatRole = (roleString) => {
-        if (!roleString) return '';
-        // Remove ROLE_ prefix if present
-        const roleName = roleString.replace('ROLE_', '');
-        // Capitalize first letter, lowercase the rest
-        return roleName.charAt(0).toUpperCase() + roleName.slice(1).toLowerCase();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const role = String(user?.role ?? "")
+        .replace(/^ROLE_/, "")
+        .toUpperCase();
+    const isLoggedIn = Boolean(user?.isLoggedIn);
+    const isGestionnaire = role === "GESTIONNAIRE";
+    const isPrepose = isGestionnaire || role === "PREPOSE";
+    const isEmprunteur = isGestionnaire || role === "EMPRUNTEUR";
+
+    const navLinkClass = ({isActive}) => [
+        "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors md:w-auto md:px-3",
+        isActive
+            ? "bg-pink text-ink"
+            : "text-white/80 hover:bg-white/10 hover:text-white"
+    ].join(" ");
+
+    const formatRole = (value) => {
+        const formatted = String(value ?? "").replace(/^ROLE_/, "").toLowerCase();
+        return formatted ? formatted.charAt(0).toUpperCase() + formatted.slice(1) : "";
     };
 
-    const isGestionnaire = () => {
-        console.log(user)
-        return user && user.role &&
-            (user.role.toString() === 'GESTIONNAIRE');
-    }
-    const isPrepose = () => {
-        console.log(user)
-        return user && user.role &&
-            (user.role.toString() === 'GESTIONNAIRE' || user.role.toString() === 'PREPOSE');
-    }
-    const isEmprunteur = () => {
-        console.log(user)
-        return user && user.role &&
-            (user.role.toString() === 'GESTIONNAIRE' || user.role.toString() === 'EMPRUNTEUR');
-    }
+    const closeMenu = () => setIsMenuOpen(false);
 
     return (
-        <header className="bg-gray-800 min-h-[60px] flex items-center justify-between text-white px-5 py-3">
-            <h1 className="text-lg font-semibold">InSeek</h1>
-            <nav className="flex items-center space-x-4">
-                <ul className="flex space-x-3 list-none">
-                    <li><Link to="/" className="text-white no-underline">Accueil</Link></li>
-                    <li><Link to="/about" className="text-white no-underline">À propos</Link></li>
-                    {isEmprunteur() && <li><Link to="/emprunteur" className="text-white no-underline">Emprunteur</Link></li>}
-                    {isPrepose() && <li><Link to="/prepose" className="text-white no-underline">Prepose</Link></li>}
-                    {isGestionnaire() && <li><Link to="/gestionnaire" className="text-white no-underline">Gestionnaire</Link></li>}
-                    <li>{user?.isLoggedIn ? <Link to="/logout" className="text-white no-underline">Logout</Link> : <Link to="/login" className="text-white no-underline">Login</Link>}</li>
-                    <li>{user?.isLoggedIn ? <Link to="/logout" className="text-white no-underline">Logout</Link> : <Link to="/register" className="text-white no-underline">Register</Link>}</li>
-                </ul>
+        <header className="sticky top-0 z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)]">
+            <div className="mx-auto flex min-h-20 w-full max-w-7xl flex-wrap items-center gap-x-5 gap-y-3 px-4 py-3 sm:px-6 lg:px-8">
+                <Link to="/" className="group flex shrink-0 items-center gap-3" onClick={closeMenu}>
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lemon text-xl font-black text-ink">
+                        I
+                    </span>
+                    <span>
+                        <span className="block text-lg font-black tracking-tight">InSeek</span>
+                        <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">Trouve ta voie</span>
+                    </span>
+                </Link>
 
-                {user?.isLoggedIn && (
-                    <div className="ml-4 text-sm text-right">
-                        <p>
-                            Bonjour <span className="font-medium">{user.firstName} {user.lastName}</span>
-                            {user.role && (
-                                <span className="ml-1"> - {formatRole(user.role.toString())}</span>
-                            )}
-                        </p>
-                    </div>
-                )}
-            </nav>
+                <button
+                    type="button"
+                    className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 text-white transition-colors hover:bg-white/10 md:hidden"
+                    aria-controls="site-navigation"
+                    aria-expanded={isMenuOpen}
+                    aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                    onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+                >
+                    <span className="sr-only">{isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}</span>
+                    {isMenuOpen ? (
+                        <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M6 6l12 12M18 6L6 18" />
+                        </svg>
+                    ) : (
+                        <svg aria-hidden="true" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    )}
+                </button>
+
+                <nav
+                    id="site-navigation"
+                    className={`${isMenuOpen ? "flex" : "hidden"} basis-full flex-col items-stretch gap-3 md:ml-auto md:flex md:basis-auto md:flex-row md:items-center md:gap-2`}
+                    aria-label="Navigation principale et actions utilisateur"
+                >
+                    <ul className="flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center">
+                        <li><NavLink to="/" end className={navLinkClass} onClick={closeMenu}>Accueil</NavLink></li>
+                        <li><NavLink to="/about" className={navLinkClass} onClick={closeMenu}>À propos</NavLink></li>
+                        {isEmprunteur && <li><NavLink to="/emprunteur" className={navLinkClass} onClick={closeMenu}>Emprunteur</NavLink></li>}
+                        {isPrepose && <li><NavLink to="/prepose" className={navLinkClass} onClick={closeMenu}>Préposé</NavLink></li>}
+                        {isGestionnaire && <li><NavLink to="/gestionnaire" className={navLinkClass} onClick={closeMenu}>Gestionnaire</NavLink></li>}
+                    </ul>
+
+                    <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">
+                        <span className="h-px w-12 bg-white/20 md:h-6 md:w-px" />
+                    </span>
+
+                    {isLoggedIn ? (
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-left text-xs md:text-right">
+                                <p className="font-bold text-white">Bonjour {user.firstName} {user.lastName}</p>
+                                {user.role && <p className="text-white/60">{formatRole(user.role)}</p>}
+                            </div>
+                            <NavLink to="/logout" onClick={closeMenu} className="w-full justify-center rounded-full border border-peach bg-peach px-4 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-gold md:w-auto">
+                                Déconnexion
+                            </NavLink>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                            <NavLink to="/login" onClick={closeMenu} className="w-full justify-center rounded-full px-4 py-2 text-center text-sm font-bold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-auto md:px-3">
+                                Connexion
+                            </NavLink>
+                            <NavLink to="/register" onClick={closeMenu} className="w-full justify-center rounded-full bg-pink px-4 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-blush md:w-auto">
+                                Créer un compte
+                            </NavLink>
+                        </div>
+                    )}
+                </nav>
+            </div>
         </header>
     );
 }

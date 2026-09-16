@@ -15,7 +15,6 @@ export default function RegisterForm() {
     const [fieldErrors, setFieldErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [serverError, setServerError] = useState(null);
-
     const navigate = useNavigate();
 
     const programmes = [
@@ -47,20 +46,12 @@ export default function RegisterForm() {
                 break;
             case "email":
                 if (!REGEX.email.test(value.trim())) {
-                    errorMsg = "Adresse courriel invalide. Example: example123@example.com";
+                    errorMsg = "Adresse courriel invalide. Exemple : example123@example.com";
                 }
                 break;
             case "password":
                 if (!REGEX.password.test(value)) {
                     errorMsg = "Au moins 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre et 1 symbole";
-                }
-                if (currentFormData.confirmPassword && value !== currentFormData.confirmPassword) {
-                    setFieldErrors((prev) => ({
-                        ...prev,
-                        confirmPassword: "Les mots de passe ne correspondent pas.",
-                    }));
-                } else if (currentFormData.confirmPassword) {
-                    setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
                 }
                 break;
             case "confirmPassword":
@@ -72,7 +63,18 @@ export default function RegisterForm() {
                 break;
         }
 
-        setFieldErrors((prev) => ({ ...prev, [name]: errorMsg }));
+        setFieldErrors((previousErrors) => {
+            const nextErrors = { ...previousErrors, [name]: errorMsg };
+
+            if (name === "password" && currentFormData.confirmPassword) {
+                nextErrors.confirmPassword =
+                    value === currentFormData.confirmPassword
+                        ? ""
+                        : "Les mots de passe ne correspondent pas.";
+            }
+
+            return nextErrors;
+        });
     };
 
     const handleChange = (e) => {
@@ -83,11 +85,15 @@ export default function RegisterForm() {
         if (touched[name]) {
             validateField(name, value, newFormData);
         }
+
+        if (name === "password" && touched.confirmPassword) {
+            validateField("confirmPassword", newFormData.confirmPassword, newFormData);
+        }
     };
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
-        setTouched((prev) => ({ ...prev, [name]: true }));
+        setTouched((previousTouched) => ({ ...previousTouched, [name]: true }));
         validateField(name, value);
     };
 
@@ -104,28 +110,30 @@ export default function RegisterForm() {
         };
         setTouched(allTouched);
 
-        validateField("prenom", formData.prenom);
-        validateField("nom", formData.nom);
-        validateField("email", formData.email);
-        validateField("password", formData.password);
-        validateField("confirmPassword", formData.confirmPassword);
+        const currentFormData = formData;
+        validateField("prenom", currentFormData.prenom, currentFormData);
+        validateField("nom", currentFormData.nom, currentFormData);
+        validateField("email", currentFormData.email, currentFormData);
+        validateField("password", currentFormData.password, currentFormData);
+        validateField("confirmPassword", currentFormData.confirmPassword, currentFormData);
 
         const hasErrors =
-            !REGEX.name.test(formData.prenom.trim()) ||
-            !REGEX.name.test(formData.nom.trim()) ||
-            !REGEX.email.test(formData.email.trim()) ||
-            !REGEX.password.test(formData.password) ||
-            formData.password !== formData.confirmPassword;
+            !REGEX.name.test(currentFormData.prenom.trim()) ||
+            !REGEX.name.test(currentFormData.nom.trim()) ||
+            !REGEX.email.test(currentFormData.email.trim()) ||
+            !REGEX.password.test(currentFormData.password) ||
+            currentFormData.password !== currentFormData.confirmPassword;
 
         if (hasErrors) return;
 
         const payload = {
-            prenom: formData.prenom.trim(),
-            nom: formData.nom.trim(),
-            email: formData.email.trim().toLowerCase(),
-            password: formData.password,
+            prenom: currentFormData.prenom.trim(),
+            nom: currentFormData.nom.trim(),
+            email: currentFormData.email.trim().toLowerCase(),
+            password: currentFormData.password,
             role,
-            programme: role === "etudiant" || role === "professeur" ? formData.programme : null,
+            programme:
+                role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
         };
 
         try {
@@ -176,10 +184,17 @@ export default function RegisterForm() {
         }
     };
 
+    const inputClass = (fieldName) =>
+        `w-full rounded-xl border bg-canvas px-4 py-3 text-sm text-ink outline-none focus:ring-4 focus:ring-pink/40 ${
+            touched[fieldName] && fieldErrors[fieldName]
+                ? "border-error focus:border-error"
+                : "border-line focus:border-lavender"
+        }`;
+
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-6 sm:px-6 sm:py-10">
-            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-md sm:max-w-md sm:p-8 md:max-w-lg">
-                <h2 className="mb-5 text-center text-xl font-bold text-gray-800 sm:mb-6 sm:text-2xl">
+        <section className="flex flex-1 items-center justify-center bg-canvas px-4 py-8 sm:px-6 sm:py-12">
+            <div className="w-full max-w-sm rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:max-w-md sm:p-8 md:max-w-lg">
+                <h2 className="mb-5 text-center text-2xl font-black tracking-tight text-ink sm:mb-6 sm:text-3xl">
                     Créer un compte
                 </h2>
 
@@ -197,13 +212,13 @@ export default function RegisterForm() {
                                 aria-pressed={role === option.id}
                                 className={`flex items-center justify-center rounded-xl border p-2 text-center transition-all sm:flex-col sm:gap-1 sm:p-3 ${
                                     role === option.id
-                                        ? "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
-                                        : "bg-white border-gray-300 hover:border-gray-400"
+                                        ? "bg-ink border-ink text-white hover:bg-ink-soft"
+                                        : "bg-surface border-line text-ink-soft hover:border-pink"
                                 }`}
                             >
                                 <span
                                     className={`text-sm font-medium ${
-                                        role === option.id ? "text-white" : "text-gray-700"
+                                        role === option.id ? "text-white" : "text-ink-soft"
                                     }`}
                                 >
                                     {option.label}
@@ -215,124 +230,125 @@ export default function RegisterForm() {
 
                 <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">Prénom</label>
+                        <label className="mb-1 block text-sm font-bold text-ink" htmlFor="prenom">
+                            Prénom
+                        </label>
                         <input
+                            id="prenom"
                             type="text"
                             name="prenom"
                             value={formData.prenom}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="Pascal"
-                            className={`w-full rounded-lg border px-4 py-2 focus:outline-none ${
-                                touched.prenom && fieldErrors.prenom
-                                    ? "border-red-500 focus:border-red-500"
-                                    : "border-gray-300 focus:border-blue-500"
-                            }`}
+                            aria-invalid={Boolean(touched.prenom && fieldErrors.prenom)}
+                            className={inputClass("prenom")}
                         />
                         {touched.prenom && fieldErrors.prenom && (
-                            <p className="mt-1 text-xs text-red-600">{fieldErrors.prenom}</p>
+                            <p className="mt-1 text-xs text-error">{fieldErrors.prenom}</p>
                         )}
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">Nom</label>
+                        <label className="mb-1 block text-sm font-bold text-ink" htmlFor="nom">
+                            Nom
+                        </label>
                         <input
+                            id="nom"
                             type="text"
                             name="nom"
                             value={formData.nom}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="Dupont"
-                            className={`w-full rounded-lg border px-4 py-2 focus:outline-none ${
-                                touched.nom && fieldErrors.nom
-                                    ? "border-red-500 focus:border-red-500"
-                                    : "border-gray-300 focus:border-blue-500"
-                            }`}
+                            aria-invalid={Boolean(touched.nom && fieldErrors.nom)}
+                            className={inputClass("nom")}
                         />
                         {touched.nom && fieldErrors.nom && (
-                            <p className="mt-1 text-xs text-red-600">{fieldErrors.nom}</p>
+                            <p className="mt-1 text-xs text-error">{fieldErrors.nom}</p>
                         )}
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label className="mb-1 block text-sm font-bold text-ink" htmlFor="email">
                             Adresse courriel
                         </label>
                         <input
+                            id="email"
                             type="email"
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="nom@exemple.com"
-                            className={`w-full rounded-lg border px-4 py-2.5 text-base focus:outline-none sm:py-2 sm:text-sm ${
-                                touched.email && fieldErrors.email
-                                    ? "border-red-500 focus:border-red-500"
-                                    : "border-gray-300 focus:border-blue-500"
-                            }`}
+                            aria-invalid={Boolean(touched.email && fieldErrors.email)}
+                            className={inputClass("email")}
                         />
                         {touched.email && fieldErrors.email && (
-                            <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+                            <p className="mt-1 text-xs text-error">{fieldErrors.email}</p>
                         )}
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label className="mb-1 block text-sm font-bold text-ink" htmlFor="password">
                             Mot de passe
                         </label>
                         <input
+                            id="password"
                             type="password"
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="••••••••"
-                            className={`w-full rounded-lg border px-4 py-2.5 text-base focus:outline-none sm:py-2 sm:text-sm ${
-                                touched.password && fieldErrors.password
-                                    ? "border-red-500 focus:border-red-500"
-                                    : "border-gray-300 focus:border-blue-500"
-                            }`}
+                            aria-invalid={Boolean(touched.password && fieldErrors.password)}
+                            className={inputClass("password")}
                         />
                         {touched.password && fieldErrors.password && (
-                            <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>
+                            <p className="mt-1 text-xs text-error">{fieldErrors.password}</p>
                         )}
                     </div>
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">
+                        <label
+                            className="mb-1 block text-sm font-bold text-ink"
+                            htmlFor="confirmPassword"
+                        >
                             Confirmer le mot de passe
                         </label>
                         <input
+                            id="confirmPassword"
                             type="password"
                             name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleChange}
                             onBlur={handleBlur}
                             placeholder="••••••••"
-                            className={`w-full rounded-lg border px-4 py-2.5 text-base focus:outline-none sm:py-2 sm:text-sm ${
-                                touched.confirmPassword && fieldErrors.confirmPassword
-                                    ? "border-red-500 focus:border-red-500"
-                                    : "border-gray-300 focus:border-blue-500"
-                            }`}
+                            aria-invalid={Boolean(touched.confirmPassword && fieldErrors.confirmPassword)}
+                            className={inputClass("confirmPassword")}
                         />
                         {touched.confirmPassword && fieldErrors.confirmPassword && (
-                            <p className="mt-1 text-xs text-red-600">{fieldErrors.confirmPassword}</p>
+                            <p className="mt-1 text-xs text-error">{fieldErrors.confirmPassword}</p>
                         )}
                     </div>
 
                     {(role === "etudiant" || role === "professeur") && (
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">
+                            <label
+                                className="mb-1 block text-sm font-bold text-ink"
+                                htmlFor="programme"
+                            >
                                 Programme / Discipline
                             </label>
                             <select
+                                id="programme"
                                 name="programme"
                                 value={formData.programme}
                                 onChange={handleChange}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-700 focus:border-blue-500 focus:outline-none"
+                                className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender focus:ring-4 focus:ring-pink/40"
                             >
-                                {programmes.map((prog, index) => (
-                                    <option key={index} value={prog}>
+                                {programmes.map((prog) => (
+                                    <option key={prog} value={prog}>
                                         {prog}
                                     </option>
                                 ))}
@@ -341,19 +357,19 @@ export default function RegisterForm() {
                     )}
 
                     {serverError && (
-                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-600">
+                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-error">
                             {serverError}
                         </div>
                     )}
 
                     <button
                         type="submit"
-                        className="w-full rounded-lg bg-blue-600 py-3 text-center text-base font-semibold text-white transition-colors hover:bg-blue-700 sm:text-sm"
+                        className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
                     >
                         S'inscrire
                     </button>
                 </form>
             </div>
-        </div>
+        </section>
     );
 }

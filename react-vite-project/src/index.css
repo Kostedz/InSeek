@@ -1,3 +1,48 @@
 @import "tailwindcss";
 
-body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+@theme {
+    --color-ink: #302337;
+    --color-ink-soft: #695570;
+    --color-canvas: #fffbfd;
+    --color-surface: #ffffff;
+    --color-line: #eaddea;
+    --color-lavender: #e2d0ea;
+    --color-pink: #ffcce8;
+    --color-blush: #ffc8d1;
+    --color-peach: #ffceaa;
+    --color-gold: #ffdf84;
+    --color-lemon: #f9f871;
+    --color-error: #a43d5d;
+    --font-sans: "Plus Jakarta Sans", "Avenir Next", Avenir, "Segoe UI", sans-serif;
+}
+
+@layer base {
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        background: var(--color-canvas);
+    }
+
+    body {
+        min-width: 320px;
+        margin: 0;
+        background: var(--color-canvas);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    button,
+    input,
+    select {
+        font: inherit;
+    }
+
+    ::selection {
+        background: var(--color-pink);
+        color: var(--color-ink);
+    }
+}
