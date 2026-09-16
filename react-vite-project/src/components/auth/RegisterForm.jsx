@@ -55,52 +55,46 @@ const fetchFunc = async () => {
 }
 
 export default function RegisterForm() {
-    const [role,setRole] = useState("etudiant");
+    const [role, setRole] = useState("etudiant");
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
-                <h2 className="mb-6 text-center text-2xl font-bold text-gray-800">
+        <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-6 sm:px-6 sm:py-10">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-md sm:max-w-md sm:p-8 md:max-w-lg">
+                <h2 className="mb-5 text-center text-xl font-bold text-gray-800 sm:mb-6 sm:text-2xl">
                     Créer un compte
                 </h2>
 
-                <div className="mb-6 flex gap-2 rounded-xl bg-gray-100 p-1">
-                    <button
-                        type="button"
-                        onClick={() => setRole('etudiant')}
-                        className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-                            role === 'etudiant'
-                                ? 'bg-blue-600 text-white shadow'
-                                : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                    >
-                        Étudiant
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setRole('professeur')}
-                        className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-                            role === 'professeur'
-                                ? 'bg-blue-600 text-white shadow'
-                                : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                    >
-                        Professeur
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setRole('employeur')}
-                        className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
-                            role === 'employeur'
-                                ? 'bg-blue-600 text-white shadow'
-                                : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                    >
-                        Employeur
-                    </button>
+                <div className="mb-5 sm:mb-6">
+                    <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
+                        {[
+                            {id: 'etudiant', label: 'Employeur'},
+                            {id: 'professeur', label: 'Étudiant'},
+                            {id: 'employeur', label: 'Professeur'},
+                        ].map((option) => (
+                            <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => setRole(option.id)}
+                                aria-pressed={role === option.id}
+                                className={`flex items-center justify-center rounded-xl border p-2 text-center transition-all sm:flex-col sm:gap-1 sm:p-3 ${
+                                    role === option.id
+                                        ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
+                                        : 'bg-white border-gray-300 hover:border-gray-400'
+                                }`}
+                            >
+                                <span
+                                    className={`text-sm font-medium ${
+                                        role === option.id ? 'text-white' : 'text-gray-700'
+                                    }`}
+                                >
+                                    {option.label}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                <form className="space-y-4 sm:space-y-5" onSubmit={(e) => e.preventDefault()}>
                     <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">
                             Adresse courriel
@@ -108,7 +102,7 @@ export default function RegisterForm() {
                         <input
                             type="email"
                             placeholder="nom@exemple.com"
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
+                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base focus:border-blue-500 focus:outline-none sm:py-2 sm:text-sm"
                         />
                     </div>
 
@@ -119,13 +113,13 @@ export default function RegisterForm() {
                         <input
                             type="password"
                             placeholder="••••••••"
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
+                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-base focus:border-blue-500 focus:outline-none sm:py-2 sm:text-sm"
                         />
                     </div>
 
                     <button
                         type="submit"
-                        className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-700"
+                        className="w-full rounded-lg bg-blue-600 py-3 text-base font-semibold text-white text-center transition-colors hover:bg-blue-700 sm:text-sm"
                     >
                         S'inscrire
                     </button>

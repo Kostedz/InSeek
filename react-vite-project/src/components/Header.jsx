@@ -30,7 +30,7 @@ function Header({user}) {
 
     return (
         <header className="header">
-            <h1>My App</h1>
+            <h1>InSeek</h1>
             <nav>
                 <ul className="nav-links">
                     <li><Link to="/">Accueil</Link></li>
