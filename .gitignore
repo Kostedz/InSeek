@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Package Files ###
+package-lock.json
+package.json
+
+### Node Modules ###
+node_modules/
