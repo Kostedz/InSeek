@@ -39,6 +39,8 @@ function Header({user}) {
                     {isPrepose() && <li><Link to="/prepose">Prepose</Link></li>}
                     {isGestionnaire() && <li><Link to="/gestionnaire">Gestionnaire</Link></li>}
                     <li>{user?.isLoggedIn ? <Link to="/logout">Logout</Link> : <Link to="/login">Login</Link>}</li>
+                    <li>{user?.isLoggedIn ? <Link to="/logout">Logout</Link> : <Link to="/register">Register</Link>}</li>
+
                 </ul>
                 {user?.isLoggedIn && (
                     <div className="user-info">

@@ -4,7 +4,7 @@ import React, {useEffect, useState} from "react";
 import {Route, Routes, useNavigate} from "react-router-dom";
 import MainContainer from "./components/MainContainer";
 import About from "./components/About";
-import LoginForm from "./components/auth/LoginForm";
+import Register from "./components/auth/Register";
 import fetcher from "./utils/fetcher";
 import ErrorPage from "./components/ErrorPage";
 import Logout from "./components/auth/Logout";

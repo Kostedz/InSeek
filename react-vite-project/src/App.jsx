@@ -11,6 +11,7 @@ import Logout from "./components/auth/Logout.jsx";
 import EmprunteurHome from "./components/page/EmprunteurHome.jsx";
 import PreposeHome from "./components/page/PreposeHome.jsx";
 import GestionnaireHome from "./components/page/GestionnaireHome.jsx";
+import RegisterForm from "./components/auth/RegisterForm.jsx";
 function App() {
   const [user, setUser] = useState({})
   const [error, setError] = useState(null)
@@ -66,6 +67,7 @@ function App() {
           <Route path='prepose' element={<PreposeHome/>}/>
           <Route path='gestionnaire' element={<GestionnaireHome/>}/>
           <Route path='error' element={<ErrorPage error={error}/>}/>
+          <Route path= 'register' element={<RegisterForm setError={setError}/>}/>
         </Route>
       </Routes>
 

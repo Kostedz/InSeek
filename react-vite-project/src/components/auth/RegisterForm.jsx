@@ -1,4 +1,58 @@
 import React, {useState} from "react";
+import fetcher from "../../utils/fetcher.js";
+
+const fetchFunc = async () => {
+    try {
+        const response = await fetcher('/user/register', {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify({
+                email: formData.email.toLowerCase(),
+                password: formData.password
+            }),
+        });
+        if (!response.ok) {
+            switch (response.status) {
+                case 401:
+                    throw new Error("Not authorized");
+                    break;
+                case 404:
+                    throw new Error("No server available");
+                default:
+                    throw new Error("Not ok")
+            }
+        }
+        const data = await response.json();
+        localStorage.setItem('token', data.accessToken);
+
+        // Fetch user info to get role
+        const userResponse = await fetcher('user/me', {});
+        if (!userResponse.ok) {
+            throw new Error("Failed to fetch user info");
+        }
+        const userData = await userResponse.json();
+
+        // Navigate to role-specific page
+        const role = userData.role;
+        if (role === "ROLE_EMPRUNTEUR") {
+            navigate("/emprunteur");
+        } else if (role === "ROLE_PREPOSE") {
+            navigate("/prepose");
+        } else if (role === "ROLE_GESTIONNAIRE") {
+            navigate("/gestionnaire");
+        } else {
+            navigate("/");
+        }
+    } catch(error) {
+        setError(error)
+        navigate('/error')
+    }
+
+
+}
 
 export default function RegisterForm() {
     const [role,setRole] = useState("etudiant");
