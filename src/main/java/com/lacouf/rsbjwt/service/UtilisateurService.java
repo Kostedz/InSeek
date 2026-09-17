@@ -101,14 +101,4 @@ public class UtilisateurService {
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
 
-
-    @Transactional
-    public String login(LoginDTO loginDTO) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword()));
-        final String token = jwtTokenProvider.generateToken(authentication);
-        System.out.println("JWT Token :" + token);
-        return token;
-
-    }
 }

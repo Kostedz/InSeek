@@ -43,6 +43,8 @@ public class UserAppService {
             case PREPOSE -> getPreposeDto(user.getId());
             case GESTIONNAIRE -> getGestionnaireDto(user.getId());
             case ETUDIANT -> getEtudiantDto(user.getId());
+            case PROFESSEUR -> null;
+            case EMPLOYEUR -> null;
         };
     }
 
