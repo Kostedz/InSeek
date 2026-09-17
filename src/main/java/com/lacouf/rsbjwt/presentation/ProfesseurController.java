@@ -1,7 +1,7 @@
 package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.service.UserAppService;
-import com.lacouf.rsbjwt.service.dto.ProfesseurDto;
+import com.lacouf.rsbjwt.service.dto.ProfesseurDTO;
 import com.lacouf.rsbjwt.service.dto.ProfesseurRegisterDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,7 +22,7 @@ public class ProfesseurController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody ProfesseurRegisterDTO dto) {
         try {
-            ProfesseurDto professeur = userService.registerProfesseur(dto);
+            ProfesseurDTO professeur = userService.registerProfesseur(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(professeur);

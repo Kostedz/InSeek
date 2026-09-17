@@ -67,14 +67,14 @@ public class UserAppService {
                 EmprunteurDto.empty();
     }
 
-    private ProfesseurDto getProfesseurDto(Long id) {
+    private ProfesseurDTO getProfesseurDto(Long id) {
         final Optional<Professeur> professeurOptional = professeurRepository.findById(id);
         return professeurOptional.isPresent() ?
-                ProfesseurDto.create(professeurOptional.get()) :
-                ProfesseurDto.empty();
+                ProfesseurDTO.create(professeurOptional.get()) :
+                ProfesseurDTO.empty();
     }
 
-    public ProfesseurDto registerProfesseur(ProfesseurRegisterDTO dto) {
+    public ProfesseurDTO registerProfesseur(ProfesseurRegisterDTO dto) {
         
         if (dto.getFirstName() == null || dto.getFirstName().isBlank()) {
             throw new RuntimeException("Le prénom est obligatoire");
@@ -103,5 +103,5 @@ public class UserAppService {
                 .discipline(dto.getDiscipline())
                 .build();
 
-        return ProfesseurDto.create(professeurRepository.save(professeur));
+        return ProfesseurDTO.create(professeurRepository.save(professeur));
     }}

@@ -15,14 +15,14 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 
-public class Professeur extends UserApp {
+public class Professeur extends Utilisateur {
 
     @Enumerated(EnumType.STRING)
     private Disciplines discipline;
 
     @Builder Professeur(
-            Long id, String firstName, String lastName, String email, String password, Disciplines discipline){
-        super(id, firstName, lastName, Credentials.builder().email(email).password(password).role(Role.PROFESSEUR).build());
+            Long id, String nom, String prenom, Disciplines discipline, String email, String password){
+        super(id, nom, prenom, Credentials.builder().email(email).password(password).role(Role.PROFESSEUR).build());
         this.discipline = discipline;
     }
 
