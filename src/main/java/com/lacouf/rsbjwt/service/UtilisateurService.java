@@ -100,6 +100,15 @@ public class UtilisateurService {
                     .password(passwordEncoder.encode(registerDTO.password()))
                     .build();
         }
+        if (registerDTO.role() == Role.PROFESSEUR){
+            return Professeur.builder()
+                    .nom(registerDTO.nom())
+                    .prenom(registerDTO.prenom())
+                    .email(registerDTO.email())
+                    .discipline(registerDTO.discipline())
+                    .password(passwordEncoder.encode(registerDTO.password()))
+                    .build();
+        }
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }

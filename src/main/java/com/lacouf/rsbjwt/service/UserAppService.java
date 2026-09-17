@@ -51,6 +51,10 @@ public class UserAppService {
         return null;
     }
 
+    private UserDTO getProfesseurDto(Long id){
+        return null;
+    }
+
     private GestionnaireDto getGestionnaireDto(Long id) {
         final Optional<Gestionnaire> gestionnaireOptional = gestionnaireRepository.findById(id);
         return gestionnaireOptional.isPresent() ?
@@ -72,12 +76,15 @@ public class UserAppService {
                 EmprunteurDto.empty();
     }
 
+    /*
     private ProfesseurDTO getProfesseurDto(Long id) {
         final Optional<Professeur> professeurOptional = professeurRepository.findById(id);
         return professeurOptional.isPresent() ?
                 ProfesseurDTO.create(professeurOptional.get()) :
                 ProfesseurDTO.empty();
     }
+
+
 
     public ProfesseurDTO registerProfesseur(ProfesseurRegisterDTO dto) {
 
@@ -109,4 +116,5 @@ public class UserAppService {
                 .build();
 
         return ProfesseurDTO.create(professeurRepository.save(professeur));
-    }}
+    } */
+    }
