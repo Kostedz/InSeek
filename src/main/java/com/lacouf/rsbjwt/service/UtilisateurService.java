@@ -7,11 +7,14 @@ import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
+import com.lacouf.rsbjwt.service.dto.LoginDTO;
 import com.lacouf.rsbjwt.service.dto.RegisterDTO;
 import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -99,5 +102,16 @@ public class UtilisateurService {
         }
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
+    }
+
+
+    @Transactional
+    public String login(LoginDTO loginDTO) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword()));
+        final String token = jwtTokenProvider.generateToken(authentication);
+        System.out.println("JWT Token :" + token);
+        return token;
+
     }
 }
