@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import fetcher from "../../utils/fetcher.js";
 import { useNavigate } from "react-router-dom";
 
+
 export default function RegisterForm() {
     const [role, setRole] = useState("etudiant");
     const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ export default function RegisterForm() {
         password: "",
         confirmPassword: "",
         programme: "Informatique",
+        entreprise: "",
     });
     const [fieldErrors, setFieldErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -57,6 +59,11 @@ export default function RegisterForm() {
             case "confirmPassword":
                 if (value !== currentFormData.password) {
                     errorMsg = "Les mots de passe ne correspondent pas.";
+                }
+                break;
+            case "entreprise":
+                if (role === "employeur" && value.trim() === "") {
+                    errorMsg = "Le nom de l'entreprise est requis.";
                 }
                 break;
             default:
@@ -107,6 +114,7 @@ export default function RegisterForm() {
             email: true,
             password: true,
             confirmPassword: true,
+            entreprise: role === "employeur",
         };
         setTouched(allTouched);
 
@@ -116,13 +124,17 @@ export default function RegisterForm() {
         validateField("email", currentFormData.email, currentFormData);
         validateField("password", currentFormData.password, currentFormData);
         validateField("confirmPassword", currentFormData.confirmPassword, currentFormData);
+        if (role === "employeur") {
+            validateField("entreprise", currentFormData.entreprise, currentFormData);
+        }
 
         const hasErrors =
             !REGEX.name.test(currentFormData.prenom.trim()) ||
             !REGEX.name.test(currentFormData.nom.trim()) ||
             !REGEX.email.test(currentFormData.email.trim()) ||
             !REGEX.password.test(currentFormData.password) ||
-            currentFormData.password !== currentFormData.confirmPassword;
+            currentFormData.password !== currentFormData.confirmPassword ||
+            (role === "employeur" && !currentFormData.entreprise.trim());
 
         if (hasErrors) return;
 
@@ -134,6 +146,7 @@ export default function RegisterForm() {
             role,
             programme:
                 role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
+            entreprise: role === "employeur" ? currentFormData.entreprise.trim() : null,
         };
 
         try {
@@ -353,6 +366,31 @@ export default function RegisterForm() {
                                     </option>
                                 ))}
                             </select>
+                        </div>
+                    )}
+
+                    {role === "employeur" && (
+                        <div>
+                            <label
+                                className="mb-1 block text-sm font-bold text-ink"
+                                htmlFor="entreprise"
+                            >
+                                Nom de l'entreprise
+                            </label>
+                            <input
+                                type="text"
+                                id="entreprise"
+                                name="entreprise"
+                                value={formData.entreprise}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                placeholder="Nom de l'entreprise"
+                                aria-invalid={Boolean(touched.entreprise && fieldErrors.entreprise)}
+                                className={inputClass("entreprise")}
+                            />
+                            {touched.entreprise && fieldErrors.entreprise && (
+                                <p className="mt-1 text-xs text-error">{fieldErrors.entreprise}</p>
+                            )}
                         </div>
                     )}
 
