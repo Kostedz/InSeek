@@ -27,10 +27,8 @@ public class UtilisateurService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
-
-    // TODO: Tell the FE guys to call findByEmail when email is validated in the form
     @Transactional
-    public UtilisateurDTO inscription(RegisterDTO registerDTO) throws BadRequestException {
+    public UtilisateurDTO register(RegisterDTO registerDTO) throws BadRequestException {
         registrationVerification(registerDTO);
 
         Utilisateur utilisateur = toEntity(registerDTO);
@@ -38,7 +36,6 @@ public class UtilisateurService {
         return toDTO(utilisateur);
     }
 
-    // TODO: Rename to findByEmail
     @Transactional
     public UtilisateurDTO findByEmail(String email) throws BadRequestException {
         if (email == null || email.isBlank()) {
