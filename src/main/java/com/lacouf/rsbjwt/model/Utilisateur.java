@@ -1,20 +1,23 @@
 package com.lacouf.rsbjwt.model;
 
+import com.lacouf.rsbjwt.model.auth.Credentials;
 import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+
+import java.util.Collection;
 
 @Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
+@ToString
 public abstract class Utilisateur {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
-    @Column(unique = true)
-    private String email;
-
-    @Column(nullable = false)
-    private String password;
 
     @Column(nullable = false)
     private String nom;
@@ -22,12 +25,22 @@ public abstract class Utilisateur {
     @Column(nullable = false)
     private String prenom;
 
-    protected Utilisateur() {}
+    @Embedded
+    private Credentials credentials;
 
-    protected Utilisateur(String email, String password, String nom, String prenom) {
-        this.email = email;
-        this.password = password;
-        this.nom = nom;
-        this.prenom = prenom;
+    public String getEmail() {
+        return credentials.getEmail();
+    }
+
+    public String getPassword() {
+        return credentials.getPassword();
+    }
+
+    public String getRole() {
+        return credentials.getRole().name();
+    }
+
+    public Collection<? extends GrantedAuthority> getAuthorities(){
+        return credentials.getAuthorities();
     }
 }

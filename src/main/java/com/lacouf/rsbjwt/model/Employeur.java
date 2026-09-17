@@ -17,7 +17,7 @@ public class Employeur extends Utilisateur {
 
     @Builder
     public Employeur(Long id, String nom, String prenom, String nomCompagnie, String email, String password){
-        super(id, nom, prenom, Credentials.builder().email(email),password(password).role(Role.EMPLOYEUR).build());
+        super(id, nom, prenom, Credentials.builder().email(email).password(password).role(Role.EMPLOYEUR).build());
         this.nomCompagnie = nomCompagnie;
     }
 }
