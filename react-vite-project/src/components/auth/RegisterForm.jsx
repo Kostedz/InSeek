@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import fetcher from "../../utils/fetcher.js";
 import { useNavigate } from "react-router-dom";
+import { RoleEnum} from "../../constants/role.js";
+import { DisciplineEnum} from "../../constants/disciplines.js";
 
 
 export default function RegisterForm() {
-    const [role, setRole] = useState("etudiant");
+    const [role, setRole] = useState(RoleEnum.ETUDIANT.value);
     const [formData, setFormData] = useState({
         prenom: "",
         nom: "",
         email: "",
         password: "",
         confirmPassword: "",
-        programme: "Informatique",
+        programme: DisciplineEnum.INFORMATIQUE.value,
         entreprise: "",
     });
     const [fieldErrors, setFieldErrors] = useState({});
@@ -20,10 +22,9 @@ export default function RegisterForm() {
     const navigate = useNavigate();
 
     const programmes = [
-        "Informatique",
-        "Tech. Infirmière",
-        "Architecture",
-        "Gestion de commerce",
+        DisciplineEnum.INFORMATIQUE.label,
+        DisciplineEnum.INFIRMIERE.label,
+        DisciplineEnum.ARCHITECTURE.label,
     ];
 
     const REGEX = {
@@ -143,9 +144,8 @@ export default function RegisterForm() {
             nom: currentFormData.nom.trim(),
             email: currentFormData.email.trim().toLowerCase(),
             password: currentFormData.password,
-            role,
-            programme:
-                role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
+            role: role,
+            programme: role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
             entreprise: role === "employeur" ? currentFormData.entreprise.trim() : null,
         };
 
@@ -213,28 +213,24 @@ export default function RegisterForm() {
 
                 <div className="mb-5 sm:mb-6">
                     <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
-                        {[
-                            { id: "employeur", label: "Employeur" },
-                            { id: "etudiant", label: "Étudiant" },
-                            { id: "professeur", label: "Professeur" },
-                        ].map((option) => (
+                        {Object.entries(RoleEnum).filter(([key, value]) => value.value !== "ROLE_GESTIONNAIRE").map(([key, value]) => (
                             <button
-                                key={option.id}
+                                key={key}
                                 type="button"
-                                onClick={() => setRole(option.id)}
-                                aria-pressed={role === option.id}
+                                onClick={() => setRole(value.value)}
+                                aria-pressed={role === value.value}
                                 className={`flex items-center justify-center rounded-xl border p-2 text-center transition-all sm:flex-col sm:gap-1 sm:p-3 ${
-                                    role === option.id
+                                    role === value.value
                                         ? "bg-ink border-ink text-white hover:bg-ink-soft"
                                         : "bg-surface border-line text-ink-soft hover:border-pink"
                                 }`}
                             >
                                 <span
                                     className={`text-sm font-medium ${
-                                        role === option.id ? "text-white" : "text-ink-soft"
+                                        role === value.value ? "text-white" : "text-ink-soft"
                                     }`}
                                 >
-                                    {option.label}
+                                    {value.label}
                                 </span>
                             </button>
                         ))}
@@ -345,7 +341,7 @@ export default function RegisterForm() {
                         )}
                     </div>
 
-                    {(role === "etudiant" || role === "professeur") && (
+                    {(role === RoleEnum.ETUDIANT.value || role === RoleEnum.PROFESSEUR.value) && (
                         <div>
                             <label
                                 className="mb-1 block text-sm font-bold text-ink"
@@ -369,7 +365,7 @@ export default function RegisterForm() {
                         </div>
                     )}
 
-                    {role === "employeur" && (
+                    {role === RoleEnum.EMPLOYEUR.value && (
                         <div>
                             <label
                                 className="mb-1 block text-sm font-bold text-ink"
