@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import fetcher from "../../utils/fetcher.js";
 import { useNavigate } from "react-router-dom";
 
+
 export default function RegisterForm() {
     const [role, setRole] = useState("etudiant");
     const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ export default function RegisterForm() {
         password: "",
         confirmPassword: "",
         programme: "Informatique",
+        entreprise: "",
     });
     const [fieldErrors, setFieldErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -22,6 +24,13 @@ export default function RegisterForm() {
         "Tech. Infirmière",
         "Architecture",
         "Gestion de commerce",
+    ];
+
+    const entreprises = [
+        "Ubisoft",
+        "Google",
+        "Microsoft",
+        "Apple",
     ];
 
     const REGEX = {
@@ -134,6 +143,7 @@ export default function RegisterForm() {
             role,
             programme:
                 role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
+            compagnie: role === "employeur" ? currentFormData.compagnie : null,
         };
 
         try {
@@ -353,6 +363,33 @@ export default function RegisterForm() {
                                     </option>
                                 ))}
                             </select>
+                        </div>
+                    )}
+
+                    {role === "employeur" && (
+                        <div>
+                            <label
+                                className="mb-1 block text-sm font-bold text-ink"
+                                htmlFor="entreprise"
+                            >
+                                Nom de l'entreprise
+                            </label>
+                           <select id="entreprise"
+                                name="entreprise"
+                                value={formData.entreprise}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender focus:ring-4 focus:ring-pink/40"
+                            >
+                                {entreprises.map((entreprise) => (
+                                    <option key={entreprise} value={entreprise}>
+                                        {entreprise}
+                                    </option>
+                                ))}
+                            </select>
+                            {touched.entreprise && fieldErrors.entreprise && (
+                                <p className="mt-1 text-xs text-error">{fieldErrors.entreprise}</p>
+                            )}
                         </div>
                     )}
 
