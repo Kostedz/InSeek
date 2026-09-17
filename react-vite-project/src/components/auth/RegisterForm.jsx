@@ -104,6 +104,26 @@ export default function RegisterForm() {
         setTouched((previousTouched) => ({ ...previousTouched, [name]: true }));
         validateField(name, value);
     };
+    const isFormValid = React.useMemo(() => {
+        const isPrenomValid = REGEX.name.test(formData.prenom.trim());
+        const isNomValid = REGEX.name.test(formData.nom.trim());
+        const isEmailValid = REGEX.email.test(formData.email.trim());
+        const isPasswordValid = REGEX.password.test(formData.password);
+        const isConfirmPasswordValid = formData.password === formData.confirmPassword && formData.confirmPassword !== "";
+        const isEntrepriseValid = role === RoleEnum.EMPLOYEUR.value ? formData.entreprise.trim() !== "" : true;
+
+        const hasNoErrors = Object.values(fieldErrors).every((err) => !err);
+
+        return (
+            isPrenomValid &&
+            isNomValid &&
+            isEmailValid &&
+            isPasswordValid &&
+            isConfirmPasswordValid &&
+            isEntrepriseValid &&
+            hasNoErrors
+        );
+    }, [formData, role, fieldErrors]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -398,7 +418,8 @@ export default function RegisterForm() {
 
                     <button
                         type="submit"
-                        className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
+                        disabled={!isFormValid}
+                        className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300"
                     >
                         S'inscrire
                     </button>
