@@ -31,7 +31,8 @@ public class UtilisateurController {
         }
     }
 
-    public ResponseEntity<JWTAuthResponse> Connexion(@RequestBody LoginDTO loginDTO){
+    @PostMapping("/login")
+    public ResponseEntity<JWTAuthResponse> login(@RequestBody LoginDTO loginDTO){
         try {
             String token = utilisateurService.login(loginDTO);
             JWTAuthResponse jwtAuthResponse = new JWTAuthResponse(token);
