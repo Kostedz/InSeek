@@ -8,7 +8,7 @@ function About() {
         <span className="inline-flex rounded-full bg-gold px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">À propos</span>
         <h1 className="mt-5 text-4xl font-black tracking-tight text-ink">InSeek</h1>
         <p className="mt-4 max-w-2xl text-base leading-8 text-ink-soft">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+          InSeek est une plateforme bilingue de gestion des stages qui facilite la collaboration entre les étudiants, les employeurs, les gestionnaires de stages et les professeurs. Elle centralise les CV, les offres, les candidatures et le suivi des stages afin de simplifier chaque étape, de la recherche d’un stage à son évaluation. Grâce à une interface claire et des outils adaptés à chaque rôle, InSeek aide tous les intervenants à rester informés et à avancer efficacement.
         </p>
         <div className="mt-8 flex items-center justify-between border-t border-line pt-5 text-sm">
           <span className="font-semibold text-ink-soft">Version 1.0.0</span>
