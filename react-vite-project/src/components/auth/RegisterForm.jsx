@@ -26,13 +26,6 @@ export default function RegisterForm() {
         "Gestion de commerce",
     ];
 
-    const entreprises = [
-        "Ubisoft",
-        "Google",
-        "Microsoft",
-        "Apple",
-    ];
-
     const REGEX = {
         name: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]{2,30}$/,
         email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
@@ -66,6 +59,11 @@ export default function RegisterForm() {
             case "confirmPassword":
                 if (value !== currentFormData.password) {
                     errorMsg = "Les mots de passe ne correspondent pas.";
+                }
+                break;
+            case "entreprise":
+                if (role === "employeur" && value.trim() === "") {
+                    errorMsg = "Le nom de l'entreprise est requis.";
                 }
                 break;
             default:
@@ -116,6 +114,7 @@ export default function RegisterForm() {
             email: true,
             password: true,
             confirmPassword: true,
+            entreprise: role === "employeur",
         };
         setTouched(allTouched);
 
@@ -125,13 +124,17 @@ export default function RegisterForm() {
         validateField("email", currentFormData.email, currentFormData);
         validateField("password", currentFormData.password, currentFormData);
         validateField("confirmPassword", currentFormData.confirmPassword, currentFormData);
+        if (role === "employeur") {
+            validateField("entreprise", currentFormData.entreprise, currentFormData);
+        }
 
         const hasErrors =
             !REGEX.name.test(currentFormData.prenom.trim()) ||
             !REGEX.name.test(currentFormData.nom.trim()) ||
             !REGEX.email.test(currentFormData.email.trim()) ||
             !REGEX.password.test(currentFormData.password) ||
-            currentFormData.password !== currentFormData.confirmPassword;
+            currentFormData.password !== currentFormData.confirmPassword ||
+            (role === "employeur" && !currentFormData.entreprise.trim());
 
         if (hasErrors) return;
 
@@ -143,7 +146,7 @@ export default function RegisterForm() {
             role,
             programme:
                 role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
-            compagnie: role === "employeur" ? currentFormData.compagnie : null,
+            entreprise: role === "employeur" ? currentFormData.entreprise.trim() : null,
         };
 
         try {
@@ -374,19 +377,17 @@ export default function RegisterForm() {
                             >
                                 Nom de l'entreprise
                             </label>
-                           <select id="entreprise"
+                            <input
+                                type="text"
+                                id="entreprise"
                                 name="entreprise"
                                 value={formData.entreprise}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender focus:ring-4 focus:ring-pink/40"
-                            >
-                                {entreprises.map((entreprise) => (
-                                    <option key={entreprise} value={entreprise}>
-                                        {entreprise}
-                                    </option>
-                                ))}
-                            </select>
+                                placeholder="Nom de l'entreprise"
+                                aria-invalid={Boolean(touched.entreprise && fieldErrors.entreprise)}
+                                className={inputClass("entreprise")}
+                            />
                             {touched.entreprise && fieldErrors.entreprise && (
                                 <p className="mt-1 text-xs text-error">{fieldErrors.entreprise}</p>
                             )}
