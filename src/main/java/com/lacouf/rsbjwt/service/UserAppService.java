@@ -42,7 +42,12 @@ public class UserAppService {
             case EMPRUNTEUR -> getEmprunteurDto(user.getId());
             case PREPOSE -> getPreposeDto(user.getId());
             case GESTIONNAIRE -> getGestionnaireDto(user.getId());
+            case ETUDIANT -> getEtudiantDto(user.getId());
         };
+    }
+
+    private UserDTO getEtudiantDto(Long id) {
+        return null;
     }
 
     private GestionnaireDto getGestionnaireDto(Long id) {
