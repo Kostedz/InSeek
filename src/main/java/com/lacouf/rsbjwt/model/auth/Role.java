@@ -7,6 +7,7 @@ public enum Role{
 	GESTIONNAIRE("ROLE_GESTIONNAIRE"),
 	PREPOSE("ROLE_PREPOSE"),
 	EMPRUNTEUR("ROLE_EMPRUNTEUR"),
+	EMPLOYEUR("ROLE_EMPLOYEUR")
 	;
 
 	private final String string;
