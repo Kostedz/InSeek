@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
+import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
@@ -93,7 +94,7 @@ public class UtilisateurService {
                     .nom(registerDTO.nom())
                     .prenom(registerDTO.prenom())
                     .email(registerDTO.email())
-                    .discipline(registerDTO.discipline())
+                    .discipline(Disciplines.valueOf(registerDTO.affiliation()))
                     .password(passwordEncoder.encode(registerDTO.password()))
                     .build();
         }
