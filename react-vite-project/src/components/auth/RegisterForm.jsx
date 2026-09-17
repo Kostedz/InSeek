@@ -3,9 +3,11 @@ import fetcher from "../../utils/fetcher.js";
 import { useNavigate } from "react-router-dom";
 import { RoleEnum} from "../../constants/role.js";
 import { DisciplineEnum} from "../../constants/disciplines.js";
+import { useTranslation } from "react-i18next";
 
 
 export default function RegisterForm() {
+    const { t } = useTranslation();
     const [role, setRole] = useState(RoleEnum.ETUDIANT.value);
     const [formData, setFormData] = useState({
         prenom: "",
@@ -22,10 +24,13 @@ export default function RegisterForm() {
     const navigate = useNavigate();
 
     const programmes = [
-        DisciplineEnum.INFORMATIQUE.label,
-        DisciplineEnum.INFIRMIERE.label,
-        DisciplineEnum.ARCHITECTURE.label,
+        { value: DisciplineEnum.INFORMATIQUE.value, label: t("auth.register.disciplines.informatique") },
+        { value: DisciplineEnum.INFIRMIERE.value, label: t("auth.register.disciplines.infirmiere") },
+        { value: DisciplineEnum.ARCHITECTURE.value, label: t("auth.register.disciplines.architecture") },
     ];
+
+    const isEmployer = role === RoleEnum.EMPLOYEUR.value;
+    const hasProgramme = role === RoleEnum.ETUDIANT.value || role === RoleEnum.PROFESSEUR.value;
 
     const REGEX = {
         name: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]{2,30}$/,
@@ -39,32 +44,32 @@ export default function RegisterForm() {
         switch (name) {
             case "prenom":
                 if (!REGEX.name.test(value.trim())) {
-                    errorMsg = "Le prénom doit contenir entre 2 et 30 caractères alphabétiques.";
+                    errorMsg = t("auth.register.errors.firstName");
                 }
                 break;
             case "nom":
                 if (!REGEX.name.test(value.trim())) {
-                    errorMsg = "Le nom doit contenir entre 2 et 30 caractères alphabétiques.";
+                    errorMsg = t("auth.register.errors.lastName");
                 }
                 break;
             case "email":
                 if (!REGEX.email.test(value.trim())) {
-                    errorMsg = "Adresse courriel invalide. Exemple : example123@example.com";
+                    errorMsg = t("auth.register.errors.email");
                 }
                 break;
             case "password":
                 if (!REGEX.password.test(value)) {
-                    errorMsg = "Au moins 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre et 1 symbole";
+                    errorMsg = t("auth.register.errors.password");
                 }
                 break;
             case "confirmPassword":
                 if (value !== currentFormData.password) {
-                    errorMsg = "Les mots de passe ne correspondent pas.";
+                    errorMsg = t("auth.register.errors.confirmPassword");
                 }
                 break;
             case "entreprise":
-                if (role === "employeur" && value.trim() === "") {
-                    errorMsg = "Le nom de l'entreprise est requis.";
+                if (isEmployer && value.trim() === "") {
+                    errorMsg = t("auth.register.errors.companyRequired");
                 }
                 break;
             default:
@@ -78,7 +83,7 @@ export default function RegisterForm() {
                 nextErrors.confirmPassword =
                     value === currentFormData.confirmPassword
                         ? ""
-                        : "Les mots de passe ne correspondent pas.";
+                        : t("auth.register.errors.confirmPassword");
             }
 
             return nextErrors;
@@ -110,7 +115,7 @@ export default function RegisterForm() {
         const isEmailValid = REGEX.email.test(formData.email.trim());
         const isPasswordValid = REGEX.password.test(formData.password);
         const isConfirmPasswordValid = formData.password === formData.confirmPassword && formData.confirmPassword !== "";
-        const isEntrepriseValid = role === RoleEnum.EMPLOYEUR.value ? formData.entreprise.trim() !== "" : true;
+        const isEntrepriseValid = isEmployer ? formData.entreprise.trim() !== "" : true;
 
         const hasNoErrors = Object.values(fieldErrors).every((err) => !err);
 
@@ -135,7 +140,7 @@ export default function RegisterForm() {
             email: true,
             password: true,
             confirmPassword: true,
-            entreprise: role === "employeur",
+            entreprise: isEmployer,
         };
         setTouched(allTouched);
 
@@ -145,7 +150,7 @@ export default function RegisterForm() {
         validateField("email", currentFormData.email, currentFormData);
         validateField("password", currentFormData.password, currentFormData);
         validateField("confirmPassword", currentFormData.confirmPassword, currentFormData);
-        if (role === "employeur") {
+        if (isEmployer) {
             validateField("entreprise", currentFormData.entreprise, currentFormData);
         }
 
@@ -155,7 +160,7 @@ export default function RegisterForm() {
             !REGEX.email.test(currentFormData.email.trim()) ||
             !REGEX.password.test(currentFormData.password) ||
             currentFormData.password !== currentFormData.confirmPassword ||
-            (role === "employeur" && !currentFormData.entreprise.trim());
+            (isEmployer && !currentFormData.entreprise.trim());
 
         if (hasErrors) return;
 
@@ -165,8 +170,8 @@ export default function RegisterForm() {
             email: currentFormData.email.trim().toLowerCase(),
             password: currentFormData.password,
             role: role,
-            programme: role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
-            entreprise: role === "employeur" ? currentFormData.entreprise.trim() : null,
+            programme: hasProgramme ? currentFormData.programme : null,
+            entreprise: isEmployer ? currentFormData.entreprise.trim() : null,
         };
 
         try {
@@ -182,13 +187,13 @@ export default function RegisterForm() {
             if (!response.ok) {
                 switch (response.status) {
                     case 400:
-                        throw new Error("Données invalides ou courriel déjà utilisé.");
+                        throw new Error(t("auth.register.errors.invalidData"));
                     case 401:
-                        throw new Error("Accès non autorisé.");
+                        throw new Error(t("auth.register.errors.unauthorized"));
                     case 404:
-                        throw new Error("Serveur non disponible.");
+                        throw new Error(t("auth.register.errors.unavailable"));
                     default:
-                        throw new Error("Erreur lors de l'inscription.");
+                        throw new Error(t("auth.register.errors.submit"));
                 }
             }
 
@@ -197,7 +202,7 @@ export default function RegisterForm() {
 
             const userResponse = await fetcher("user/me", {});
             if (!userResponse.ok) {
-                throw new Error("Impossible de récupérer les informations de l'utilisateur.");
+                throw new Error(t("auth.register.errors.userInfo"));
             }
 
             const userData = await userResponse.json();
@@ -228,7 +233,7 @@ export default function RegisterForm() {
         <section className="flex flex-1 items-center justify-center bg-canvas px-4 py-8 sm:px-6 sm:py-12">
             <div className="w-full max-w-sm rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:max-w-md sm:p-8 md:max-w-lg">
                 <h2 className="mb-5 text-center text-2xl font-black tracking-tight text-ink sm:mb-6 sm:text-3xl">
-                    Créer un compte
+                    {t("auth.register.title")}
                 </h2>
 
                 <div className="mb-5 sm:mb-6">
@@ -250,7 +255,7 @@ export default function RegisterForm() {
                                         role === value.value ? "text-white" : "text-ink-soft"
                                     }`}
                                 >
-                                    {value.label}
+                                    {t(`navigation.roles.${key.toLowerCase()}`)}
                                 </span>
                             </button>
                         ))}
@@ -260,7 +265,7 @@ export default function RegisterForm() {
                 <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="prenom">
-                            Prénom
+                            {t("auth.register.firstName")}
                         </label>
                         <input
                             id="prenom"
@@ -269,7 +274,7 @@ export default function RegisterForm() {
                             value={formData.prenom}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Pascal"
+                            placeholder={t("auth.register.firstNamePlaceholder")}
                             aria-invalid={Boolean(touched.prenom && fieldErrors.prenom)}
                             className={inputClass("prenom")}
                         />
@@ -280,7 +285,7 @@ export default function RegisterForm() {
 
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="nom">
-                            Nom
+                            {t("auth.register.lastName")}
                         </label>
                         <input
                             id="nom"
@@ -289,7 +294,7 @@ export default function RegisterForm() {
                             value={formData.nom}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Dupont"
+                            placeholder={t("auth.register.lastNamePlaceholder")}
                             aria-invalid={Boolean(touched.nom && fieldErrors.nom)}
                             className={inputClass("nom")}
                         />
@@ -300,7 +305,7 @@ export default function RegisterForm() {
 
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="email">
-                            Adresse courriel
+                            {t("auth.register.email")}
                         </label>
                         <input
                             id="email"
@@ -309,7 +314,7 @@ export default function RegisterForm() {
                             value={formData.email}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="nom@exemple.com"
+                            placeholder={t("auth.register.emailPlaceholder")}
                             aria-invalid={Boolean(touched.email && fieldErrors.email)}
                             className={inputClass("email")}
                         />
@@ -320,7 +325,7 @@ export default function RegisterForm() {
 
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="password">
-                            Mot de passe
+                            {t("auth.register.password")}
                         </label>
                         <input
                             id="password"
@@ -343,7 +348,7 @@ export default function RegisterForm() {
                             className="mb-1 block text-sm font-bold text-ink"
                             htmlFor="confirmPassword"
                         >
-                            Confirmer le mot de passe
+                            {t("auth.register.confirmPassword")}
                         </label>
                         <input
                             id="confirmPassword"
@@ -361,13 +366,13 @@ export default function RegisterForm() {
                         )}
                     </div>
 
-                    {(role === RoleEnum.ETUDIANT.value || role === RoleEnum.PROFESSEUR.value) && (
+                    {hasProgramme && (
                         <div>
                             <label
                                 className="mb-1 block text-sm font-bold text-ink"
                                 htmlFor="programme"
                             >
-                                Programme / Discipline
+                                {t("auth.register.programme")}
                             </label>
                             <select
                                 id="programme"
@@ -377,21 +382,21 @@ export default function RegisterForm() {
                                 className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender focus:ring-4 focus:ring-pink/40"
                             >
                                 {programmes.map((prog) => (
-                                    <option key={prog} value={prog}>
-                                        {prog}
+                                    <option key={prog.value} value={prog.value}>
+                                        {prog.label}
                                     </option>
                                 ))}
                             </select>
                         </div>
                     )}
 
-                    {role === RoleEnum.EMPLOYEUR.value && (
+                    {isEmployer && (
                         <div>
                             <label
                                 className="mb-1 block text-sm font-bold text-ink"
                                 htmlFor="entreprise"
                             >
-                                Nom de l'entreprise
+                                {t("auth.register.company")}
                             </label>
                             <input
                                 type="text"
@@ -400,7 +405,7 @@ export default function RegisterForm() {
                                 value={formData.entreprise}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
-                                placeholder="Nom de l'entreprise"
+                                placeholder={t("auth.register.companyPlaceholder")}
                                 aria-invalid={Boolean(touched.entreprise && fieldErrors.entreprise)}
                                 className={inputClass("entreprise")}
                             />
@@ -421,7 +426,7 @@ export default function RegisterForm() {
                         disabled={!isFormValid}
                         className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300"
                     >
-                        S'inscrire
+                        {t("auth.register.submit")}
                     </button>
                 </form>
             </div>
