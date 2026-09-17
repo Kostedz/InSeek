@@ -28,9 +28,7 @@ public class UtilisateurService {
     // TODO: Tell the FE guys to call findByEmail when email is validated in the form
     @Transactional
     public UtilisateurDTO inscription(RegisterDTO registerDTO) throws BadRequestException {
-        if (registerDTO == null) {
-            throw new BadRequestException("Le DTO d'inscription est null.");
-        }
+        registrationVerification(registerDTO);
 
         Utilisateur utilisateur = toEntity(registerDTO);
         utilisateurRepository.save(utilisateur);
@@ -39,13 +37,38 @@ public class UtilisateurService {
 
     // TODO: Rename to findByEmail
     @Transactional
-    public EtudiantDTO findEtudiantByEmail(String email) throws BadRequestException {
+    public UtilisateurDTO findByEmail(String email) throws BadRequestException {
         if (email == null || email.isBlank()) {
             throw new BadRequestException("L'email ne peut pas être null ou vide.");
         }
 
-        Etudiant etudiant = (Etudiant) utilisateurRepository.findByEmail(email);
-        return EtudiantDTO.of(etudiant);
+        Utilisateur user = utilisateurRepository.findByEmail(email);
+        return toDTO(user);
+    }
+
+    public void registrationVerification(RegisterDTO dto ) throws BadRequestException {
+
+        if (dto == null) {
+            throw new BadRequestException("Le DTO d'inscription est null.");
+        }
+        if (dto.prenom() == null || dto.prenom().isBlank()) {
+            throw new BadRequestException("Le prénom est obligatoire");
+        }
+        if (dto.nom() == null || dto.nom().isBlank()) {
+            throw new BadRequestException("Le nom est obligatoire");
+        }
+        if (dto.email() == null || !dto.email().matches("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$")) {
+            throw new BadRequestException("Le format du courriel est invalide");
+        }
+        if (dto.password() == null || !dto.password().matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$")) {
+            throw new BadRequestException("Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial");
+        }
+        if (!dto.password().equals(dto.confirmedPassword())) {
+            throw new BadRequestException("Les mots de passe ne correspondent pas");
+        }
+        if (utilisateurRepository.findByEmail(dto.email()) != null) {
+            throw new BadRequestException("Ce courriel est déjà associé à un compte");
+        }
     }
 
     public UtilisateurDTO toDTO(Utilisateur utilisateur) throws BadRequestException {
