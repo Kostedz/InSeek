@@ -18,6 +18,13 @@ function Header({user}) {
             : "text-white/80 hover:bg-white/10 hover:text-white"
     ].join(" ");
 
+    const loginLinkClass = ({isActive}) => [
+        "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-bold transition-colors md:w-auto md:px-3",
+        isActive
+            ? "bg-pink text-ink"
+            : "text-white/85 hover:bg-white/10 hover:text-white"
+    ].join(" ");
+
     const formatRole = (value) => {
         const formatted = String(value ?? "").replace(/^ROLE_/, "").toLowerCase();
         return formatted ? formatted.charAt(0).toUpperCase() + formatted.slice(1) : "";
@@ -27,8 +34,8 @@ function Header({user}) {
 
     return (
         <header className="sticky top-0 z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)]">
-            <div className="mx-auto flex min-h-20 w-full max-w-7xl flex-wrap items-center gap-x-5 gap-y-3 px-4 py-3 sm:px-6 lg:px-8">
-                <Link to="/" className="group flex shrink-0 items-center gap-3" onClick={closeMenu}>
+            <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
+                <Link to="/" className="group -my-1 flex shrink-0 items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-white/10 focus:outline-none" onClick={closeMenu}>
                     <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lemon text-xl font-black text-ink">
                         I
                     </span>
@@ -87,7 +94,7 @@ function Header({user}) {
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                            <NavLink to="/login" onClick={closeMenu} className="w-full justify-center rounded-full px-4 py-2 text-center text-sm font-bold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-auto md:px-3">
+                            <NavLink to="/login" onClick={closeMenu} className={loginLinkClass}>
                                 Connexion
                             </NavLink>
                             <NavLink to="/register" onClick={closeMenu} className="w-full justify-center rounded-full bg-pink px-4 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-blush md:w-auto">
