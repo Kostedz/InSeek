@@ -43,7 +43,12 @@ public class UserAppService {
             case PREPOSE -> getPreposeDto(user.getId());
             case GESTIONNAIRE -> getGestionnaireDto(user.getId());
             case PROFESSEUR -> getProfesseurDto(user.getId());
+            case ETUDIANT -> getEtudiantDto(user.getId());
         };
+    }
+
+    private UserDTO getEtudiantDto(Long id) {
+        return null;
     }
 
     private GestionnaireDto getGestionnaireDto(Long id) {
@@ -75,7 +80,7 @@ public class UserAppService {
     }
 
     public ProfesseurDTO registerProfesseur(ProfesseurRegisterDTO dto) {
-        
+
         if (dto.getFirstName() == null || dto.getFirstName().isBlank()) {
             throw new RuntimeException("Le prénom est obligatoire");
         }

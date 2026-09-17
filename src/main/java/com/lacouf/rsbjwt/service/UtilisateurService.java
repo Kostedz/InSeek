@@ -2,11 +2,13 @@ package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.model.Professeur;
+import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.ProfesseurDTO;
+import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.RegisterDTO;
 import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import jakarta.transaction.Transactional;
@@ -25,7 +27,7 @@ public class UtilisateurService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public UtilisateurDTO inscription(RegisterDTO registerDTO) throws BadRequestException {
+    public UtilisateurDTO register(RegisterDTO registerDTO) throws BadRequestException {
         registrationVerification(registerDTO);
 
         Utilisateur utilisateur = toEntity(registerDTO);

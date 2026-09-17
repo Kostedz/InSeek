@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.presentation;
 
+import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.RegisterDTO;
 import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
@@ -13,18 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/utilisateur")
 public class UtilisateurController {
 
     private final UtilisateurService utilisateurService;
 
-    @PostMapping("/inscription")
-    public ResponseEntity<UtilisateurDTO> inscription(@RequestBody RegisterDTO registerDTO) {
+    @PostMapping("/register")
+    public ResponseEntity<UtilisateurDTO> registerUser(@RequestBody RegisterDTO registerDTO) {
         try {
-            UtilisateurDTO created = utilisateurService.inscription(registerDTO);
+            UtilisateurDTO created = utilisateurService.register(registerDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 }
