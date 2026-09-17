@@ -65,8 +65,8 @@ function App() {
           <Route path='emprunteur' element={<EmprunteurHome/>}/>
           <Route path='prepose' element={<PreposeHome/>}/>
           <Route path='gestionnaire' element={<GestionnaireHome/>}/>
-          <Route path='error' element={<ErrorPage error={error}/>}/>
           <Route path= 'register' element={<RegisterForm setError={setError}/>}/>
+          <Route path='*' element={<ErrorPage error={error}/>}/>
         </Route>
       </Routes>
 

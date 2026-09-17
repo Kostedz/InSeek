@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from 'react-router-dom';
+
 function About() {
   return (
     <section className="flex flex-1 items-center px-4 py-12 sm:px-6 lg:px-8">
@@ -16,5 +17,6 @@ function About() {
       </div>
     </section>
   );
+
 }
 export default About;
