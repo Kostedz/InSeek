@@ -25,7 +25,7 @@ public class UtilisateurService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public UtilisateurDTO inscription(RegisterDTO registerDTO) throws BadRequestException {
+    public UtilisateurDTO register(RegisterDTO registerDTO) throws BadRequestException {
         registrationVerification(registerDTO);
 
         Utilisateur utilisateur = toEntity(registerDTO);
