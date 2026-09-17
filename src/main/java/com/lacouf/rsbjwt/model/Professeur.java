@@ -20,7 +20,7 @@ public class Professeur extends Utilisateur {
     @Enumerated(EnumType.STRING)
     private Disciplines discipline;
 
-    @Builder Professeur(
+    @Builder public Professeur(
             Long id, String nom, String prenom, Disciplines discipline, String email, String password){
         super(id, nom, prenom, Credentials.builder().email(email).password(password).role(Role.PROFESSEUR).build());
         this.discipline = discipline;
