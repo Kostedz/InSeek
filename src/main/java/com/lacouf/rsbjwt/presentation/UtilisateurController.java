@@ -2,7 +2,6 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.security.exception.AuthenticationException;
-import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 public class UtilisateurController {
 
     private final UtilisateurService utilisateurService;
-    private final AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<JWTAuthResponse> registerUser(@RequestBody RegisterDTO registerDTO) {
@@ -33,7 +31,7 @@ public class UtilisateurController {
     @PostMapping("/login")
     public ResponseEntity<JWTAuthResponse> login(@RequestBody LoginDTO loginDTO){
         try {
-            String token = authService.login(loginDTO);
+            String token = utilisateurService.login(loginDTO);
             return ResponseEntity.ok(new JWTAuthResponse(token));
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -44,6 +42,6 @@ public class UtilisateurController {
     @GetMapping("/me")
 	public ResponseEntity<UtilisateurDTO> getMe(HttpServletRequest request) throws BadRequestException {
 		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(
-			authService.getMe(request.getHeader("Authorization")));
+			utilisateurService.getMe(request.getHeader("Authorization")));
 	}
 }
