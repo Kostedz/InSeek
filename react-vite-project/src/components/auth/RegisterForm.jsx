@@ -170,7 +170,7 @@ export default function RegisterForm() {
             email: currentFormData.email.trim().toLowerCase(),
             role: role.replace(/^ROLE_/, "").toUpperCase(),
             password: currentFormData.password,
-            programme: hasProgramme ? currentFormData.programme : null,
+            affiliation: hasProgramme ? currentFormData.programme : currentFormData.entreprise.trim(),
         };
 
         try {
