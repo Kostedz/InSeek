@@ -1,9 +1,11 @@
 import {useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import fetcher from "../../utils/fetcher";
+import { useTranslation } from "react-i18next";
 
 const LoginForm = ({user, setError}) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -23,8 +25,8 @@ const LoginForm = ({user, setError}) => {
 
   const validateUser = () => {
     const updatedWarnings = {
-      email: validateEmail() ? "" : "courriel invalide",
-      password: validatePassword() ? "" : "mot de passe invalide"
+      email: validateEmail() ? "" : t("auth.login.invalidEmail"),
+      password: validatePassword() ? "" : t("auth.login.invalidPassword")
     };
     setWarnings(updatedWarnings);
     return !updatedWarnings.email && !updatedWarnings.password;
@@ -58,11 +60,11 @@ const LoginForm = ({user, setError}) => {
       if (!response.ok) {
         switch (response.status) {
           case 401:
-            throw new Error("Not authorized");
+            throw new Error(t("errors.unauthorized"));
           case 404:
-            throw new Error("No server available");
+            throw new Error(t("errors.serverUnavailable"));
           default:
-            throw new Error("Not ok");
+            throw new Error(t("errors.requestFailedGeneric"));
         }
       }
 
@@ -70,7 +72,7 @@ const LoginForm = ({user, setError}) => {
       localStorage.setItem('token', data.accessToken);
 
       const userResponse = await fetcher('user/me', {});
-      if (!userResponse.ok) throw new Error("Failed to fetch user info");
+      if (!userResponse.ok) throw new Error(t("errors.requestFailed"));
 
       const userData = await userResponse.json();
       const role = userData.role;
@@ -95,20 +97,20 @@ const LoginForm = ({user, setError}) => {
         <section className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
           <div className="w-full max-w-md rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-10">
             <div className="mb-8">
-              <span className="inline-flex rounded-full bg-lavender px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">Espace membre</span>
-              <h1 className="mt-5 text-3xl font-black tracking-tight text-ink">Bon retour.</h1>
-              <p className="mt-2 text-sm leading-6 text-ink-soft">Connectez-vous pour accéder à votre espace InSeek.</p>
+              <span className="inline-flex rounded-full bg-lavender px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">{t("auth.memberArea")}</span>
+              <h1 className="mt-5 text-3xl font-black tracking-tight text-ink">{t("auth.login.welcomeBack")}</h1>
+              <p className="mt-2 text-sm leading-6 text-ink-soft">{t("auth.login.description")}</p>
             </div>
 
             <form id="login-form" className="space-y-5" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="email" className="mb-2 block text-sm font-bold text-ink">Adresse courriel</label>
+                <label htmlFor="email" className="mb-2 block text-sm font-bold text-ink">{t("auth.login.email")}</label>
                 <input
                   id="email"
                   type="email"
                   autoComplete="email"
                   className={`w-full rounded-xl border bg-canvas px-4 py-3 text-sm text-ink outline-none transition focus:ring-4 focus:ring-pink/40 ${warnings.email ? "border-error" : "border-line focus:border-lavender"}`}
-                  placeholder="nom@exemple.com"
+                  placeholder={t("auth.login.emailPlaceholder")}
                   name="email"
                   onChange={handleChanges}
                   aria-invalid={Boolean(warnings.email)}
@@ -118,7 +120,7 @@ const LoginForm = ({user, setError}) => {
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-2 block text-sm font-bold text-ink">Mot de passe</label>
+                <label htmlFor="password" className="mb-2 block text-sm font-bold text-ink">{t("auth.login.password")}</label>
                 <input
                   id="password"
                   type="password"
@@ -134,12 +136,12 @@ const LoginForm = ({user, setError}) => {
               </div>
 
               <button type="submit" className="w-full rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50">
-                Se connecter
+                {t("auth.login.submit")}
               </button>
             </form>
 
             <p className="mt-7 text-center text-sm text-ink-soft">
-              Pas encore de compte ? <Link to="/register" className="font-bold text-ink underline decoration-pink decoration-2 underline-offset-4 hover:text-ink-soft">Créer un compte</Link>
+              {t("auth.login.noAccount")} <Link to="/register" className="font-bold text-ink underline decoration-pink decoration-2 underline-offset-4 hover:text-ink-soft">{t("auth.login.createAccount")}</Link>
             </p>
           </div>
         </section>
