@@ -16,19 +16,21 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.logging.Logger;
+
 @Component
 @RequiredArgsConstructor
 public class AuthProvider implements AuthenticationProvider{
 	private final PasswordEncoder passwordEncoder;
 	private final UserAppRepository userAppRepository;
 	private final UtilisateurRepository utilisateurRepository;
+	private static final Logger logger = Logger.getLogger(AuthProvider.class.getName());
 
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		Utilisateur utilisateur = utilisateurRepository.findByEmail(authentication.getPrincipal().toString());
-		if (utilisateur == null || !passwordEncoder.matches(String.valueOf(authentication.getCredentials()), utilisateur.getPassword())) {
-			throw new BadCredentialsException("Courriel ou mot de passe invalide");
-		}
+		logger.info(utilisateur.toString());
+		validateAuthentication(authentication, utilisateur);
 		return new UsernamePasswordAuthenticationToken(utilisateur.getEmail(), utilisateur.getPassword(), utilisateur.getAuthorities());
 	}
 	
@@ -42,8 +44,13 @@ public class AuthProvider implements AuthenticationProvider{
 			.orElseThrow(UserNotFoundException::new);
 	}
 
-	private void validateAuthentication(Authentication authentication, UserApp user){
-		if(!passwordEncoder.matches(authentication.getCredentials().toString(), user.getPassword()))
-			throw new AuthenticationException(HttpStatus.FORBIDDEN, "Incorrect username or password");
+	private void validateAuthentication(Authentication authentication, Utilisateur user) {
+		if (!passwordEncoder.matches(authentication.getCredentials().toString(), user.getPassword())) {
+			throw new BadCredentialsException("Invalid credentials");
+		}
 	}
 }
+
+
+
+
