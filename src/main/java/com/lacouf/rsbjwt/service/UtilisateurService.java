@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
+import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
@@ -52,9 +53,6 @@ public class UtilisateurService {
         if (dto.password() == null || !dto.password().matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$")) {
             throw new BadRequestException("Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial");
         }
-        if (!dto.password().equals(dto.confirmedPassword())) {
-            throw new BadRequestException("Les mots de passe ne correspondent pas");
-        }
         if (utilisateurRepository.findByEmail(dto.email()) != null) {
             throw new BadRequestException("Ce courriel est déjà associé à un compte");
         }
@@ -82,7 +80,7 @@ public class UtilisateurService {
                     .nom(registerDTO.nom())
                     .prenom(registerDTO.prenom())
                     .email(registerDTO.email())
-                    .discipline(registerDTO.discipline())
+                    .discipline(Disciplines.valueOf(registerDTO.affiliation()))
                     .password(passwordEncoder.encode(registerDTO.password()))
                     .build();
         }

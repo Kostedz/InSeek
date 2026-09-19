@@ -11,10 +11,13 @@ import EmprunteurHome from "./components/page/EmprunteurHome.jsx";
 import PreposeHome from "./components/page/PreposeHome.jsx";
 import GestionnaireHome from "./components/page/GestionnaireHome.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
+import { useTranslation } from "react-i18next";
+
 function App() {
   const [user, setUser] = useState({})
   const [error, setError] = useState(null)
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   let token = localStorage.getItem('token')
 
@@ -29,10 +32,13 @@ function App() {
                     case 401:
                       localStorage.clear();
                       setUser(null);
+                      throw new Error(t("errors.unauthorized"));
                     case 403:
-                      throw new Error("Forbidden")
+                      throw new Error(t("errors.forbidden"));
                     case 404:
-                      throw new Error("Nothing here 404");
+                      throw new Error(t("errors.notFound"));
+                    default:
+                      throw new Error(t("errors.requestFailedGeneric"));
                   }
                 }
                 const data = await res.json();
@@ -51,7 +57,7 @@ function App() {
           }
         }
       }
-    }, [token]
+    }, [token, t]
   );
 
   return (
