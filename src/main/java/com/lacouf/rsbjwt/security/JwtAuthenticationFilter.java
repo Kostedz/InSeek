@@ -1,7 +1,9 @@
 package com.lacouf.rsbjwt.security;
 
 import com.lacouf.rsbjwt.model.UserApp;
+import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.repository.UserAppRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.exception.UserNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,11 +19,11 @@ import java.io.IOException;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider tokenProvider;
-    private final UserAppRepository userRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserAppRepository userRepository) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UtilisateurRepository utilisateurRepository) {
         this.tokenProvider = tokenProvider;
-        this.userRepository = userRepository;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     @Override
@@ -36,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 tokenProvider.validateToken(token);
                 String email = tokenProvider.getEmailFromJWT(token);
-                UserApp user = userRepository.findUserAppByEmail(email).orElseThrow(UserNotFoundException::new);
+                Utilisateur user = utilisateurRepository.findByEmail(email);
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                         user.getEmail(), null, user.getAuthorities()
                 );

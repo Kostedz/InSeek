@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt.security;
 
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UserAppRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,7 +54,7 @@ public class SecurityConfiguration {
 
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UtilisateurRepository utilisateurRepository) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -77,7 +78,7 @@ public class SecurityConfiguration {
                 .sessionManagement((secuManagement) -> {
                     secuManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 })
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter(utilisateurRepository), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(configurer -> configurer.authenticationEntryPoint(authenticationEntryPoint));
 
         return http.build();
@@ -135,8 +136,8 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
-        return new JwtAuthenticationFilter(jwtTokenProvider, userRepository);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(UtilisateurRepository utilisateurRepository) throws Exception {
+        return new JwtAuthenticationFilter(jwtTokenProvider, utilisateurRepository);
     }
 
     @Bean
