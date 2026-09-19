@@ -165,13 +165,12 @@ export default function RegisterForm() {
         if (hasErrors) return;
 
         const payload = {
-            prenom: currentFormData.prenom.trim(),
             nom: currentFormData.nom.trim(),
+            prenom: currentFormData.prenom.trim(),
             email: currentFormData.email.trim().toLowerCase(),
+            role: role.replace(/^ROLE_/, "").toUpperCase(),
             password: currentFormData.password,
-            role: role,
             programme: hasProgramme ? currentFormData.programme : null,
-            entreprise: isEmployer ? currentFormData.entreprise.trim() : null,
         };
 
         try {
@@ -197,26 +196,7 @@ export default function RegisterForm() {
                 }
             }
 
-            const data = await response.json();
-            localStorage.setItem("token", data.accessToken);
-
-            const userResponse = await fetcher("user/me", {});
-            if (!userResponse.ok) {
-                throw new Error(t("auth.register.errors.userInfo"));
-            }
-
-            const userData = await userResponse.json();
-            const userRole = userData.role;
-
-            if (userRole === "ROLE_EMPRUNTEUR") {
-                navigate("/emprunteur");
-            } else if (userRole === "ROLE_PREPOSE") {
-                navigate("/prepose");
-            } else if (userRole === "ROLE_GESTIONNAIRE") {
-                navigate("/gestionnaire");
-            } else {
-                navigate("/");
-            }
+            navigate("/login");
         } catch (err) {
             setServerError(err.message);
         }
