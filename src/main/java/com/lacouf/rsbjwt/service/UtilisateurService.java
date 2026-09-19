@@ -19,31 +19,38 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-
 @Service
 @RequiredArgsConstructor
 public class UtilisateurService {
-    private final AuthenticationManager authenticationManager;
     private final UtilisateurRepository utilisateurRepository;
-    private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final AuthenticationManager authenticationManager;
+
 
     @Transactional
-    public UtilisateurDTO register(RegisterDTO registerDTO) throws BadRequestException {
+    public String register(RegisterDTO registerDTO) throws BadRequestException {
         registrationVerification(registerDTO);
 
+        LoginDTO loginDTO = new LoginDTO(registerDTO.email(), registerDTO.password());
         Utilisateur utilisateur = toEntity(registerDTO);
         utilisateurRepository.save(utilisateur);
-        return toDTO(utilisateur);
+        return login(loginDTO);
     }
 
     @Transactional
-    public UtilisateurDTO findByEmail(String email) throws BadRequestException {
-        if (email == null || email.isBlank()) {
-            throw new BadRequestException("L'email ne peut pas être null ou vide.");
-        }
+    public String login(LoginDTO loginDTO) {
+         Authentication authentication = authenticationManager.authenticate(
+                 new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword()));
+        return jwtTokenProvider.generateToken(authentication);
+    }
 
+    @Transactional
+    public UtilisateurDTO getMe(String token) throws BadRequestException {
+        token = token.startsWith("Bearer") ? token.substring(7) : token;
+        String email = jwtTokenProvider.getEmailFromJWT(token);
         Utilisateur user = utilisateurRepository.findByEmail(email);
+
         return toDTO(user);
     }
 
@@ -99,14 +106,4 @@ public class UtilisateurService {
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
 
-
-    @Transactional
-    public String login(LoginDTO loginDTO) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword()));
-        final String token = jwtTokenProvider.generateToken(authentication);
-        System.out.println("JWT Token :" + token);
-        return token;
-
-    }
 }
