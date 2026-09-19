@@ -168,7 +168,7 @@ export default function RegisterForm() {
             nom: currentFormData.nom.trim(),
             prenom: currentFormData.prenom.trim(),
             email: currentFormData.email.trim().toLowerCase(),
-            role: role.replace(/^ROLE_/, "").toUpperCase(),
+            role: role.toUpperCase(),
             password: currentFormData.password,
             affiliation: hasProgramme ? currentFormData.programme : currentFormData.entreprise.trim(),
         };
