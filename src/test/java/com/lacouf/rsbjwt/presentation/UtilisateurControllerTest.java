@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.presentation;
 
+import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
@@ -11,6 +12,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -70,5 +72,71 @@ class UtilisateurControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nom").value("Gagnon"))
                 .andExpect(jsonPath("$.prenom").value("Bob"));
+    }
+
+    @Test
+    @DisplayName("POST /register avec un courriel invalide retourne 400")
+    void registerUser_emailInvalide_retourne400() throws Exception {
+        when(utilisateurService.register(any()))
+                .thenThrow(new BadRequestException("Le format du courriel est invalide"));
+
+        mockMvc.perform(post("/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "nom": "Tremblay",
+                              "prenom": "Alice",
+                              "email": "pas-un-email",
+                              "role": "ETUDIANT",
+                              "password": "Abcdef1!",
+                              "confirmedPassword": "Abcdef1!",
+                              "discipline": "INFORMATIQUE"
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /register avec un courriel déjà existant retourne 400")
+    void registerUser_emailDejaExistant_retourne400() throws Exception {
+        when(utilisateurService.register(any()))
+                .thenThrow(new BadRequestException("Ce courriel est déjà associé à un compte"));
+
+        mockMvc.perform(post("/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "nom": "Tremblay",
+                              "prenom": "Alice",
+                              "email": "alice@mail.com",
+                              "role": "ETUDIANT",
+                              "password": "Abcdef1!",
+                              "confirmedPassword": "Abcdef1!",
+                              "discipline": "INFORMATIQUE"
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /register avec des mots de passe différents retourne 400")
+    void registerUser_motsDePasseDifferents_retourne400() throws Exception {
+        when(utilisateurService.register(any()))
+                .thenThrow(new BadRequestException("Les mots de passe ne correspondent pas"));
+
+        mockMvc.perform(post("/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "nom": "Tremblay",
+                              "prenom": "Alice",
+                              "email": "alice@mail.com",
+                              "role": "ETUDIANT",
+                              "password": "Abcdef1!",
+                              "confirmedPassword": "Autrechose1!",
+                              "discipline": "INFORMATIQUE"
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
     }
 }
