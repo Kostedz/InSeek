@@ -29,10 +29,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UtilisateurServiceTest {
 
-    @Mock private AuthenticationManager authenticationManager;
-    @Mock private UtilisateurRepository utilisateurRepository;
-    @Mock private JwtTokenProvider jwtTokenProvider;
-    @Mock private PasswordEncoder passwordEncoder;
+    @Mock
+    private AuthenticationManager authenticationManager;
+    @Mock
+    private UtilisateurRepository utilisateurRepository;
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UtilisateurService utilisateurService;
@@ -168,5 +172,93 @@ class UtilisateurServiceTest {
                 () -> utilisateurService.registrationVerification(null));
 
         assertEquals("Le DTO d'inscription est null.", exception.getMessage());
+    }
+
+    // TESTER findByEmail()
+
+    @Test
+    @DisplayName("findByEmail() avec un courriel existant retourne le DTO correspondant")
+    void findByEmail_succes_retourneDTO() throws BadRequestException {
+        Etudiant etudiant = Etudiant.builder()
+                .id(1L).nom("Tremblay").prenom("Alice")
+                .email("alice@mail.com").password("hashed")
+                .discipline(Disciplines.INFORMATIQUE).build();
+
+        when(utilisateurRepository.findByEmail("alice@mail.com")).thenReturn(etudiant);
+
+        UtilisateurDTO result = utilisateurService.findByEmail("alice@mail.com");
+
+        assertNotNull(result);
+        assertEquals("Tremblay", result.nom());
+    }
+
+    @Test
+    @DisplayName("findByEmail() avec un email null lève une BadRequestException")
+    void findByEmail_emailNull_leveBadRequestException() {
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> utilisateurService.findByEmail(null));
+
+        assertEquals("L'email ne peut pas être null ou vide.", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("findByEmail() avec un email vide lève une BadRequestException")
+    void findByEmail_emailVide_leveBadRequestException() {
+        assertThrows(BadRequestException.class,
+                () -> utilisateurService.findByEmail("  "));
+    }
+
+    //  toDTO()
+
+    @Test
+    @DisplayName("toDTO() avec un utilisateur null retourne null")
+    void toDTO_null_retourneNull() throws BadRequestException {
+        assertNull(utilisateurService.toDTO(null));
+    }
+
+    @Test
+    @DisplayName("toDTO() avec un Etudiant retourne un EtudiantDTO")
+    void toDTO_etudiant_retourneEtudiantDTO() throws BadRequestException {
+        Etudiant etudiant = Etudiant.builder()
+                .id(1L).nom("Nom").prenom("Prenom")
+                .email("a@a.com").password("hashed")
+                .discipline(Disciplines.ARCHITECTURE).build();
+
+        UtilisateurDTO dto = utilisateurService.toDTO(etudiant);
+
+        assertTrue(dto instanceof EtudiantDTO);
+    }
+
+    @Test
+    @DisplayName("toDTO() avec un Professeur retourne un ProfesseurDTO")
+    void toDTO_professeur_retourneProfesseurDTO() throws BadRequestException {
+        Professeur professeur = Professeur.builder()
+                .id(1L).nom("Nom").prenom("Prenom")
+                .email("a@a.com").password("hashed")
+                .discipline(Disciplines.ARCHITECTURE).build();
+
+        UtilisateurDTO dto = utilisateurService.toDTO(professeur);
+
+        assertTrue(dto instanceof ProfesseurDTO);
+    }
+
+    // toEntity()
+
+    @Test
+    @DisplayName("toEntity() avec un RegisterDTO null retourne null")
+    void toEntity_null_retourneNull() throws BadRequestException {
+        assertNull(utilisateurService.toEntity(null));
+    }
+
+    @Test
+    @DisplayName("toEntity() avec un rôle non supporté exemple: GESTIONNAIRE ca lève une BadRequestException")
+    void toEntity_roleNonSupporte_leveBadRequestException() {
+        RegisterDTO dto = new RegisterDTO("Nom", "Prenom", "a@a.com", Role.GESTIONNAIRE,
+                "Abcdef1!", "Abcdef1!", null);
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> utilisateurService.toEntity(dto));
+
+        assertEquals("Type de DTO non pris en charge pour la conversion en entité.", exception.getMessage());
     }
 }
