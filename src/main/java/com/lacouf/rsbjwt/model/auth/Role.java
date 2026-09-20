@@ -10,7 +10,6 @@ public enum Role{
 	PROFESSEUR("ROLE_PROFESSEUR"),
 	ETUDIANT("ROLE_ETUDIANT"),
 	EMPLOYEUR("ROLE_EMPLOYEUR"),
-	PROFESSEUR("ROLE_PROFESSEUR")
 	;
 
 	private final String string;

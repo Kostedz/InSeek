@@ -13,7 +13,7 @@ public class ProfesseurRegisterDTO {
     private String lastName;
     private String email;
     private String password;
-    private String confirmPassword;
+    private String affilitation;
     private Disciplines discipline;
 
 }
