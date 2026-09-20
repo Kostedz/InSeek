@@ -1,16 +1,22 @@
 import React, { useState } from "react";
 import fetcher from "../../utils/fetcher.js";
 import { useNavigate } from "react-router-dom";
+import { RoleEnum} from "../../constants/role.js";
+import { DisciplineEnum} from "../../constants/disciplines.js";
+import { useTranslation } from "react-i18next";
+
 
 export default function RegisterForm() {
-    const [role, setRole] = useState("etudiant");
+    const { t } = useTranslation();
+    const [role, setRole] = useState(RoleEnum.ETUDIANT.value);
     const [formData, setFormData] = useState({
         prenom: "",
         nom: "",
         email: "",
         password: "",
         confirmPassword: "",
-        programme: "Informatique",
+        programme: DisciplineEnum.INFORMATIQUE.value,
+        entreprise: "",
     });
     const [fieldErrors, setFieldErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -18,11 +24,13 @@ export default function RegisterForm() {
     const navigate = useNavigate();
 
     const programmes = [
-        "Informatique",
-        "Tech. Infirmière",
-        "Architecture",
-        "Gestion de commerce",
+        { value: DisciplineEnum.INFORMATIQUE.value, label: t("auth.register.disciplines.informatique") },
+        { value: DisciplineEnum.INFIRMIERE.value, label: t("auth.register.disciplines.infirmiere") },
+        { value: DisciplineEnum.ARCHITECTURE.value, label: t("auth.register.disciplines.architecture") },
     ];
+
+    const isEmployer = role === RoleEnum.EMPLOYEUR.value;
+    const hasProgramme = role === RoleEnum.ETUDIANT.value || role === RoleEnum.PROFESSEUR.value;
 
     const REGEX = {
         name: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]{2,30}$/,
@@ -36,27 +44,32 @@ export default function RegisterForm() {
         switch (name) {
             case "prenom":
                 if (!REGEX.name.test(value.trim())) {
-                    errorMsg = "Le prénom doit contenir entre 2 et 30 caractères alphabétiques.";
+                    errorMsg = t("auth.register.errors.firstName");
                 }
                 break;
             case "nom":
                 if (!REGEX.name.test(value.trim())) {
-                    errorMsg = "Le nom doit contenir entre 2 et 30 caractères alphabétiques.";
+                    errorMsg = t("auth.register.errors.lastName");
                 }
                 break;
             case "email":
                 if (!REGEX.email.test(value.trim())) {
-                    errorMsg = "Adresse courriel invalide. Exemple : example123@example.com";
+                    errorMsg = t("auth.register.errors.email");
                 }
                 break;
             case "password":
                 if (!REGEX.password.test(value)) {
-                    errorMsg = "Au moins 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre et 1 symbole";
+                    errorMsg = t("auth.register.errors.password");
                 }
                 break;
             case "confirmPassword":
                 if (value !== currentFormData.password) {
-                    errorMsg = "Les mots de passe ne correspondent pas.";
+                    errorMsg = t("auth.register.errors.confirmPassword");
+                }
+                break;
+            case "entreprise":
+                if (isEmployer && value.trim() === "") {
+                    errorMsg = t("auth.register.errors.companyRequired");
                 }
                 break;
             default:
@@ -70,7 +83,7 @@ export default function RegisterForm() {
                 nextErrors.confirmPassword =
                     value === currentFormData.confirmPassword
                         ? ""
-                        : "Les mots de passe ne correspondent pas.";
+                        : t("auth.register.errors.confirmPassword");
             }
 
             return nextErrors;
@@ -96,6 +109,26 @@ export default function RegisterForm() {
         setTouched((previousTouched) => ({ ...previousTouched, [name]: true }));
         validateField(name, value);
     };
+    const isFormValid = React.useMemo(() => {
+        const isPrenomValid = REGEX.name.test(formData.prenom.trim());
+        const isNomValid = REGEX.name.test(formData.nom.trim());
+        const isEmailValid = REGEX.email.test(formData.email.trim());
+        const isPasswordValid = REGEX.password.test(formData.password);
+        const isConfirmPasswordValid = formData.password === formData.confirmPassword && formData.confirmPassword !== "";
+        const isEntrepriseValid = isEmployer ? formData.entreprise.trim() !== "" : true;
+
+        const hasNoErrors = Object.values(fieldErrors).every((err) => !err);
+
+        return (
+            isPrenomValid &&
+            isNomValid &&
+            isEmailValid &&
+            isPasswordValid &&
+            isConfirmPasswordValid &&
+            isEntrepriseValid &&
+            hasNoErrors
+        );
+    }, [formData, role, fieldErrors]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -107,6 +140,7 @@ export default function RegisterForm() {
             email: true,
             password: true,
             confirmPassword: true,
+            entreprise: isEmployer,
         };
         setTouched(allTouched);
 
@@ -116,24 +150,27 @@ export default function RegisterForm() {
         validateField("email", currentFormData.email, currentFormData);
         validateField("password", currentFormData.password, currentFormData);
         validateField("confirmPassword", currentFormData.confirmPassword, currentFormData);
+        if (isEmployer) {
+            validateField("entreprise", currentFormData.entreprise, currentFormData);
+        }
 
         const hasErrors =
             !REGEX.name.test(currentFormData.prenom.trim()) ||
             !REGEX.name.test(currentFormData.nom.trim()) ||
             !REGEX.email.test(currentFormData.email.trim()) ||
             !REGEX.password.test(currentFormData.password) ||
-            currentFormData.password !== currentFormData.confirmPassword;
+            currentFormData.password !== currentFormData.confirmPassword ||
+            (isEmployer && !currentFormData.entreprise.trim());
 
         if (hasErrors) return;
 
         const payload = {
-            prenom: currentFormData.prenom.trim(),
             nom: currentFormData.nom.trim(),
+            prenom: currentFormData.prenom.trim(),
             email: currentFormData.email.trim().toLowerCase(),
+            role: role.toUpperCase(),
             password: currentFormData.password,
-            role,
-            programme:
-                role === "etudiant" || role === "professeur" ? currentFormData.programme : null,
+            affiliation: hasProgramme ? currentFormData.programme : currentFormData.entreprise.trim(),
         };
 
         try {
@@ -149,36 +186,17 @@ export default function RegisterForm() {
             if (!response.ok) {
                 switch (response.status) {
                     case 400:
-                        throw new Error("Données invalides ou courriel déjà utilisé.");
+                        throw new Error(t("auth.register.errors.invalidData"));
                     case 401:
-                        throw new Error("Accès non autorisé.");
+                        throw new Error(t("auth.register.errors.unauthorized"));
                     case 404:
-                        throw new Error("Serveur non disponible.");
+                        throw new Error(t("auth.register.errors.unavailable"));
                     default:
-                        throw new Error("Erreur lors de l'inscription.");
+                        throw new Error(t("auth.register.errors.submit"));
                 }
             }
 
-            const data = await response.json();
-            localStorage.setItem("token", data.accessToken);
-
-            const userResponse = await fetcher("user/me", {});
-            if (!userResponse.ok) {
-                throw new Error("Impossible de récupérer les informations de l'utilisateur.");
-            }
-
-            const userData = await userResponse.json();
-            const userRole = userData.role;
-
-            if (userRole === "ROLE_EMPRUNTEUR") {
-                navigate("/emprunteur");
-            } else if (userRole === "ROLE_PREPOSE") {
-                navigate("/prepose");
-            } else if (userRole === "ROLE_GESTIONNAIRE") {
-                navigate("/gestionnaire");
-            } else {
-                navigate("/");
-            }
+            navigate("/login");
         } catch (err) {
             setServerError(err.message);
         }
@@ -195,33 +213,29 @@ export default function RegisterForm() {
         <section className="flex flex-1 items-center justify-center bg-canvas px-4 py-8 sm:px-6 sm:py-12">
             <div className="w-full max-w-sm rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:max-w-md sm:p-8 md:max-w-lg">
                 <h2 className="mb-5 text-center text-2xl font-black tracking-tight text-ink sm:mb-6 sm:text-3xl">
-                    Créer un compte
+                    {t("auth.register.title")}
                 </h2>
 
                 <div className="mb-5 sm:mb-6">
                     <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
-                        {[
-                            { id: "employeur", label: "Employeur" },
-                            { id: "etudiant", label: "Étudiant" },
-                            { id: "professeur", label: "Professeur" },
-                        ].map((option) => (
+                        {Object.entries(RoleEnum).filter(([key, value]) => value.value !== "ROLE_GESTIONNAIRE").map(([key, value]) => (
                             <button
-                                key={option.id}
+                                key={key}
                                 type="button"
-                                onClick={() => setRole(option.id)}
-                                aria-pressed={role === option.id}
+                                onClick={() => setRole(value.value)}
+                                aria-pressed={role === value.value}
                                 className={`flex items-center justify-center rounded-xl border p-2 text-center transition-all sm:flex-col sm:gap-1 sm:p-3 ${
-                                    role === option.id
+                                    role === value.value
                                         ? "bg-ink border-ink text-white hover:bg-ink-soft"
                                         : "bg-surface border-line text-ink-soft hover:border-pink"
                                 }`}
                             >
                                 <span
                                     className={`text-sm font-medium ${
-                                        role === option.id ? "text-white" : "text-ink-soft"
+                                        role === value.value ? "text-white" : "text-ink-soft"
                                     }`}
                                 >
-                                    {option.label}
+                                    {t(`navigation.roles.${key.toLowerCase()}`)}
                                 </span>
                             </button>
                         ))}
@@ -231,7 +245,7 @@ export default function RegisterForm() {
                 <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="prenom">
-                            Prénom
+                            {t("auth.register.firstName")}
                         </label>
                         <input
                             id="prenom"
@@ -240,7 +254,7 @@ export default function RegisterForm() {
                             value={formData.prenom}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Pascal"
+                            placeholder={t("auth.register.firstNamePlaceholder")}
                             aria-invalid={Boolean(touched.prenom && fieldErrors.prenom)}
                             className={inputClass("prenom")}
                         />
@@ -251,7 +265,7 @@ export default function RegisterForm() {
 
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="nom">
-                            Nom
+                            {t("auth.register.lastName")}
                         </label>
                         <input
                             id="nom"
@@ -260,7 +274,7 @@ export default function RegisterForm() {
                             value={formData.nom}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="Dupont"
+                            placeholder={t("auth.register.lastNamePlaceholder")}
                             aria-invalid={Boolean(touched.nom && fieldErrors.nom)}
                             className={inputClass("nom")}
                         />
@@ -271,7 +285,7 @@ export default function RegisterForm() {
 
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="email">
-                            Adresse courriel
+                            {t("auth.register.email")}
                         </label>
                         <input
                             id="email"
@@ -280,7 +294,7 @@ export default function RegisterForm() {
                             value={formData.email}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            placeholder="nom@exemple.com"
+                            placeholder={t("auth.register.emailPlaceholder")}
                             aria-invalid={Boolean(touched.email && fieldErrors.email)}
                             className={inputClass("email")}
                         />
@@ -291,7 +305,7 @@ export default function RegisterForm() {
 
                     <div>
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="password">
-                            Mot de passe
+                            {t("auth.register.password")}
                         </label>
                         <input
                             id="password"
@@ -314,7 +328,7 @@ export default function RegisterForm() {
                             className="mb-1 block text-sm font-bold text-ink"
                             htmlFor="confirmPassword"
                         >
-                            Confirmer le mot de passe
+                            {t("auth.register.confirmPassword")}
                         </label>
                         <input
                             id="confirmPassword"
@@ -332,13 +346,13 @@ export default function RegisterForm() {
                         )}
                     </div>
 
-                    {(role === "etudiant" || role === "professeur") && (
+                    {hasProgramme && (
                         <div>
                             <label
                                 className="mb-1 block text-sm font-bold text-ink"
                                 htmlFor="programme"
                             >
-                                Programme / Discipline
+                                {t("auth.register.programme")}
                             </label>
                             <select
                                 id="programme"
@@ -348,11 +362,36 @@ export default function RegisterForm() {
                                 className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender focus:ring-4 focus:ring-pink/40"
                             >
                                 {programmes.map((prog) => (
-                                    <option key={prog} value={prog}>
-                                        {prog}
+                                    <option key={prog.value} value={prog.value}>
+                                        {prog.label}
                                     </option>
                                 ))}
                             </select>
+                        </div>
+                    )}
+
+                    {isEmployer && (
+                        <div>
+                            <label
+                                className="mb-1 block text-sm font-bold text-ink"
+                                htmlFor="entreprise"
+                            >
+                                {t("auth.register.company")}
+                            </label>
+                            <input
+                                type="text"
+                                id="entreprise"
+                                name="entreprise"
+                                value={formData.entreprise}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                placeholder={t("auth.register.companyPlaceholder")}
+                                aria-invalid={Boolean(touched.entreprise && fieldErrors.entreprise)}
+                                className={inputClass("entreprise")}
+                            />
+                            {touched.entreprise && fieldErrors.entreprise && (
+                                <p className="mt-1 text-xs text-error">{fieldErrors.entreprise}</p>
+                            )}
                         </div>
                     )}
 
@@ -364,9 +403,10 @@ export default function RegisterForm() {
 
                     <button
                         type="submit"
-                        className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
+                        disabled={!isFormValid}
+                        className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300"
                     >
-                        S'inscrire
+                        {t("auth.register.submit")}
                     </button>
                 </form>
             </div>

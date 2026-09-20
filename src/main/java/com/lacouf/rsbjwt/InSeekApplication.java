@@ -1,10 +1,14 @@
 package com.lacouf.rsbjwt;
 
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.EmprunteurRepository;
 import com.lacouf.rsbjwt.repository.GestionnaireRepository;
 import com.lacouf.rsbjwt.repository.PreposeRepository;
 import com.lacouf.rsbjwt.repository.UserAppRepository;
+import com.lacouf.rsbjwt.service.UtilisateurService;
+import com.lacouf.rsbjwt.service.dto.RegisterDTO;
+import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,14 +24,15 @@ public class InSeekApplication implements CommandLineRunner {
     private final EmprunteurRepository emprunteurRepository;
     private final PreposeRepository preposeRepository;
     private final UserAppRepository userAppRepository;
-
+    private final UtilisateurService utilisateurService;
     private final PasswordEncoder passwordEncoder;
 
-    public InSeekApplication(GestionnaireRepository gestionnaireRepository, EmprunteurRepository emprunteurRepository, PreposeRepository preposeRepository, UserAppRepository userAppRepository, PasswordEncoder passwordEncoder) {
+    public InSeekApplication(GestionnaireRepository gestionnaireRepository, EmprunteurRepository emprunteurRepository, PreposeRepository preposeRepository, UserAppRepository userAppRepository, UtilisateurService utilisateurService, PasswordEncoder passwordEncoder) {
         this.gestionnaireRepository = gestionnaireRepository;
         this.emprunteurRepository = emprunteurRepository;
         this.preposeRepository = preposeRepository;
         this.userAppRepository = userAppRepository;
+        this.utilisateurService = utilisateurService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -65,6 +70,9 @@ public class InSeekApplication implements CommandLineRunner {
                         .passeKey("12345")
                         .build()
         );
+
+        RegisterDTO registerDTO = new RegisterDTO("bib", "bib", "bib@a.com", Role.ETUDIANT, "123456Aa@", "INFORMATIQUE");
+        utilisateurService.register(registerDTO);
         final Optional<UserApp> userAppByEmail = userAppRepository.findUserAppByEmail("l@l.com");
         userAppByEmail.ifPresent(userApp -> System.out.println("user " + userAppByEmail));
 
