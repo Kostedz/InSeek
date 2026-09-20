@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
+import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Utilisateur;
@@ -30,16 +31,30 @@ public class UtilisateurService {
 
     @Transactional
     public String register(RegisterDTO registerDTO) throws BadRequestException {
-        registrationVerification(registerDTO);
+        if (registerDTO == null) {
+            throw new BadRequestException("Le DTO d'inscription est null.");
+        }
 
-        LoginDTO loginDTO = new LoginDTO(registerDTO.email(), registerDTO.password());
+        if (!registrationVerification(registerDTO)) {
+            throw new BadRequestException("La vérification d'inscription a échoué.");
+        }
+
         Utilisateur utilisateur = toEntity(registerDTO);
         utilisateurRepository.save(utilisateur);
-        return login(loginDTO);
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(registerDTO.email(), registerDTO.password()));
+        return jwtTokenProvider.generateToken(authentication);
     }
 
     @Transactional
-    public String login(LoginDTO loginDTO) {
+    public String login(LoginDTO loginDTO) throws BadRequestException, NotFoundException {
+        if (loginDTO == null) {
+            throw new BadRequestException("Le DTO de connexion est null.");
+        }
+        if (utilisateurRepository.findByEmail(loginDTO.getEmail()) == null) {
+            throw new NotFoundException("L'utilisateur n'existe pas.");
+        }
          Authentication authentication = authenticationManager.authenticate(
                  new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword()));
         return jwtTokenProvider.generateToken(authentication);
@@ -54,11 +69,8 @@ public class UtilisateurService {
         return toDTO(user);
     }
 
-    public void registrationVerification(RegisterDTO dto ) throws BadRequestException {
+    public boolean registrationVerification(RegisterDTO dto ) throws BadRequestException {
 
-        if (dto == null) {
-            throw new BadRequestException("Le DTO d'inscription est null.");
-        }
         if (dto.prenom() == null || dto.prenom().isBlank()) {
             throw new BadRequestException("Le prénom est obligatoire");
         }
@@ -74,6 +86,7 @@ public class UtilisateurService {
         if (utilisateurRepository.findByEmail(dto.email()) != null) {
             throw new BadRequestException("Ce courriel est déjà associé à un compte");
         }
+        return true;
     }
 
     public UtilisateurDTO toDTO(Utilisateur utilisateur) throws BadRequestException {
