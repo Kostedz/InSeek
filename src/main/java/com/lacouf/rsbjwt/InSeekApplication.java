@@ -76,5 +76,10 @@ public class InSeekApplication implements CommandLineRunner {
         final Optional<UserApp> userAppByEmail = userAppRepository.findUserAppByEmail("l@l.com");
         userAppByEmail.ifPresent(userApp -> System.out.println("user " + userAppByEmail));
 
+        RegisterDTO registerDTO1 = new RegisterDTO("Ubi","Soft","ubisoft@mail.com",Role.EMPLOYEUR,"123456Aa@","UbiSoft");
+        utilisateurService.register(registerDTO1);
+        final Optional<UserApp> userAppByEmail1 = userAppRepository.findUserAppByEmail("ubisoft@mail.com");
+        userAppByEmail1.ifPresent(userApp -> System.out.println("user " + userAppByEmail1));
+
     }
 }
