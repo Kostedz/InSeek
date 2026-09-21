@@ -287,7 +287,7 @@ class UtilisateurServiceTest {
                 utilisateurService.getMe("Bearer valid-token");
 
         assertNotNull(result);
-        assertTrue(result instanceof EtudiantDTO);
+        assertInstanceOf(EtudiantDTO.class, result);
         assertEquals("Tremblay", result.nom());
     }
 
@@ -314,7 +314,7 @@ class UtilisateurServiceTest {
                 utilisateurService.getMe("valid-token");
 
         assertNotNull(result);
-        assertTrue(result instanceof ProfesseurDTO);
+        assertInstanceOf(ProfesseurDTO.class, result);
         assertEquals("Gagnon", result.nom());
     }
 
@@ -342,7 +342,7 @@ class UtilisateurServiceTest {
 
         UtilisateurDTO dto = utilisateurService.toDTO(etudiant);
 
-        assertTrue(dto instanceof EtudiantDTO);
+        assertInstanceOf(EtudiantDTO.class, dto);
     }
 
     @Test
@@ -361,7 +361,7 @@ class UtilisateurServiceTest {
 
         UtilisateurDTO dto = utilisateurService.toDTO(professeur);
 
-        assertTrue(dto instanceof ProfesseurDTO);
+        assertInstanceOf(ProfesseurDTO.class, dto);
     }
 
     // toEntity()
@@ -383,7 +383,7 @@ class UtilisateurServiceTest {
         Utilisateur result =
                 utilisateurService.toEntity(validEtudiantDto);
 
-        assertTrue(result instanceof Etudiant);
+        assertInstanceOf(Etudiant.class, result);
     }
 
     @Test
@@ -397,7 +397,7 @@ class UtilisateurServiceTest {
         Utilisateur result =
                 utilisateurService.toEntity(validProfesseurDto);
 
-        assertTrue(result instanceof Professeur);
+        assertInstanceOf(Professeur.class, result);
     }
 
     @Test

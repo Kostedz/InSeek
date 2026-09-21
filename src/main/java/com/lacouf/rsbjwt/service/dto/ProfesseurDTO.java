@@ -11,6 +11,8 @@ public record ProfesseurDTO(Long id, String nom, String prenom, String email, St
     }
 
 }
+
+///g pas compris pourquoi on a professeurRegisterDTO et ProfesseurDTO
 /*
 public class ProfesseurDTO extends UserDTO{
     private Disciplines discipline;

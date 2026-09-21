@@ -23,7 +23,6 @@ public class UserAppService {
     private final EmprunteurRepository emprunteurRepository;
     private final PreposeRepository preposeRepository;
     private final GestionnaireRepository gestionnaireRepository;
-    private final ProfesseurRepository professeurRepository;
     private final PasswordEncoder passwordEncoder;
 
     public String authenticateUser(LoginDTO loginDto) {
