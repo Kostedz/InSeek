@@ -270,8 +270,14 @@ class UtilisateurControllerTest {
     @DisplayName("GET /user/me avec un token valide retourne 202 et le DTO de l'utilisateur")
     void getMe_succes_retourne202() throws Exception {
 
-        UtilisateurDTO dto = new EtudiantDTO(1L, "Tremblay", "Alice", "alice@mail.com",
-                "ROLE_ETUDIANT", Disciplines.INFORMATIQUE);
+        UtilisateurDTO dto = new EtudiantDTO(
+                1L,
+                "Tremblay",
+                "Alice",
+                "alice@mail.com",
+                "ROLE_ETUDIANT",
+                Disciplines.INFORMATIQUE
+        );
 
         when(utilisateurService.getMe(any())).thenReturn(dto);
 

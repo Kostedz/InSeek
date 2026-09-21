@@ -209,12 +209,17 @@ class UtilisateurServiceTest {
 
     @Test
     @DisplayName("login() avec des identifiants valides retourne un JWT")
-    void login_succes_retourneJWT() throws BadRequestException, NotFoundException {
-        LoginDTO loginDTO = new LoginDTO("alice@mail.com", "Abcdef1!");
+    void login_succes_retourneJWT()
+            throws BadRequestException, NotFoundException {
+
+        LoginDTO loginDTO = new LoginDTO(
+                "alice@mail.com",
+                "Abcdef1!");
 
         when(utilisateurRepository.findByEmail("alice@mail.com"))
                 .thenReturn(mock(Etudiant.class));
-        when(authenticationManager.authenticate(any())).thenReturn(authentication);
+        when(authenticationManager.authenticate(any()))
+                .thenReturn(authentication);
         when(jwtTokenProvider.generateToken(authentication))
                 .thenReturn("fake-jwt-token");
 
@@ -227,17 +232,23 @@ class UtilisateurServiceTest {
     @Test
     @DisplayName("login() avec un DTO null lève une BadRequestException")
     void login_dtoNull_leveBadRequestException() {
+
         BadRequestException exception = assertThrows(
                 BadRequestException.class,
                 () -> utilisateurService.login(null));
 
-        assertEquals("Le DTO de connexion est null.", exception.getMessage());
+        assertEquals(
+                "Le DTO de connexion est null.",
+                exception.getMessage());
     }
 
     @Test
     @DisplayName("login() avec un email inexistant lève une NotFoundException")
     void login_emailInexistant_leveNotFoundException() {
-        LoginDTO loginDTO = new LoginDTO("inconnu@mail.com", "Abcdef1!");
+
+        LoginDTO loginDTO = new LoginDTO(
+                "inconnu@mail.com",
+                "Abcdef1!");
 
         when(utilisateurRepository.findByEmail("inconnu@mail.com"))
                 .thenReturn(null);
@@ -246,25 +257,34 @@ class UtilisateurServiceTest {
                 NotFoundException.class,
                 () -> utilisateurService.login(loginDTO));
 
-        assertEquals("L'utilisateur n'existe pas.", exception.getMessage());
+        assertEquals(
+                "L'utilisateur n'existe pas.",
+                exception.getMessage());
     }
 
     // TESTER getmapping getMe()
 
     @Test
     @DisplayName("getMe() avec un token 'Bearer' valide retourne le DTO de l'étudiant")
-    void getMe_avecPrefixeBearer_retourneEtudiantDTO() throws BadRequestException {
+    void getMe_avecPrefixeBearer_retourneEtudiantDTO()
+            throws BadRequestException {
+
         Etudiant etudiant = Etudiant.builder()
-                .id(1L).nom("Tremblay").prenom("Alice")
-                .email("alice@mail.com").password("hashed")
-                .discipline(Disciplines.INFORMATIQUE).build();
+                .id(1L)
+                .nom("Tremblay")
+                .prenom("Alice")
+                .email("alice@mail.com")
+                .password("hashed")
+                .discipline(Disciplines.INFORMATIQUE)
+                .build();
 
         when(jwtTokenProvider.getEmailFromJWT("valid-token"))
                 .thenReturn("alice@mail.com");
         when(utilisateurRepository.findByEmail("alice@mail.com"))
                 .thenReturn(etudiant);
 
-        UtilisateurDTO result = utilisateurService.getMe("Bearer valid-token");
+        UtilisateurDTO result =
+                utilisateurService.getMe("Bearer valid-token");
 
         assertNotNull(result);
         assertTrue(result instanceof EtudiantDTO);
@@ -273,18 +293,25 @@ class UtilisateurServiceTest {
 
     @Test
     @DisplayName("getMe() sans préfixe 'Bearer' retourne le DTO du professeur")
-    void getMe_sansPrefixeBearer_retourneProfesseurDTO() throws BadRequestException {
+    void getMe_sansPrefixeBearer_retourneProfesseurDTO()
+            throws BadRequestException {
+
         Professeur professeur = Professeur.builder()
-                .id(2L).nom("Gagnon").prenom("Bob")
-                .email("bob@mail.com").password("hashed")
-                .discipline(Disciplines.ARCHITECTURE).build();
+                .id(2L)
+                .nom("Gagnon")
+                .prenom("Bob")
+                .email("bob@mail.com")
+                .password("hashed")
+                .discipline(Disciplines.ARCHITECTURE)
+                .build();
 
         when(jwtTokenProvider.getEmailFromJWT("valid-token"))
                 .thenReturn("bob@mail.com");
         when(utilisateurRepository.findByEmail("bob@mail.com"))
                 .thenReturn(professeur);
 
-        UtilisateurDTO result = utilisateurService.getMe("valid-token");
+        UtilisateurDTO result =
+                utilisateurService.getMe("valid-token");
 
         assertNotNull(result);
         assertTrue(result instanceof ProfesseurDTO);
@@ -378,8 +405,12 @@ class UtilisateurServiceTest {
     void toEntity_roleNonSupporte_leveBadRequestException() {
 
         RegisterDTO dto = new RegisterDTO(
-                "Nom", "Prenom", "a@a.com",
-                Role.GESTIONNAIRE, "Abcdef1!", "INFORMATIQUE");
+                "Nom",
+                "Prenom",
+                "a@a.com",
+                Role.GESTIONNAIRE,
+                "Abcdef1!",
+                "INFORMATIQUE");
 
         BadRequestException exception = assertThrows(
                 BadRequestException.class,
