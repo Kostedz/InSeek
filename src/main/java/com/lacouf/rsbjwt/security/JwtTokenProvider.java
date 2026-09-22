@@ -75,4 +75,16 @@ public class JwtTokenProvider{
 		}
 	}
 
+	public boolean isTokenValid(String token) {
+		try {
+			Jwts.parser()
+					.verifyWith((javax.crypto.SecretKey) getSigningKey())
+					.build()
+					.parseSignedClaims(token);
+			return true;
+		} catch (ExpiredJwtException ex) {
+			return false;
+		}
+	}
+
 }
