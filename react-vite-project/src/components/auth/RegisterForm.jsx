@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import fetcher from "../../utils/fetcher.js";
 import { Navigate, useNavigate } from "react-router-dom";
-import { RoleEnum} from "../../constants/role.js";
-import { DisciplineEnum} from "../../constants/disciplines.js";
+import { RoleEnum } from "../../constants/role.js";
+import { DisciplineEnum } from "../../constants/disciplines.js";
 import { useTranslation } from "react-i18next";
 import Loading from "../Loading.jsx";
 
-
-export default function RegisterForm({user, authChecked}) {
+export default function RegisterForm({ user, authChecked, setUser }) {
     const { t } = useTranslation();
     const [role, setRole] = useState(RoleEnum.ETUDIANT.value);
     const [formData, setFormData] = useState({
@@ -22,6 +21,7 @@ export default function RegisterForm({user, authChecked}) {
     const [fieldErrors, setFieldErrors] = useState({});
     const [touched, setTouched] = useState({});
     const [serverError, setServerError] = useState(null);
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const programmes = [
@@ -116,9 +116,10 @@ export default function RegisterForm({user, authChecked}) {
         setTouched((previousTouched) => ({ ...previousTouched, [name]: true }));
         validateField(name, value);
     };
+
     const isFormValid = React.useMemo(() => {
         const isPrenomValid = REGEX.name.test(formData.prenom.trim());
-        const isNomValid = REGEX.name.test(formData.nom.trim());
+        const isNomValid = REGEX.nom ? REGEX.name.test(formData.nom.trim()) : true;
         const isEmailValid = REGEX.email.test(formData.email.trim());
         const isPasswordValid = REGEX.password.test(formData.password);
         const isConfirmPasswordValid = formData.password === formData.confirmPassword && formData.confirmPassword !== "";
@@ -136,6 +137,21 @@ export default function RegisterForm({user, authChecked}) {
             hasNoErrors
         );
     }, [formData, role, fieldErrors]);
+
+    const getRedirectPath = (userRole) => {
+        switch (userRole) {
+            case RoleEnum.ETUDIANT.value:
+                return "/etudiant";
+            case RoleEnum.PROFESSEUR.value:
+                return "/professeur";
+            case RoleEnum.EMPLOYEUR.value:
+                return "/employeur";
+            case RoleEnum.GESTIONNAIRE.value:
+                return "/gestionnaire";
+            default:
+                return "/";
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -171,6 +187,8 @@ export default function RegisterForm({user, authChecked}) {
 
         if (hasErrors) return;
 
+        setLoading(true);
+
         const payload = {
             nom: currentFormData.nom.trim(),
             prenom: currentFormData.prenom.trim(),
@@ -181,7 +199,8 @@ export default function RegisterForm({user, authChecked}) {
         };
 
         try {
-            const response = await fetcher("/user/register", {
+            // 1. Inscription du compte
+            const regResponse = await fetcher("/user/register", {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
@@ -190,8 +209,8 @@ export default function RegisterForm({user, authChecked}) {
                 body: JSON.stringify(payload),
             });
 
-            if (!response.ok) {
-                switch (response.status) {
+            if (!regResponse.ok) {
+                switch (regResponse.status) {
                     case 400:
                         throw new Error(t("auth.register.errors.invalidData"));
                     case 401:
@@ -203,9 +222,42 @@ export default function RegisterForm({user, authChecked}) {
                 }
             }
 
-            navigate("/login");
+            // 2. Connexion automatique immédiatement après l'inscription
+            const loginResponse = await fetcher("/user/login", {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify({
+                    email: payload.email,
+                    password: payload.password,
+                }),
+            });
+
+            if (!loginResponse.ok) {
+                navigate("/login");
+                return;
+            }
+
+            const loginData = await loginResponse.json();
+            localStorage.setItem("token", loginData.accessToken || loginData.token);
+
+            // 3. Récupération des informations de la session utilisateur
+            const meResponse = await fetcher("user/me", {});
+            if (meResponse.ok) {
+                const userData = await meResponse.json();
+                if (setUser) {
+                    setUser({ ...userData, isLoggedIn: true });
+                }
+                navigate(getRedirectPath(userData.role));
+            } else {
+                navigate(getRedirectPath(payload.role));
+            }
         } catch (err) {
             setServerError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -221,7 +273,7 @@ export default function RegisterForm({user, authChecked}) {
     }
 
     if (user?.isLoggedIn) {
-        return <Navigate to="/" replace state={{authNotice: true}} />;
+        return <Navigate to={getRedirectPath(user.role)} replace state={{ authNotice: true }} />;
     }
 
     return (
@@ -420,10 +472,10 @@ export default function RegisterForm({user, authChecked}) {
 
                     <button
                         type="submit"
-                        disabled={!isFormValid}
+                        disabled={!isFormValid || loading}
                         className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300"
                     >
-                        {t("auth.register.submit")}
+                        {loading ? t("auth.register.submitting", "Inscription en cours...") : t("auth.register.submit")}
                     </button>
                 </form>
             </div>
