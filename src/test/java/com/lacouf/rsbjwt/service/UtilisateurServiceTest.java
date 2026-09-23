@@ -3,12 +3,14 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.Employeur;
 import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Professeur;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
+import com.lacouf.rsbjwt.service.dto.*;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.LoginDTO;
 import com.lacouf.rsbjwt.service.dto.ProfesseurDTO;
@@ -53,6 +55,7 @@ class UtilisateurServiceTest {
 
     private RegisterDTO validEtudiantDto;
     private RegisterDTO validProfesseurDto;
+    private RegisterDTO validEmployeurDto;
 
     @BeforeEach
     void setUp() {
@@ -63,6 +66,11 @@ class UtilisateurServiceTest {
         validProfesseurDto = new RegisterDTO(
                 "Gagnon", "Bob", "bob@mail.com",
                 Role.PROFESSEUR, "Abcdef1!", "INFORMATIQUE");
+
+
+        validEmployeurDto = new RegisterDTO(
+                "Gates", "Will", "will@mail.com",
+                Role.EMPLOYEUR, "Abcdef1!", "MicroSoft");
     }
 
     // TESTER register()
@@ -101,6 +109,24 @@ class UtilisateurServiceTest {
         assertNotNull(result);
         assertEquals("fake-jwt-token", result);
         verify(utilisateurRepository).save(any(Professeur.class));
+    }
+
+    @Test
+    @DisplayName("register() avec un DTO employeur valide crée le compte et retourne un JWT")
+    void register_employeur_succes_retourneJWT() throws BadRequestException {
+        when(utilisateurRepository.findByEmail("will@mail.com")).thenReturn(null);
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed");
+        when(utilisateurRepository.save(any(Utilisateur.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(authenticationManager.authenticate(any())).thenReturn(authentication);
+        when(jwtTokenProvider.generateToken(authentication))
+                .thenReturn("fake-jwt-token");
+
+        String result = utilisateurService.register(validEmployeurDto);
+
+        assertNotNull(result);
+        assertEquals("fake-jwt-token", result);
+        verify(utilisateurRepository).save(any(Employeur.class));
     }
 
     @Test
@@ -318,6 +344,33 @@ class UtilisateurServiceTest {
         assertEquals("Gagnon", result.nom());
     }
 
+    @Test
+    @DisplayName("getMe() avec un token 'Bearer' valide retourne le DTO de l'employeur")
+    void getMe_avecPrefixeBearer_retourneEmployeurDTO()
+            throws BadRequestException {
+
+        Employeur employeur = Employeur.builder()
+                .id(1L)
+                .nom("Will")
+                .prenom("Gates")
+                .email("will@mail.com")
+                .password("hashed")
+                .nomCompagnie("microsoft")
+                .build();
+
+        when(jwtTokenProvider.getEmailFromJWT("valid-token"))
+                .thenReturn("will@mail.com");
+        when(utilisateurRepository.findByEmail("will@mail.com"))
+                .thenReturn(employeur);
+
+        UtilisateurDTO result =
+                utilisateurService.getMe("Bearer valid-token");
+
+        assertNotNull(result);
+        assertInstanceOf(EmployeurDTO.class, result);
+        assertEquals("Will", result.nom());
+    }
+
     // toDTO()
 
     @Test
@@ -364,6 +417,26 @@ class UtilisateurServiceTest {
         assertInstanceOf(ProfesseurDTO.class, dto);
     }
 
+    @Test
+    @DisplayName("toDTO() avec un Employeur retourne un EmployeurDTO")
+    void toDTO_employeur_retourneEmployeurDTO()
+            throws BadRequestException {
+
+        Employeur employeur = Employeur.builder()
+                .id(3L)
+                .nom("Nom")
+                .prenom("Prenom")
+                .email("a@a.com")
+                .password("hashed")
+                .nomCompagnie("Compagnie")
+                .build();
+
+        UtilisateurDTO dto = utilisateurService.toDTO(employeur);
+
+        assertInstanceOf(EmployeurDTO.class, dto);
+    }
+
+
     // toEntity()
 
     @Test
@@ -401,6 +474,20 @@ class UtilisateurServiceTest {
     }
 
     @Test
+    @DisplayName("toEntity() avec un employeur retourne un Employeur")
+    void toEntity_employeur_retourneEmployeur()
+            throws BadRequestException {
+
+        when(passwordEncoder.encode("Abcdef1!"))
+                .thenReturn("hashed");
+
+        Utilisateur result =
+                utilisateurService.toEntity(validEmployeurDto);
+
+        assertInstanceOf(Employeur.class, result);
+    }
+
+    @Test
     @DisplayName("toEntity() avec un rôle non supporté exemple: GESTIONNAIRE ca lève une BadRequestException")
     void toEntity_roleNonSupporte_leveBadRequestException() {
 
@@ -414,10 +501,12 @@ class UtilisateurServiceTest {
 
         BadRequestException exception = assertThrows(
                 BadRequestException.class,
-                () -> utilisateurService.toEntity(dto));
+                () -> utilisateurService.toEntity(dto)
+        );
 
         assertEquals(
                 "Type de DTO non pris en charge pour la conversion en entité.",
-                exception.getMessage());
+                exception.getMessage()
+        );
     }
 }

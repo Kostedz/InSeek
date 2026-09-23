@@ -3,17 +3,14 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.Employeur;
 import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Professeur;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
-import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
-import com.lacouf.rsbjwt.service.dto.LoginDTO;
-import com.lacouf.rsbjwt.service.dto.ProfesseurDTO;
-import com.lacouf.rsbjwt.service.dto.RegisterDTO;
-import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
+import com.lacouf.rsbjwt.service.dto.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,7 +22,6 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class UtilisateurService {
-
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -100,6 +96,10 @@ public class UtilisateurService {
             return EtudiantDTO.of(etudiant);
         }
 
+        if(utilisateur instanceof Employeur employeur){
+            return EmployeurDTO.of(employeur);
+        }
+
         if (utilisateur instanceof Professeur professeur) {
             return ProfesseurDTO.of(professeur);
         }
@@ -125,6 +125,16 @@ public class UtilisateurService {
                     .password(
                             passwordEncoder.encode(registerDTO.password())
                     )
+                    .build();
+        }
+
+        if (registerDTO.role() == Role.EMPLOYEUR) {
+            return Employeur.builder()
+                    .nom(registerDTO.nom())
+                    .prenom(registerDTO.prenom())
+                    .email(registerDTO.email())
+                    .nomCompagnie(String.valueOf(registerDTO.affiliation()))
+                    .password(passwordEncoder.encode(registerDTO.password()))
                     .build();
         }
 
