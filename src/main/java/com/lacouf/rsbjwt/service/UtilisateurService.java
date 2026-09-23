@@ -1,9 +1,11 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
+import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.Employeur;
 import com.lacouf.rsbjwt.model.Etudiant;
+import com.lacouf.rsbjwt.model.Professeur;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
@@ -25,56 +27,95 @@ public class UtilisateurService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
 
-
     @Transactional
     public String register(RegisterDTO registerDTO) throws BadRequestException {
-        registrationVerification(registerDTO);
+        if (registerDTO == null) {
+            throw new BadRequestException("Le DTO d'inscription est null.");
+        }
 
-        LoginDTO loginDTO = new LoginDTO(registerDTO.email(), registerDTO.password());
+        if (!registrationVerification(registerDTO)) {
+            throw new BadRequestException("La vérification d'inscription a échoué.");
+        }
+
         Utilisateur utilisateur = toEntity(registerDTO);
         utilisateurRepository.save(utilisateur);
-        return login(loginDTO);
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        registerDTO.email(),
+                        registerDTO.password()
+                )
+        );
+
+        return jwtTokenProvider.generateToken(authentication);
     }
 
     @Transactional
-    public String login(LoginDTO loginDTO) {
-         Authentication authentication = authenticationManager.authenticate(
-                 new UsernamePasswordAuthenticationToken(loginDTO.getEmail(), loginDTO.getPassword()));
+    public String login(LoginDTO loginDTO)
+            throws BadRequestException, NotFoundException {
+
+        if (loginDTO == null) {
+            throw new BadRequestException("Le DTO de connexion est null.");
+        }
+
+        if (utilisateurRepository.findByEmail(loginDTO.getEmail()) == null) {
+            throw new NotFoundException("L'utilisateur n'existe pas.");
+        }
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginDTO.getEmail(),
+                        loginDTO.getPassword()
+                )
+        );
+
         return jwtTokenProvider.generateToken(authentication);
     }
 
     @Transactional
     public UtilisateurDTO getMe(String token) throws BadRequestException {
-        token = token.startsWith("Bearer") ? token.substring(7) : token;
+        token = token.startsWith("Bearer")
+                ? token.substring(7)
+                : token;
+
         String email = jwtTokenProvider.getEmailFromJWT(token);
         Utilisateur user = utilisateurRepository.findByEmail(email);
 
         return toDTO(user);
     }
 
-    public void registrationVerification(RegisterDTO dto ) throws BadRequestException {
+    public boolean registrationVerification(RegisterDTO dto)
+            throws BadRequestException {
 
-        if (dto == null) {
-            throw new BadRequestException("Le DTO d'inscription est null.");
-        }
         if (dto.prenom() == null || dto.prenom().isBlank()) {
             throw new BadRequestException("Le prénom est obligatoire");
         }
+
         if (dto.nom() == null || dto.nom().isBlank()) {
             throw new BadRequestException("Le nom est obligatoire");
         }
-        if (dto.email() == null || !dto.email().matches("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$")) {
+
+        if (dto.email() == null ||
+                !dto.email().matches("^[\\w.+-]+@[\\w-]+\\.[a-zA-Z]{2,}$")) {
             throw new BadRequestException("Le format du courriel est invalide");
         }
+
         if (dto.password() == null || !dto.password().matches("^(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$")) {
-            throw new BadRequestException("Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial");
+            throw new BadRequestException("Le mot de passe doit contenir au moins 8 caractères, " + "une majuscule, un chiffre et un caractère spécial");
         }
+
         if (utilisateurRepository.findByEmail(dto.email()) != null) {
-            throw new BadRequestException("Ce courriel est déjà associé à un compte");
+            throw new BadRequestException(
+                    "Ce courriel est déjà associé à un compte"
+            );
         }
+
+        return true;
     }
 
-    public UtilisateurDTO toDTO(Utilisateur utilisateur) throws BadRequestException {
+    public UtilisateurDTO toDTO(Utilisateur utilisateur)
+            throws BadRequestException {
+
         if (utilisateur == null) {
             return null;
         }
@@ -87,10 +128,18 @@ public class UtilisateurService {
             return EmployeurDTO.of(employeur);
         }
 
-        throw new BadRequestException("Type d'entité non pris en charge pour la conversion en DTO.");
+        if (utilisateur instanceof Professeur professeur) {
+            return ProfesseurDTO.of(professeur);
+        }
+
+        throw new BadRequestException(
+                "Type d'entité non pris en charge pour la conversion en DTO."
+        );
     }
 
-    public Utilisateur toEntity(RegisterDTO registerDTO) throws BadRequestException {
+    public Utilisateur toEntity(RegisterDTO registerDTO)
+            throws BadRequestException {
+
         if (registerDTO == null) {
             return null;
         }
@@ -100,8 +149,12 @@ public class UtilisateurService {
                     .nom(registerDTO.nom())
                     .prenom(registerDTO.prenom())
                     .email(registerDTO.email())
-                    .discipline(Disciplines.valueOf(registerDTO.affiliation()))
-                    .password(passwordEncoder.encode(registerDTO.password()))
+                    .discipline(
+                            Disciplines.valueOf(registerDTO.affiliation())
+                    )
+                    .password(
+                            passwordEncoder.encode(registerDTO.password())
+                    )
                     .build();
         }
 
@@ -115,7 +168,22 @@ public class UtilisateurService {
                     .build();
         }
 
-        throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
-    }
+        if (registerDTO.role() == Role.PROFESSEUR) {
+            return Professeur.builder()
+                    .nom(registerDTO.nom())
+                    .prenom(registerDTO.prenom())
+                    .email(registerDTO.email())
+                    .discipline(
+                            Disciplines.valueOf(registerDTO.affiliation())
+                    )
+                    .password(
+                            passwordEncoder.encode(registerDTO.password())
+                    )
+                    .build();
+        }
 
+        throw new BadRequestException(
+                "Type de DTO non pris en charge pour la conversion en entité."
+        );
+    }
 }
