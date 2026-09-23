@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 
 function App() {
   const [user, setUser] = useState({})
+  const [authChecked, setAuthChecked] = useState(() => !localStorage.getItem('token'))
   const [error, setError] = useState(null)
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ function App() {
 
   useEffect(() => {
       if (token) {
+        setAuthChecked(false);
 
         try {
           fetcher('user/me', {})
@@ -48,6 +50,8 @@ function App() {
             ).catch(async (err) => {
               setError(err)
               navigate('/error')
+            }).finally(() => {
+              setAuthChecked(true)
           })
 
         } catch (err) {
@@ -55,7 +59,10 @@ function App() {
             setError(err)
             navigate('/error')
           }
+          setAuthChecked(true)
         }
+      } else {
+        setAuthChecked(true)
       }
     }, [token, t]
   );
@@ -66,13 +73,14 @@ function App() {
         <Route path="/" element={<PageLayout user={user}/>}>
           <Route index element={<MainContainer setError={setError}/>}/>
           <Route path='about' element={<About/>}/>
-          <Route path='login' element={<LoginForm setError={setError}/>}/>
+          <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setError={setError}/>}/>
           <Route path='logout' element={<Logout setUser={setUser}/>}/>
           <Route path='emprunteur' element={<EmprunteurHome/>}/>
           <Route path='prepose' element={<PreposeHome/>}/>
           <Route path='gestionnaire' element={<GestionnaireHome/>}/>
-          <Route path= 'register' element={<RegisterForm setError={setError}/>}/>
-          <Route path='*' element={<ErrorPage error={error}/>}/>
+          <Route path= 'register' element={<RegisterForm user={user} authChecked={authChecked} setError={setError}/>}/>
+          <Route path='error' element={<ErrorPage error={error}/>}/>
+          <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
         </Route>
       </Routes>
 

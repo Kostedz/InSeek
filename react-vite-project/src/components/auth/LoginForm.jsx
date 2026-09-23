@@ -1,9 +1,10 @@
 import {useState} from "react";
-import {Link, useNavigate} from "react-router-dom";
+import {Link, Navigate, useNavigate} from "react-router-dom";
 import fetcher from "../../utils/fetcher";
 import { useTranslation } from "react-i18next";
+import Loading from "../Loading.jsx";
 
-const LoginForm = ({user, setError}) => {
+const LoginForm = ({user, authChecked, setError}) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -88,11 +89,10 @@ const LoginForm = ({user, setError}) => {
 
   return (
     <>
-      {user?.isLoggedIn ? (
-        user.role === "ROLE_EMPRUNTEUR" ? navigate("/emprunteur") :
-          user.role === "ROLE_PREPOSE" ? navigate("/prepose") :
-            user.role === "ROLE_GESTIONNAIRE" ? navigate("/gestionnaire") :
-              navigate("/")
+      {!authChecked ? (
+        <Loading />
+      ) : user?.isLoggedIn ? (
+        <Navigate to="/" replace state={{authNotice: true}} />
       ) : (
         <section className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
           <div className="w-full max-w-md rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-10">

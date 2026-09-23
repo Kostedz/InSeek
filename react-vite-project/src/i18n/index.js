@@ -21,7 +21,9 @@ const resources = {
                 manager: "Gestionnaire",
                 closeMenu: "Fermer le menu",
                 openMenu: "Ouvrir le menu",
-                greeting: "Bonjour {{firstName}} {{lastName}}",
+                account: "Compte",
+                closeUserMenu: "Fermer le menu du compte",
+                openUserMenu: "Ouvrir le menu du compte",
                 logout: "Déconnexion",
                 login: "Connexion",
                 register: "Créer un compte",
@@ -54,6 +56,8 @@ const resources = {
             },
             auth: {
                 memberArea: "Espace membre",
+                alreadyLoggedIn: "Vous êtes déjà connecté. Veuillez vous déconnecter avant de vous connecter ou de créer un compte.",
+                disconnect: "Se déconnecter",
                 login: {
                     welcomeBack: "Bon retour.",
                     description: "Connectez-vous pour accéder à votre espace InSeek.",
@@ -84,6 +88,12 @@ const resources = {
                         informatique: "Informatique",
                         infirmiere: "Tech. Infirmière",
                         architecture: "Architecture",
+                        administration: "Administration",
+                        comptabilite: "Comptabilité",
+                        education: "Éducation",
+                        genieCivil: "Génie civil",
+                        marketing: "Marketing",
+                        designGraphique: "Design graphique",
                     },
                     errors: {
                         firstName: "Le prénom doit contenir entre 2 et 30 caractères alphabétiques.",
@@ -128,6 +138,18 @@ const resources = {
                 title: "Un problème est survenu",
                 unexpected: "Une erreur inattendue est survenue.",
                 backHome: "Retour à l'accueil",
+                "404": {
+                    title: "Page introuvable",
+                    description: "La page que vous recherchez n'existe pas ou a été déplacée.",
+                },
+                "403": {
+                    title: "Accès refusé",
+                    description: "Vous n'avez pas les autorisations nécessaires pour accéder à cette ressource.",
+                },
+                "500": {
+                    title: "Erreur serveur",
+                    description: "Un problème est survenu sur nos serveurs. Veuillez réessayer plus tard.",
+                },
             },
             loading: {
                 ariaLabel: "Chargement",
@@ -165,7 +187,9 @@ const resources = {
                 manager: "Manager",
                 closeMenu: "Close menu",
                 openMenu: "Open menu",
-                greeting: "Hello {{firstName}} {{lastName}}",
+                account: "Account",
+                closeUserMenu: "Close account menu",
+                openUserMenu: "Open account menu",
                 logout: "Log out",
                 login: "Log in",
                 register: "Create account",
@@ -198,6 +222,8 @@ const resources = {
             },
             auth: {
                 memberArea: "Member area",
+                alreadyLoggedIn: "You are already logged in. Please log out before logging in or creating an account.",
+                disconnect: "Log out",
                 login: {
                     welcomeBack: "Welcome back.",
                     description: "Log in to access your InSeek space.",
@@ -228,6 +254,12 @@ const resources = {
                         informatique: "Computer Science",
                         infirmiere: "Nursing Technician",
                         architecture: "Architecture",
+                        administration: "Business Administration",
+                        comptabilite: "Accounting",
+                        education: "Education",
+                        genieCivil: "Civil Engineering",
+                        marketing: "Marketing",
+                        designGraphique: "Graphic Design",
                     },
                     errors: {
                         firstName: "The first name must contain between 2 and 30 alphabetic characters.",
@@ -272,6 +304,18 @@ const resources = {
                 title: "Something went wrong",
                 unexpected: "An unexpected error occurred.",
                 backHome: "Back to home",
+                "404": {
+                    title: "Page not found",
+                    description: "The page you are looking for does not exist or has been moved.",
+                },
+                "403": {
+                    title: "Access denied",
+                    description: "You do not have permission to access this resource.",
+                },
+                "500": {
+                    title: "Server error",
+                    description: "Something went wrong on our servers. Please try again later.",
+                },
             },
             loading: {
                 ariaLabel: "Loading",

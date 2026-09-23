@@ -1,14 +1,23 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 function MainContainer() {
   const { t } = useTranslation();
+  const location = useLocation();
 
   return (
     <section className="flex flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-5xl rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-10 lg:p-14">
         <div className="mx-auto max-w-3xl text-center">
+          {location.state?.authNotice && (
+            <div className="mb-7 rounded-2xl border border-peach bg-peach/45 px-5 py-4 text-left text-sm text-ink" role="alert">
+              <p className="font-semibold">{t("auth.alreadyLoggedIn")}</p>
+              <Link to="/logout" className="mx-auto mt-3 flex w-fit rounded-full bg-ink px-4 py-2 font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50">
+                {t("auth.disconnect")}
+              </Link>
+            </div>
+          )}
           <h1 className=" text-4xl font-black leading-tight tracking-tight text-ink sm:text-5xl">
             {t("home.title")}
           </h1>

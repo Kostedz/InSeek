@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import fetcher from "../../utils/fetcher.js";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { RoleEnum} from "../../constants/role.js";
 import { DisciplineEnum} from "../../constants/disciplines.js";
 import { useTranslation } from "react-i18next";
+import Loading from "../Loading.jsx";
 
 
-export default function RegisterForm() {
+export default function RegisterForm({user, authChecked}) {
     const { t } = useTranslation();
     const [role, setRole] = useState(RoleEnum.ETUDIANT.value);
     const [formData, setFormData] = useState({
@@ -27,6 +28,12 @@ export default function RegisterForm() {
         { value: DisciplineEnum.INFORMATIQUE.value, label: t("auth.register.disciplines.informatique") },
         { value: DisciplineEnum.INFIRMIERE.value, label: t("auth.register.disciplines.infirmiere") },
         { value: DisciplineEnum.ARCHITECTURE.value, label: t("auth.register.disciplines.architecture") },
+        { value: DisciplineEnum.ADMINISTRATION.value, label: t("auth.register.disciplines.administration") },
+        { value: DisciplineEnum.COMPTABILITE.value, label: t("auth.register.disciplines.comptabilite") },
+        { value: DisciplineEnum.EDUCATION.value, label: t("auth.register.disciplines.education") },
+        { value: DisciplineEnum.GENIE_CIVIL.value, label: t("auth.register.disciplines.genieCivil") },
+        { value: DisciplineEnum.MARKETING.value, label: t("auth.register.disciplines.marketing") },
+        { value: DisciplineEnum.DESIGN_GRAPHIQUE.value, label: t("auth.register.disciplines.designGraphique") },
     ];
 
     const isEmployer = role === RoleEnum.EMPLOYEUR.value;
@@ -209,6 +216,14 @@ export default function RegisterForm() {
                 : "border-line focus:border-lavender"
         }`;
 
+    if (!authChecked) {
+        return <Loading />;
+    }
+
+    if (user?.isLoggedIn) {
+        return <Navigate to="/" replace state={{authNotice: true}} />;
+    }
+
     return (
         <section className="flex flex-1 items-center justify-center bg-canvas px-4 py-8 sm:px-6 sm:py-12">
             <div className="w-full max-w-sm rounded-[2rem] border border-line bg-surface p-6 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:max-w-md sm:p-8 md:max-w-lg">
@@ -243,44 +258,46 @@ export default function RegisterForm() {
                 </div>
 
                 <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
-                    <div>
-                        <label className="mb-1 block text-sm font-bold text-ink" htmlFor="prenom">
-                            {t("auth.register.firstName")}
-                        </label>
-                        <input
-                            id="prenom"
-                            type="text"
-                            name="prenom"
-                            value={formData.prenom}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            placeholder={t("auth.register.firstNamePlaceholder")}
-                            aria-invalid={Boolean(touched.prenom && fieldErrors.prenom)}
-                            className={inputClass("prenom")}
-                        />
-                        {touched.prenom && fieldErrors.prenom && (
-                            <p className="mt-1 text-xs text-error">{fieldErrors.prenom}</p>
-                        )}
-                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1 block text-sm font-bold text-ink" htmlFor="prenom">
+                                {t("auth.register.firstName")}
+                            </label>
+                            <input
+                                id="prenom"
+                                type="text"
+                                name="prenom"
+                                value={formData.prenom}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                placeholder={t("auth.register.firstNamePlaceholder")}
+                                aria-invalid={Boolean(touched.prenom && fieldErrors.prenom)}
+                                className={inputClass("prenom")}
+                            />
+                            {touched.prenom && fieldErrors.prenom && (
+                                <p className="mt-1 text-xs text-error">{fieldErrors.prenom}</p>
+                            )}
+                        </div>
 
-                    <div>
-                        <label className="mb-1 block text-sm font-bold text-ink" htmlFor="nom">
-                            {t("auth.register.lastName")}
-                        </label>
-                        <input
-                            id="nom"
-                            type="text"
-                            name="nom"
-                            value={formData.nom}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            placeholder={t("auth.register.lastNamePlaceholder")}
-                            aria-invalid={Boolean(touched.nom && fieldErrors.nom)}
-                            className={inputClass("nom")}
-                        />
-                        {touched.nom && fieldErrors.nom && (
-                            <p className="mt-1 text-xs text-error">{fieldErrors.nom}</p>
-                        )}
+                        <div>
+                            <label className="mb-1 block text-sm font-bold text-ink" htmlFor="nom">
+                                {t("auth.register.lastName")}
+                            </label>
+                            <input
+                                id="nom"
+                                type="text"
+                                name="nom"
+                                value={formData.nom}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                placeholder={t("auth.register.lastNamePlaceholder")}
+                                aria-invalid={Boolean(touched.nom && fieldErrors.nom)}
+                                className={inputClass("nom")}
+                            />
+                            {touched.nom && fieldErrors.nom && (
+                                <p className="mt-1 text-xs text-error">{fieldErrors.nom}</p>
+                            )}
+                        </div>
                     </div>
 
                     <div>
