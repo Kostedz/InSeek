@@ -51,6 +51,8 @@ public class SecurityConfiguration {
     private static final String PREPOSE_PATH = "/prepose/**";
     private static final String GESTIONNAIRE_PATH = "/gestionnaire/**";
     private static final String ETUDIANT_PATH = "/etudiant/**";
+    private static final String EMPLOYEUR_PATH = "/employeur/**";
+    private static final String PROFESSEUR_PATH = "/professeur/**";
 
 
     @Bean
@@ -72,6 +74,8 @@ public class SecurityConfiguration {
                         .requestMatchers(PREPOSE_PATH).hasAuthority(Role.PREPOSE.name())
                         .requestMatchers(ETUDIANT_PATH).hasAuthority(Role.ETUDIANT.name())
                         .requestMatchers(GESTIONNAIRE_PATH).hasAuthority(Role.GESTIONNAIRE.name())
+                        .requestMatchers(EMPLOYEUR_PATH).hasAuthority(Role.EMPLOYEUR.name())
+                        .requestMatchers(PROFESSEUR_PATH).hasAuthority(Role.PROFESSEUR.name())
                         .anyRequest().authenticated() // Changed from denyAll() to authenticated() - more common, adjust if denyAll is strictly needed
                 )
                 .headers(headers -> headers.frameOptions(Customizer.withDefaults()).disable()) // for h2-console
