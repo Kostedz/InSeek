@@ -19,6 +19,7 @@ public enum Role{
 		GESTIONNAIRE.managedRoles.add(PREPOSE);
 		GESTIONNAIRE.managedRoles.add(EMPRUNTEUR);
 		GESTIONNAIRE.managedRoles.add(ETUDIANT);
+		GESTIONNAIRE.managedRoles.add(EMPLOYEUR);
 	}
 
 	Role(String string){

@@ -109,6 +109,33 @@ class UtilisateurControllerTest {
     }
 
     @Test
+    @DisplayName("POST /user/register avec un employeur valide retourne 201 et un JWT")
+    void registerUser_employeur_retourne201() throws Exception {
+
+        when(authService.validateJwt(any())).thenReturn(false);
+        when(utilisateurService.register(any()))
+                .thenReturn("fake-jwt-token");
+
+        mockMvc.perform(
+                        post("/user/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "nom": "From",
+                                      "prenom": "Soft",
+                                      "email": "fromsoft@mail.com",
+                                      "role": "ROLE_EMPLOYEUR",
+                                      "password": "Abcdef1!",
+                                      "affiliation": "FromSoft"
+                                    }
+                                    """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.accessToken").value("fake-jwt-token"));
+    }
+
+
+
+    @Test
     @DisplayName("POST /user/register avec un courriel invalide retourne 400")
     void registerUser_emailInvalide_retourne400() throws Exception {
 
