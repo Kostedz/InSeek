@@ -69,7 +69,7 @@ public class SecurityConfiguration {
                         .requestMatchers(H2_CONSOLE_PATH).permitAll() // Allow H2 console access
 
                         // Use Role enum names for authorities
-                        .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name(), Role.ETUDIANT.name())
+                        .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name(), Role.ETUDIANT.name(), Role.EMPLOYEUR.name(), Role.PROFESSEUR.name())
                         .requestMatchers(EMPRUNTEUR_PATH).hasAuthority(Role.EMPRUNTEUR.name())
                         .requestMatchers(PREPOSE_PATH).hasAuthority(Role.PREPOSE.name())
                         .requestMatchers(ETUDIANT_PATH).hasAuthority(Role.ETUDIANT.name())
