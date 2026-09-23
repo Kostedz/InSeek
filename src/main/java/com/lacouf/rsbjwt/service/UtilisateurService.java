@@ -4,12 +4,14 @@ import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.Etudiant;
+import com.lacouf.rsbjwt.model.Professeur;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.LoginDTO;
+import com.lacouf.rsbjwt.service.dto.ProfesseurDTO;
 import com.lacouf.rsbjwt.service.dto.RegisterDTO;
 import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import jakarta.transaction.Transactional;
@@ -23,11 +25,11 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class UtilisateurService {
+
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
-
 
     @Transactional
     public String register(RegisterDTO registerDTO) throws BadRequestException {
@@ -98,7 +100,13 @@ public class UtilisateurService {
             return EtudiantDTO.of(etudiant);
         }
 
-        throw new BadRequestException("Type d'entité non pris en charge pour la conversion en DTO.");
+        if (utilisateur instanceof Professeur professeur) {
+            return ProfesseurDTO.of(professeur);
+        }
+
+        throw new BadRequestException(
+                "Type d'entité non pris en charge pour la conversion en DTO."
+        );
     }
 
     public Utilisateur toEntity(RegisterDTO registerDTO) throws BadRequestException {
@@ -111,12 +119,29 @@ public class UtilisateurService {
                     .nom(registerDTO.nom())
                     .prenom(registerDTO.prenom())
                     .email(registerDTO.email())
-                    .discipline(Disciplines.valueOf(registerDTO.affiliation()))
-                    .password(passwordEncoder.encode(registerDTO.password()))
+                    .discipline(
+                            Disciplines.valueOf(registerDTO.affiliation())
+                    )
+                    .password(
+                            passwordEncoder.encode(registerDTO.password())
+                    )
+                    .build();
+        }
+
+        if (registerDTO.role() == Role.PROFESSEUR) {
+            return Professeur.builder()
+                    .nom(registerDTO.nom())
+                    .prenom(registerDTO.prenom())
+                    .email(registerDTO.email())
+                    .discipline(
+                            Disciplines.valueOf(registerDTO.affiliation())
+                    )
+                    .password(
+                            passwordEncoder.encode(registerDTO.password())
+                    )
                     .build();
         }
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
-
 }

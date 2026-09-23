@@ -1,10 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.model.*;
-import com.lacouf.rsbjwt.repository.EmprunteurRepository;
-import com.lacouf.rsbjwt.repository.GestionnaireRepository;
-import com.lacouf.rsbjwt.repository.PreposeRepository;
-import com.lacouf.rsbjwt.repository.UserAppRepository;
+import com.lacouf.rsbjwt.repository.*;
 import com.lacouf.rsbjwt.service.dto.*;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.security.exception.UserNotFoundException;
@@ -12,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -25,6 +23,7 @@ public class UserAppService {
     private final EmprunteurRepository emprunteurRepository;
     private final PreposeRepository preposeRepository;
     private final GestionnaireRepository gestionnaireRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public String authenticateUser(LoginDTO loginDto) {
         Authentication authentication = authenticationManager.authenticate(
@@ -42,13 +41,17 @@ public class UserAppService {
             case EMPRUNTEUR -> getEmprunteurDto(user.getId());
             case PREPOSE -> getPreposeDto(user.getId());
             case GESTIONNAIRE -> getGestionnaireDto(user.getId());
+            case PROFESSEUR -> getProfesseurDto(user.getId());
             case ETUDIANT -> getEtudiantDto(user.getId());
-            case PROFESSEUR -> null;
             case EMPLOYEUR -> null;
         };
     }
 
     private UserDTO getEtudiantDto(Long id) {
+        return null;
+    }
+
+    private UserDTO getProfesseurDto(Long id){
         return null;
     }
 
