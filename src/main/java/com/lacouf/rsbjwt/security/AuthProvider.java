@@ -1,13 +1,10 @@
 package com.lacouf.rsbjwt.security;
 
 import com.lacouf.rsbjwt.model.Utilisateur;
-import com.lacouf.rsbjwt.repository.UserAppRepository;
-import com.lacouf.rsbjwt.model.UserApp;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import com.lacouf.rsbjwt.security.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,7 +19,6 @@ import java.util.logging.Logger;
 @RequiredArgsConstructor
 public class AuthProvider implements AuthenticationProvider{
 	private final PasswordEncoder passwordEncoder;
-	private final UserAppRepository userAppRepository;
 	private final UtilisateurRepository utilisateurRepository;
 	private static final Logger logger = Logger.getLogger(AuthProvider.class.getName());
 
@@ -37,11 +33,6 @@ public class AuthProvider implements AuthenticationProvider{
 	@Override
 	public boolean supports(Class<?> authentication){
 		return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
-	}
-
-	private UserApp loadUserByEmail(String email) throws UsernameNotFoundException{
-		return userAppRepository.findUserAppByEmail(email)
-			.orElseThrow(UserNotFoundException::new);
 	}
 
 	private void validateAuthentication(Authentication authentication, Utilisateur user) {

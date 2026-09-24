@@ -3,10 +3,6 @@ package com.lacouf.rsbjwt.presentation;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.repository.EmprunteurRepository;
-import com.lacouf.rsbjwt.repository.GestionnaireRepository;
-import com.lacouf.rsbjwt.repository.PreposeRepository;
-import com.lacouf.rsbjwt.repository.UserAppRepository;
 import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
@@ -39,19 +35,6 @@ class UtilisateurControllerTest {
 
     @MockitoBean
     AuthService authService;
-
-    // g ajouter ces dependaices pr pas que spring boot crash
-    @MockitoBean
-    GestionnaireRepository gestionnaireRepository;
-
-    @MockitoBean
-    EmprunteurRepository emprunteurRepository;
-
-    @MockitoBean
-    PreposeRepository preposeRepository;
-
-    @MockitoBean
-    UserAppRepository userAppRepository;
 
     @MockitoBean
     PasswordEncoder passwordEncoder;

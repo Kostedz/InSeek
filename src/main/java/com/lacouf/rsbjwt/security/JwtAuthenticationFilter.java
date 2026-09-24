@@ -1,10 +1,7 @@
 package com.lacouf.rsbjwt.security;
 
-import com.lacouf.rsbjwt.model.UserApp;
 import com.lacouf.rsbjwt.model.Utilisateur;
-import com.lacouf.rsbjwt.repository.UserAppRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
-import com.lacouf.rsbjwt.security.exception.UserNotFoundException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
