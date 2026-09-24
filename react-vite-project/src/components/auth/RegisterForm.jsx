@@ -475,7 +475,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                         disabled={!isFormValid || loading}
                         className="w-full rounded-xl bg-ink py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300"
                     >
-                        {loading ? t("auth.register.submitting", "Inscription en cours...") : t("auth.register.submit")}
+                        {loading ? t("auth.register.submitting") : t("auth.register.submit")}
                     </button>
                 </form>
             </div>

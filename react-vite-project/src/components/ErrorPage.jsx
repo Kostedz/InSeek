@@ -24,44 +24,35 @@ function ErrorPage({ error: propError }) {
       case 404:
         return {
           code: "404",
-          title: t("errorPage.404.title", "Page introuvable"),
+          title: t("errorPage.404.title"),
           description:
               error?.message ||
-              t(
-                  "errorPage.404.description",
-                  "La page que vous recherchez n'existe pas ou a été déplacée."
-              ),
+              t("errorPage.404.description"),
         };
       case 403:
         return {
           code: "403",
-          title: t("errorPage.403.title", "Accès refusé"),
+          title: t("errorPage.403.title"),
           description:
               error?.message ||
-              t(
-                  "errorPage.403.description",
-                  "Vous n'avez pas les autorisations nécessaires pour accéder à cette ressource."
-              ),
+              t("errorPage.403.description"),
         };
       case 500:
         return {
           code: "500",
-          title: t("errorPage.500.title", "Erreur serveur"),
+          title: t("errorPage.500.title"),
           description:
               error?.message ||
-              t(
-                  "errorPage.500.description",
-                  "Un problème est survenu sur nos serveurs. Veuillez réessayer plus tard."
-              ),
+              t("errorPage.500.description"),
         };
       default:
         return {
-          code: statusCode ? String(statusCode) : t("errorPage.label", "Erreur"),
-          title: t("errorPage.title", "Une erreur est survenue"),
+          code: statusCode ? String(statusCode) : t("errorPage.label"),
+          title: t("errorPage.title"),
           description:
               error?.message ||
               error?.statusText ||
-              t("errorPage.unexpected", "Une erreur inattendue s'est produite."),
+              t("errorPage.unexpected"),
         };
     }
   };
@@ -87,7 +78,7 @@ function ErrorPage({ error: propError }) {
               to="/"
               className="mt-8 inline-flex rounded-full bg-ink px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/60"
           >
-            {t("errorPage.backHome", "Retour à l'accueil")}
+            {t("errorPage.backHome")}
           </Link>
         </div>
       </section>

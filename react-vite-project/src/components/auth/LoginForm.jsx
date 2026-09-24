@@ -34,10 +34,10 @@ const LoginForm = ({ user, authChecked, setUser }) => {
     setFormData({ ...formData, [name]: trimmedValue });
 
     if (name === "email") {
-      if (trimmedValue && !validateEmail(trimmedValue)) {
+        if (trimmedValue && !validateEmail(trimmedValue)) {
         setWarnings(prev => ({
           ...prev,
-          email: t("auth.login.invalidEmail", "Format d'adresse courriel invalide (ex: exemple@domaine.com)")
+          email: t("auth.login.invalidEmail")
         }));
       } else {
         setWarnings(prev => ({ ...prev, email: "" }));
@@ -54,7 +54,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
     if (!validateEmail(formData.email)) {
       setWarnings(prev => ({
         ...prev,
-        email: t("auth.login.invalidEmail", "Format d'adresse courriel invalide (ex: exemple@domaine.com)")
+        email: t("auth.login.invalidEmail")
       }));
       return;
     }
@@ -82,14 +82,14 @@ const LoginForm = ({ user, authChecked, setUser }) => {
           case 400:
           case 401:
           case 404:
-            setApiError(t("auth.login.invalidCredentials", "Courriel ou mot de passe incorrect."));
+            setApiError(t("auth.login.invalidCredentials"));
             break;
           case 403:
-            setApiError(t("auth.login.forbidden", "Votre compte n'a pas les autorisations requises."));
+            setApiError(t("auth.login.forbidden"));
             break;
           case 500:
           default:
-            setApiError(t("errors.serverUnavailable", "Serveur non disponible. Veuillez réessayer plus tard."));
+            setApiError(t("errors.serverUnavailable"));
             break;
         }
         setLoading(false);
@@ -101,7 +101,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
 
       const userResponse = await fetcher('user/me', {});
       if (!userResponse.ok) {
-        setApiError(t("errors.serverUnavailable", "Serveur non disponible. Impossible d'extraire la session."));
+        setApiError(t("errors.serverUnavailable"));
         setLoading(false);
         return;
       }
@@ -120,7 +120,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
 
     } catch (error) {
       console.error("Login Error:", error);
-      setApiError(t("errors.serverUnavailable", "Serveur non disponible. Veuillez vérifier votre connexion."));
+      setApiError(t("errors.serverUnavailable"));
     } finally {
       setLoading(false);
     }
@@ -205,7 +205,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
                       disabled={loading || Boolean(warnings.email)}
                       className="w-full rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:opacity-50"
                   >
-                    {loading ? t("auth.login.loading", "Connexion en cours...") : t("auth.login.submit")}
+                    {loading ? t("auth.login.loading") : t("auth.login.submit")}
                   </button>
                 </form>
 
