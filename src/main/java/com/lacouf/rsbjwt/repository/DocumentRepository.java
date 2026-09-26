@@ -1,7 +1,7 @@
 package com.lacouf.rsbjwt.repository;
 
-import com.lacouf.rsbjwt.model.acteurs.Disciplines;
-import com.lacouf.rsbjwt.model.documents.Document;
+import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 
