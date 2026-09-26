@@ -1,16 +1,15 @@
 package com.lacouf.rsbjwt.model;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Inheritance(strategy = InheritanceType.JOINED)
 @ToString
-public class Document {
+public abstract class Document {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -19,14 +18,13 @@ public class Document {
     private String fileName;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private DocumentType documentType;
+    private Disciplines targetDiscipline;
 
     @Lob
     @Basic(fetch = FetchType.LAZY)
     private byte[] data;
 
+    private String email;
     private String contentType;
     private long size;
-
 }
