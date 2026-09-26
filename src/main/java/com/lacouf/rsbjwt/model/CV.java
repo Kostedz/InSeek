@@ -1,6 +1,5 @@
-package com.lacouf.rsbjwt.model.documents;
+package com.lacouf.rsbjwt.model;
 
-import com.lacouf.rsbjwt.model.acteurs.Disciplines;
 import jakarta.persistence.Entity;
 import lombok.Builder;
 import lombok.Getter;

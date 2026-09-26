@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.service.dto.documents;
+package com.lacouf.rsbjwt.service.dto;
 
 public interface DocumentDTO {
     String email();

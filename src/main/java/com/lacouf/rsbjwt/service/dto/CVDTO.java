@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.service.dto.documents;
+package com.lacouf.rsbjwt.service.dto;
 
 public record CVDTO(String email, String nom) implements DocumentDTO {
     public static CVDTO of(String email, String nom) {
