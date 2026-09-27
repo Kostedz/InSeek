@@ -67,6 +67,17 @@ public class UtilisateurService {
         return toDTO(user);
     }
 
+    public UtilisateurDTO findByEmail(String email) throws NotFoundException, BadRequestException {
+        if (email == null || email.isBlank()) {
+            throw new BadRequestException("L'email est obligatoire");
+        }
+        Utilisateur user = utilisateurRepository.findByEmail(email);
+        if (user == null) {
+            throw new NotFoundException("L'utilisateur n'existe pas.");
+        }
+        return toDTO(user);
+    }
+
     public boolean registrationVerification(RegisterDTO dto ) throws BadRequestException {
 
         if (dto.prenom() == null || dto.prenom().isBlank()) {
@@ -88,25 +99,15 @@ public class UtilisateurService {
     }
 
     public UtilisateurDTO toDTO(Utilisateur utilisateur) throws BadRequestException {
-        if (utilisateur == null) {
-            return null;
-        }
-
-        if (utilisateur instanceof Etudiant etudiant) {
-            return EtudiantDTO.of(etudiant);
-        }
-
-        if(utilisateur instanceof Employeur employeur){
-            return EmployeurDTO.of(employeur);
-        }
-
-        if (utilisateur instanceof Professeur professeur) {
-            return ProfesseurDTO.of(professeur);
-        }
-
-        throw new BadRequestException(
-                "Type d'entité non pris en charge pour la conversion en DTO."
-        );
+        return switch (utilisateur) {
+            case null -> null;
+            case Etudiant etudiant -> EtudiantDTO.of(etudiant);
+            case Employeur employeur -> EmployeurDTO.of(employeur);
+            case Professeur professeur -> ProfesseurDTO.of(professeur);
+            default -> throw new BadRequestException(
+                    "Type d'entité non pris en charge pour la conversion en DTO."
+            );
+        };
     }
 
     public Utilisateur toEntity(RegisterDTO registerDTO) throws BadRequestException {
