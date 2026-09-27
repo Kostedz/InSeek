@@ -5,7 +5,9 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.CV;
 import com.lacouf.rsbjwt.model.Document;
+import com.lacouf.rsbjwt.model.OffreDeStage;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import com.lacouf.rsbjwt.service.dto.CVDTO;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
@@ -48,9 +50,10 @@ public class DocumentService {
     }
 
 
-    private DocumentDTO toDTO(Document document) {
+    public DocumentDTO toDTO(Document document) {
         return switch (document) {
             case CV cv -> CVDTO.of(cv.getEmail(), cv.getNom());
+            case OffreDeStage offre -> OffreDeStageDTO.of(offre);
             default -> throw new IllegalArgumentException("Unknown document type");
         };
     }
