@@ -77,7 +77,7 @@ public class DocumentService {
                     .contentType(file.getContentType())
                     .size(file.getSize())
                     .email(uploader.email())
-                    .employeur() //Ajouter id de employeur
+                    .employeur(1) //Ajouter id de employeur
                     .position()
                     .descriptionPosition()
                     .dateDebutStage()
