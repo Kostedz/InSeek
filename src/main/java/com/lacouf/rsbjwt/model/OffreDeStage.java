@@ -25,6 +25,7 @@ public class OffreDeStage extends Document{
     @ManyToOne // Ajout
     @JoinColumn(name = "employeur_id") // Ajout
     private Employeur employeur; // Ajout
+    //private Etudiant edtudiant // Au cas ou on veut envoyer une offre a un etuuant specifique
 
     @Builder
     public OffreDeStage(Long id, String fileName, Disciplines targetDiscipline,
