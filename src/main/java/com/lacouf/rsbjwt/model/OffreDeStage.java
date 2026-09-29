@@ -21,7 +21,6 @@ public class OffreDeStage extends Document{
     private LocalDate dateDebutStage;
     private LocalDate dateFinStage;
     private String adresseEntreprise;
-    private Disciplines disciplines; // Ajout
     private Double salaire; // Ajout
     @ManyToOne // Ajout
     @JoinColumn(name = "employeur_id") // Ajout
@@ -33,8 +32,7 @@ public class OffreDeStage extends Document{
                         String email,
                         Employeur employeur,
                         String position, String descriptionPosition,
-                        LocalDate dateDebutStage, LocalDate dateFinStage, String adresseEntreprise,
-                        Disciplines disciplines,Double salaire ) {
+                        LocalDate dateDebutStage, LocalDate dateFinStage, String adresseEntreprise,Double salaire ) {
 
         super(id, fileName, targetDiscipline, data, email, contentType, size,
                 StatutValidation.EN_ATTENTE, null);
@@ -45,7 +43,6 @@ public class OffreDeStage extends Document{
         this.dateDebutStage = dateDebutStage;
         this.dateFinStage = dateFinStage;
         this.adresseEntreprise = adresseEntreprise;
-        this.disciplines = disciplines;
         this.salaire = salaire;
     }
 

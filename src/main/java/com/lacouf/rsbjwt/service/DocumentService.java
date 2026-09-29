@@ -69,6 +69,23 @@ public class DocumentService {
                     .nom(uploader.nom())
                     .email(uploader.email())
                     .build();
+
+            case "OffreDeStage" -> OffreDeStage.builder()
+                    .fileName(file.getOriginalFilename())
+                    .targetDiscipline(Disciplines.valueOf(targetDiscipline))
+                    .data(file.getBytes())
+                    .contentType(file.getContentType())
+                    .size(file.getSize())
+                    .email(uploader.email())
+                    .employeur() //Ajouter id de employeur
+                    .position()
+                    .descriptionPosition()
+                    .dateDebutStage()
+                    .dateFinStage()
+                    .adresseEntreprise()
+                    .salaire()
+                    .build();
+
             default -> throw new BadRequestException("Invalid document type");
         };
     }
