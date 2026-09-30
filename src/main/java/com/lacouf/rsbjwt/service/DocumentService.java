@@ -2,11 +2,9 @@ package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.CV;
-import com.lacouf.rsbjwt.model.Document;
-import com.lacouf.rsbjwt.model.OffreDeStage;
+import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.OffreDeStageRepository;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
 import com.lacouf.rsbjwt.service.dto.CVDTO;
@@ -27,9 +25,11 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class DocumentService {
     private final DocumentRepository documentRepository;
+    private final OffreDeStageRepository offreDeStageRepository;
     private final UtilisateurService utilisateurService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
+
 
     public DocumentDTO saveDocument(MultipartFile file, String formContent) throws BadRequestException, IOException, NotFoundException {
         JsonNode result = objectMapper.readTree(formContent);
@@ -49,7 +49,6 @@ public class DocumentService {
         return toDTO(document);
     }
 
-
     public DocumentDTO toDTO(Document document) {
         return switch (document) {
             case CV cv -> CVDTO.of(cv.getEmail(), cv.getNom());
@@ -58,7 +57,9 @@ public class DocumentService {
         };
     }
 
-    private Document createDocument(String type, MultipartFile file, String targetDiscipline, UtilisateurDTO uploader) throws BadRequestException, IOException {
+    private Document createDocument(String type, MultipartFile file, String targetDiscipline, UtilisateurDTO uploader) throws BadRequestException, IOException, NotFoundException {
+        Utilisateur user = utilisateurService.toEntity(utilisateurService.findByEmail(uploader.email()));
+
         return switch (type) {
             case "CV" -> CV.builder()
                     .fileName(file.getOriginalFilename())
@@ -77,7 +78,7 @@ public class DocumentService {
                     .contentType(file.getContentType())
                     .size(file.getSize())
                     .email(uploader.email())
-                    .employeur(1) //Ajouter id de employeur
+                    .employeur((Employeur) user) //Ajouter id de employeur
                     .position()
                     .descriptionPosition()
                     .dateDebutStage()
