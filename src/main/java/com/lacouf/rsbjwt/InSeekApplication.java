@@ -49,7 +49,6 @@ public class InSeekApplication implements CommandLineRunner {
 
         MultipartFile file = new MockMultipartFile("cv.pdf", "cv.pdf", "application/pdf", "Dummy CV content".getBytes());
         DocumentDTO doc = documentService.saveDocument(file, "{\"type\":\"CV\",\"email\":\"bib@a.com\",\"targetDiscipline\":\"INFORMATIQUE\"}");
-        logger.info(doc.toString());
 
         ///creer gestionnaire pour le mettre dans save.
         Gestionnaire gestionnaire = Gestionnaire.builder()
