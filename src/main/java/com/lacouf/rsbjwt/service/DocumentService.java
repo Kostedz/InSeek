@@ -97,4 +97,22 @@ public class DocumentService {
             default -> throw new BadRequestException("Invalid document type");
         };
     }
+
+    private OffreDeStage createOffreDeStage(String type, MultipartFile file, String targetDiscipline, Utilisateur uploader, OffreDeStageDTO dto) throws BadRequestException, IOException, NotFoundException{
+        return OffreDeStage.builder()
+                    .fileName(file.getOriginalFilename())
+                    .targetDiscipline(Disciplines.valueOf(targetDiscipline))
+                    .data(file.getBytes())
+                    .contentType(file.getContentType())
+                    .size(file.getSize())
+                    //.email(uploader.email())
+                    .employeur((Employeur) uploader) //Ajouter id de employeur
+                    .position(dto.position())
+                    .descriptionPosition(dto.descriptionPosition())
+                    .dateDebutStage(dto.dateDebutStage())
+                    .dateFinStage(dto.dateFinStage())
+                    .adresseEntreprise(dto.adresseEntreprise())
+                    .salaire(dto.salaire())
+                    .build();
+    }
 }

@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt;
 
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.model.auth.Role;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
@@ -12,6 +13,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 @SpringBootApplication
@@ -45,7 +47,7 @@ public class InSeekApplication implements CommandLineRunner {
         utilisateurService.register(registerDTO1);
 
         MultipartFile file = new MockMultipartFile("cv.pdf", "cv.pdf", "application/pdf", "Dummy CV content".getBytes());
-        DocumentDTO doc = documentService.saveDocument(file, "{\"type\":\"CV\",\"email\":\"bib@a.com\",\"targetDiscipline\":\"INFORMATIQUE\"}");
+        //DocumentDTO doc = documentService.saveDocument(file, "{\"type\":\"CV\",\"email\":\"bib@a.com\",\"targetDiscipline\":\"INFORMATIQUE\"}");
 
         ///creer gestionnaire pour le mettre dans save.
         Gestionnaire gestionnaire = Gestionnaire.builder()
