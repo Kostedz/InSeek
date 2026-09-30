@@ -6,7 +6,7 @@ import com.lacouf.rsbjwt.model.StatutValidation;
 public record DocumentValidationDTO(
         Long id,
         String fileName,
-        UtilisateurDTO utilisateur,
+        String email,
         StatutValidation statut,
         String commentaireRejet
 ) {
@@ -14,7 +14,7 @@ public record DocumentValidationDTO(
         return new DocumentValidationDTO(
                 document.getId(),
                 document.getFileName(),
-                UtilisateurDTO.of(document.getUtilisateur()),
+                document.getUtilisateur().getEmail(),
                 document.getStatut(),
                 document.getCommentaireRejet()
         );
