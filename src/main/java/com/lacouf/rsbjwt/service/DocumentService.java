@@ -38,7 +38,7 @@ public class DocumentService {
         logger.info("Form content: " + formContent);
         logger.info("Type: " + type);
         logger.info("Uploader: " + uploader);
-        if (type == "CV") {
+        if (type.equals("CV")) {
             logger.info("Uploader is an instance of EtudiantDTO: " + uploader);
             targetDiscipline = ((EtudiantDTO) uploader).discipline().toString();
         } else {
