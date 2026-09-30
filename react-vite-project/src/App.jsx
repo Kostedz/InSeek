@@ -79,6 +79,10 @@ function App() {
           <Route path='logout' element={<Logout setUser={setUser}/>}/>
           <Route path='emprunteur' element={<EmprunteurHome/>}/>
           <Route path='prepose' element={<PreposeHome/>}/>
+          <Route path='gestionnaire' element={<GestionnaireHome/>}/>
+          <Route path='etudiant' element={<EtudiantTeleverseCV/>}/>
+          <Route path='register'
+                 element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser} setError={setError}/>}/>
           <Route path='gestionnaire' element={<GestionnaireValidation/>}/>
           <Route path= 'register' element={<RegisterForm user={user} authChecked={authChecked} setError={setError}/>}/>
           <Route path='error' element={<ErrorPage error={error}/>}/>
