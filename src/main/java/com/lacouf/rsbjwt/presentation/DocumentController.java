@@ -2,9 +2,11 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,10 +20,14 @@ import java.io.IOException;
 @RequestMapping("/documents")
 public class DocumentController {
     private final DocumentService documentService;
+    private final AuthService authService;
 
     @PostMapping("/upload")
-    public ResponseEntity<DocumentDTO> uploadDocument(@RequestPart("file") MultipartFile file, @RequestPart("formContent") String formContent) {
+    public ResponseEntity<DocumentDTO> uploadDocument(@RequestPart("file") MultipartFile file, @RequestPart("formContent") String formContent, HttpServletRequest request) {
         try {
+            if (!authService.validateJwt(request)) {
+                throw new BadRequestException("Invalid JWT token");
+            }
             if (file.isEmpty()) {
                 throw new BadRequestException("File is empty");
             }
@@ -34,7 +40,7 @@ public class DocumentController {
                 throw new BadRequestException("Only PDF files are allowed");
             }
 
-            DocumentDTO savedDocument = documentService.saveDocument(file, formContent);
+            DocumentDTO savedDocument = documentService.saveDocument(file, formContent, request);
 
             return ResponseEntity.ok(savedDocument);
         } catch (BadRequestException e) {
