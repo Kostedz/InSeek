@@ -5,7 +5,9 @@ import { useTranslation } from "react-i18next";
 function Header({user}) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const userMenuRef = useRef(null);
+    const lastScrollYRef = useRef(0);
     const { t, i18n } = useTranslation();
     const currentLanguage = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const nextLanguage = currentLanguage === "fr" ? "en" : "fr";
@@ -17,7 +19,6 @@ function Header({user}) {
     const displayName = [firstName, lastName].filter(Boolean).join(" ");
     const isLoggedIn = Boolean(user?.isLoggedIn);
     const isGestionnaire = role === "GESTIONNAIRE";
-    const isPrepose = isGestionnaire || role === "PREPOSE";
     const isEmprunteur = isGestionnaire || role === "EMPRUNTEUR";
 
     const navLinkClass = ({isActive}) => [
@@ -56,6 +57,26 @@ function Header({user}) {
         };
     }, []);
 
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            const previousScrollY = lastScrollYRef.current;
+
+            if (isMenuOpen || currentScrollY <= 8) {
+                setIsHeaderVisible(true);
+            } else if (currentScrollY > previousScrollY) {
+                setIsHeaderVisible(false);
+            } else if (currentScrollY < previousScrollY) {
+                setIsHeaderVisible(true);
+            }
+
+            lastScrollYRef.current = currentScrollY;
+        };
+
+        window.addEventListener("scroll", handleScroll, {passive: true});
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, [isMenuOpen]);
+
     const closeMenus = () => {
         setIsMenuOpen(false);
         setIsUserMenuOpen(false);
@@ -67,7 +88,8 @@ function Header({user}) {
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)]">
+        <header
+            className={`sticky top-0 z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)] transition-transform duration-300 ease-out ${isHeaderVisible ? "translate-y-0" : "-translate-y-full"}`}>
             <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
                 <Link to="/" className="group -my-1 flex shrink-0 items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-white/10 focus:outline-none" onClick={closeMenus}>
                     <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lemon text-xl font-black text-ink">
@@ -110,9 +132,10 @@ function Header({user}) {
                         <li><NavLink to="/" end className={navLinkClass} onClick={closeMenus}>{t("navigation.home")}</NavLink></li>
                         <li><NavLink to="/about" className={navLinkClass} onClick={closeMenus}>{t("navigation.about")}</NavLink></li>
                         {isEmprunteur && <li><NavLink to="/emprunteur" className={navLinkClass} onClick={closeMenus}>{t("navigation.borrower")}</NavLink></li>}
-                        {isPrepose && <li><NavLink to="/prepose" className={navLinkClass} onClick={closeMenus}>{t("navigation.clerk")}</NavLink></li>}
-                        <li><NavLink to="/gestionnaire" className={navLinkClass}
-                                     onClick={closeMenus}>Validation</NavLink></li>
+                        <li><NavLink to="/employeur" className={navLinkClass} onClick={closeMenus}>Publier une
+                            offre</NavLink></li>
+                        <li><NavLink to="/etudiant" className={navLinkClass}
+                                     onClick={closeMenus}>Téléverser mon CV</NavLink></li>
                     </ul>
 
                     <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">
