@@ -30,7 +30,7 @@ public class DocumentService {
 
     public DocumentDTO saveDocument(MultipartFile file, String formContent, HttpServletRequest request) throws BadRequestException, IOException, NotFoundException {
         String email = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
-        UtilisateurDTO uploader = utilisateurService.findByEmail(email);
+        Utilisateur uploader = utilisateurService.findEntityByEmail(email);
 
         JsonNode result = objectMapper.readTree(formContent);
         String type = result.get("type").asString();
@@ -39,8 +39,8 @@ public class DocumentService {
         logger.info("Type: " + type);
         logger.info("Uploader: " + uploader);
         if (type.equals("CV")) {
-            logger.info("Uploader is an instance of EtudiantDTO: " + uploader);
-            targetDiscipline = ((EtudiantDTO) uploader).discipline().toString();
+            logger.info("Uploader is an instance of Etudiant: " + uploader);
+            targetDiscipline = ((Etudiant) uploader).getDiscipline().toString();
         } else {
             logger.info("Uploader is not an instance of EtudiantDTO: " + uploader);
             targetDiscipline = result.get("targetDiscipline").asString();
@@ -66,8 +66,7 @@ public class DocumentService {
         };
     }
 
-    private Document createDocument(String type, MultipartFile file, String targetDiscipline, UtilisateurDTO uploader) throws BadRequestException, IOException, NotFoundException {
-        Utilisateur utilisateur = utilisateurService.toEntity(utilisateurService.findByEmail(uploader.email()));
+    private Document createDocument(String type, MultipartFile file, String targetDiscipline, Utilisateur uploader) throws BadRequestException, IOException, NotFoundException {
 
         return switch (type) {
             case "CV" -> CV.builder()
@@ -76,7 +75,7 @@ public class DocumentService {
                     .data(file.getBytes())
                     .contentType(file.getContentType())
                     .size(file.getSize())
-                    .utilisateur((Etudiant) utilisateur)
+                    .utilisateur((Etudiant) uploader)
                     .build();
 
 //            case "OffreDeStage" -> OffreDeStage.builder()
