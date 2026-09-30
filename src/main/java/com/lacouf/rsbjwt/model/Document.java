@@ -4,7 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -27,4 +28,9 @@ public abstract class Document {
     private String email;
     private String contentType;
     private long size;
+
+    @Enumerated(EnumType.STRING)
+    private StatutValidation statut = StatutValidation.EN_ATTENTE;
+
+    private String commentaireRejet;
 }
