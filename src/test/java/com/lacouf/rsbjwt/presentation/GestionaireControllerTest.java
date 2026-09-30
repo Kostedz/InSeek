@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithMockUser;
+
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -124,4 +124,79 @@ class GestionaireControllerTest {
     }
 
 
+    @Test
+    @DisplayName("PUT /gestionnaire/documents/{id}/reject avec un commentaire retourne 200 et le statut REJETE")
+    void rejectDocument_succes_retourne200() throws Exception {
+
+        DocumentValidationDTO dto = new DocumentValidationDTO(
+                1L, "cv_alice.pdf", "alice@mail.com", StatutValidation.REJETE, "Format non professionnel");
+
+        when(gestionnaireService.rejectDocument(eq(1L), any())).thenReturn(dto);
+
+        mockMvc.perform(
+                        put("/gestionnaire/documents/1/reject")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "commentaire": "Format non professionnel"
+                                    }
+                                    """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statut").value("REJETE"))
+                .andExpect(jsonPath("$.commentaireRejet").value("Format non professionnel"));
+    }
+
+    @Test
+    @DisplayName("PUT /gestionnaire/documents/{id}/reject avec un id inexistant retourne 404")
+    void rejectDocument_documentInexistant_retourne404() throws Exception {
+
+        when(gestionnaireService.rejectDocument(eq(999L), any()))
+                .thenThrow(new NotFoundException("Document introuvable"));
+
+        mockMvc.perform(
+                        put("/gestionnaire/documents/999/reject")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "commentaire": "Format non professionnel"
+                                    }
+                                    """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /gestionnaire/documents/{id}/reject sans commentaire retourne 400")
+    void rejectDocument_sansCommentaire_retourne400() throws Exception {
+
+        when(gestionnaireService.rejectDocument(eq(1L), any()))
+                .thenThrow(new BadRequestException("Un commentaire est obligatoire pour refuser un document."));
+
+        mockMvc.perform(
+                        put("/gestionnaire/documents/1/reject")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "commentaire": ""
+                                    }
+                                    """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUT /gestionnaire/documents/{id}/reject sur un document déjà traité retourne 400")
+    void rejectDocument_dejaTraite_retourne400() throws Exception {
+
+        when(gestionnaireService.rejectDocument(eq(1L), any()))
+                .thenThrow(new BadRequestException("Ce document a déjà été traité."));
+
+        mockMvc.perform(
+                        put("/gestionnaire/documents/1/reject")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "commentaire": "Trop tard"
+                                    }
+                                    """))
+                .andExpect(status().isBadRequest());
+    }
 }
