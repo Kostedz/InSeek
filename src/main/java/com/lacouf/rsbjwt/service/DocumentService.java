@@ -34,8 +34,17 @@ public class DocumentService {
 
         JsonNode result = objectMapper.readTree(formContent);
         String type = result.get("type").asString();
-        String targetDiscipline = result.get("targetDiscipline").asString() != null ? result.get("targetDiscipline").asString()
-                : uploader != null ? ((EtudiantDTO) uploader).discipline().toString() : null;
+        String targetDiscipline;
+        logger.info("Form content: " + formContent);
+        logger.info("Type: " + type);
+        logger.info("Uploader: " + uploader);
+        if (type == "CV") {
+            logger.info("Uploader is an instance of EtudiantDTO: " + uploader);
+            targetDiscipline = ((EtudiantDTO) uploader).discipline().toString();
+        } else {
+            logger.info("Uploader is not an instance of EtudiantDTO: " + uploader);
+            targetDiscipline = result.get("targetDiscipline").asString();
+        }
 
         logger.info(targetDiscipline);
         Document document = createDocument(type, file, targetDiscipline, uploader);
