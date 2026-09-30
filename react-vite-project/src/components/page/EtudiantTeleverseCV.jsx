@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import fetcher from "../../utils/fetcher.js";
 
-export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = true, onCvUpdated}) {
+export default function EtudiantTeleverseCV({ cvData, isAccountEmailValidated = true, onCvUpdated }) {
     const fileInputRef = useRef(null);
 
     const [selectedFile, setSelectedFile] = useState(null);
@@ -39,7 +39,7 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
         } else {
             setSelectedFile(null);
         }
-    }
+    };
 
     const handleDragOver = (e) => {
         e.preventDefault();
@@ -73,10 +73,17 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
         setSuccessMessage("");
 
         const formData = new FormData();
-        formData.append("cv", selectedFile);
+
+        formData.append("file", selectedFile);
+
+        const formContentBlob = new Blob(
+            [JSON.stringify({ type: "CV" })],
+            { type: "application/json" }
+        );
+        formData.append("formContent", formContentBlob);
 
         try {
-            const res = await fetcher("/student/cv/upload", {
+            const res = await fetcher("/documents/upload", {
                 method: "POST",
                 body: formData,
             });
@@ -115,31 +122,32 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
 
     return (
         <section className="flex flex-1 items-center px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-            <div
-                className="mx-auto w-full max-w-3xl rounded-[2rem] border border-line bg-surface p-7 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-9">
-                <span
-                    className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">Espace étudiant</span>
+            <div className="mx-auto w-full max-w-3xl rounded-[2rem] border border-line bg-surface p-7 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-9">
+                <span className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                    Espace étudiant
+                </span>
                 <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">Téléverser mon CV</h1>
-                <p className="mt-3 text-sm leading-7 text-ink-soft">Déposez votre CV en format PDF pour le soumettre au
-                    gestionnaire de stages.</p>
+                <p className="mt-3 text-sm leading-7 text-ink-soft">
+                    Déposez votre CV en format PDF pour le soumettre au gestionnaire de stages.
+                </p>
 
                 {!isAccountEmailValidated && (
-                    <p className="mt-6 rounded-xl border border-peach bg-peach/40 px-4 py-3 text-sm font-medium text-ink"
-                       role="alert">
+                    <p className="mt-6 rounded-xl border border-peach bg-peach/40 px-4 py-3 text-sm font-medium text-ink" role="alert">
                         Veuillez d'abord valider votre compte par courriel avant de téléverser un CV.
                     </p>
                 )}
 
                 {status === "REJECTED" && rejectionComment && (
-                    <p className="mt-6 rounded-xl border border-blush bg-blush/40 px-4 py-3 text-sm text-ink"
-                       role="status">
+                    <p className="mt-6 rounded-xl border border-blush bg-blush/40 px-4 py-3 text-sm text-ink" role="status">
                         <strong>Commentaire du gestionnaire :</strong> {rejectionComment}
                     </p>
                 )}
 
                 <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
                     <div
-                        className={`rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${isDragging ? "border-pink bg-pink/30" : "border-line bg-canvas"}`}
+                        className={`rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
+                            isDragging ? "border-pink bg-pink/30" : "border-line bg-canvas"
+                        }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -153,23 +161,31 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
                             disabled={!isAccountEmailValidated}
                             className="sr-only"
                         />
-                        <label htmlFor="cv-file"
-                               className="cursor-pointer text-sm font-bold text-ink underline decoration-pink decoration-4 underline-offset-4">
+                        <label
+                            htmlFor="cv-file"
+                            className="cursor-pointer text-sm font-bold text-ink underline decoration-pink decoration-4 underline-offset-4"
+                        >
                             Choisir un fichier PDF
                         </label>
                         <p className="mt-2 text-sm text-ink-soft">ou glissez-déposez votre fichier ici</p>
                         <p className="mt-1 text-xs text-ink-soft">Taille maximale : 5 Mo</p>
-                        {selectedFile &&
-                            <p className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
-                               role="status">{selectedFile.name}</p>}
+                        {selectedFile && (
+                            <p className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink" role="status">
+                                {selectedFile.name}
+                            </p>
+                        )}
                     </div>
 
-                    {errorMessage &&
-                        <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-medium text-error"
-                           role="alert">{errorMessage}</p>}
-                    {successMessage &&
-                        <p className="rounded-xl border border-lemon bg-lemon/45 px-4 py-3 text-sm font-medium text-ink"
-                           role="status">{successMessage}</p>}
+                    {errorMessage && (
+                        <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-medium text-error" role="alert">
+                            {errorMessage}
+                        </p>
+                    )}
+                    {successMessage && (
+                        <p className="rounded-xl border border-lemon bg-lemon/45 px-4 py-3 text-sm font-medium text-ink" role="status">
+                            {successMessage}
+                        </p>
+                    )}
 
                     <button
                         type="submit"

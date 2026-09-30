@@ -13,6 +13,7 @@ import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
 import { useTranslation } from "react-i18next";
+import GestionnaireHome from "./components/page/GestionnaireHome.jsx";
 
 function App() {
   const [user, setUser] = useState({})
