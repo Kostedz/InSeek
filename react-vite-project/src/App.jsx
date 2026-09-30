@@ -7,15 +7,12 @@ import LoginForm from "./components/auth/LoginForm.jsx";
 import fetcher from "./utils/fetcher.js";
 import ErrorPage from "./components/ErrorPage.jsx";
 import Logout from "./components/auth/Logout.jsx";
-import EmprunteurHome from "./components/page/EmprunteurHome.jsx";
 import EmployeurOffres from "./components/page/EmployeurOffres.jsx";
-import PreposeHome from "./components/page/PreposeHome.jsx";
-import GestionnaireHome from "./components/page/GestionnaireHome.jsx";
 import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
 import { useTranslation } from "react-i18next";
-import GestionnaireHome from "./components/page/GestionnaireHome.jsx";
+
 
 function App() {
   const [user, setUser] = useState({})
@@ -80,15 +77,11 @@ function App() {
           <Route path='login'
                  element={<LoginForm user={user} authChecked={authChecked} setUser={setUser} setError={setError}/>}/>
           <Route path='logout' element={<Logout setUser={setUser}/>}/>
-          <Route path='emprunteur' element={<EmprunteurHome/>}/>
           <Route path='employeur' element={<EmployeurOffres/>}/>
           <Route path='employeur/offres' element={<EmployeurOffres/>}/>
-          <Route path='prepose' element={<PreposeHome/>}/>
-          <Route path='gestionnaire' element={<GestionnaireHome/>}/>
           <Route path='etudiant' element={<EtudiantTeleverseCV/>}/>
           <Route path='register'
                  element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser} setError={setError}/>}/>
-          <Route path='gestionnaire' element={<GestionnaireValidation/>}/>
           <Route path= 'register' element={<RegisterForm user={user} authChecked={authChecked} setError={setError}/>}/>
           <Route path='error' element={<ErrorPage error={error}/>}/>
           <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
