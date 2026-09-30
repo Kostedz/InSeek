@@ -30,13 +30,11 @@ public class OffreDeStage extends Document{
     @Builder
     public OffreDeStage(Long id, String fileName, Disciplines targetDiscipline,
                         byte[] data, String contentType, long size,
-                        String email,
                         Employeur employeur,
                         String position, String descriptionPosition,
-                        LocalDate dateDebutStage, LocalDate dateFinStage, String adresseEntreprise,Double salaire ) {
+                        LocalDate dateDebutStage, LocalDate dateFinStage, String adresseEntreprise,Double salaire) {
 
-        super(id, fileName, targetDiscipline, data, email, contentType, size,
-                StatutValidation.EN_ATTENTE, null);
+        super(id, fileName, targetDiscipline, employeur, data, contentType, size, StatutValidation.EN_ATTENTE, null);
 
         this.nomEntreprise = employeur.getNomCompagnie();
         this.position = position;

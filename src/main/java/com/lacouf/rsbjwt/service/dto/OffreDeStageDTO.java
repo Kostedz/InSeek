@@ -26,7 +26,7 @@ public record OffreDeStageDTO(
         return new OffreDeStageDTO(
                 offre.getId(),
                 offre.getFileName(),
-                offre.getEmail(),
+                offre.getEmployeur().getEmail(),
                 offre.getNomEntreprise(),
                 offre.getPosition(),
                 offre.getDescriptionPosition(),
