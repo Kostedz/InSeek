@@ -78,6 +78,16 @@ public class UtilisateurService {
         return toDTO(user);
     }
 
+    public Utilisateur findEntityByEmail(String email) throws NotFoundException {
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email);
+
+        if (utilisateur == null) {
+            throw new NotFoundException("Utilisateur not found");
+        }
+
+        return utilisateur;
+    }
+
     public boolean registrationVerification(RegisterDTO dto ) throws BadRequestException {
 
         if (dto.prenom() == null || dto.prenom().isBlank()) {
