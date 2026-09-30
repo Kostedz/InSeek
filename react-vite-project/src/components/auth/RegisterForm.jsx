@@ -199,7 +199,6 @@ export default function RegisterForm({ user, authChecked, setUser }) {
         };
 
         try {
-            // 1. Inscription du compte
             const regResponse = await fetcher("/user/register", {
                 method: "POST",
                 headers: {
@@ -222,7 +221,6 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                 }
             }
 
-            // 2. Connexion automatique immédiatement après l'inscription
             const loginResponse = await fetcher("/user/login", {
                 method: "POST",
                 headers: {
@@ -243,7 +241,6 @@ export default function RegisterForm({ user, authChecked, setUser }) {
             const loginData = await loginResponse.json();
             localStorage.setItem("token", loginData.accessToken || loginData.token);
 
-            // 3. Récupération des informations de la session utilisateur
             const meResponse = await fetcher("user/me", {});
             if (meResponse.ok) {
                 const userData = await meResponse.json();
