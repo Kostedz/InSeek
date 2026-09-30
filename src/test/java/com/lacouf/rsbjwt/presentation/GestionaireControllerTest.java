@@ -87,4 +87,41 @@ class GestionaireControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    @Test
+    @DisplayName("PUT /gestionnaire/documents/{id}/approve avec un document en attente retourne 200 et le statut VALIDE")
+    void approveDocument_succes_retourne200() throws Exception {
+
+        DocumentValidationDTO dto = new DocumentValidationDTO(
+                1L, "cv_alice.pdf", "alice@mail.com", StatutValidation.VALIDE, null);
+
+        when(gestionnaireService.approveDocument(1L)).thenReturn(dto);
+
+        mockMvc.perform(put("/gestionnaire/documents/1/approve"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statut").value("VALIDE"));
+    }
+
+    @Test
+    @DisplayName("PUT /gestionnaire/documents/{id}/approve avec un id inexistant retourne 404")
+    void approveDocument_documentInexistant_retourne404() throws Exception {
+
+        when(gestionnaireService.approveDocument(999L))
+                .thenThrow(new NotFoundException("Document introuvable"));
+
+        mockMvc.perform(put("/gestionnaire/documents/999/approve"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /gestionnaire/documents/{id}/approve sur un document déjà traité retourne 400")
+    void approveDocument_dejaTraite_retourne400() throws Exception {
+
+        when(gestionnaireService.approveDocument(1L))
+                .thenThrow(new BadRequestException("Ce document a déjà été traité."));
+
+        mockMvc.perform(put("/gestionnaire/documents/1/approve"))
+                .andExpect(status().isBadRequest());
+    }
+
+
 }
