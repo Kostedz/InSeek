@@ -116,6 +116,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
       if (role === "ROLE_EMPRUNTEUR") navigate("/emprunteur");
       else if (role === "ROLE_PREPOSE") navigate("/prepose");
       else if (role === "ROLE_GESTIONNAIRE") navigate("/gestionnaire");
+      else if (role === "ROLE_ETUDIANT" || role === "ETUDIANT") navigate("/etudiant");
       else navigate("/");
 
     } catch (error) {

@@ -2,11 +2,9 @@ package com.lacouf.rsbjwt;
 
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.model.auth.Role;
-import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
-import com.lacouf.rsbjwt.service.dto.GestionnaireDTO;
 import com.lacouf.rsbjwt.service.dto.RegisterDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +12,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 @SpringBootApplication

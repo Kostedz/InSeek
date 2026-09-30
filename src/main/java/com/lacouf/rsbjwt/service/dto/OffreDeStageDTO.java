@@ -16,14 +16,17 @@ public record OffreDeStageDTO(
         LocalDate dateFinStage,
         String adresseEntreprise,
         StatutValidation statut,
-        String commentaireRejet) implements DocumentDTO {
+        String commentaireRejet,
+        Double salaire//,
+//        EmployeurDTO employeurDTO
+) implements DocumentDTO {
 
 
     public static OffreDeStageDTO of(OffreDeStage offre) {
         return new OffreDeStageDTO(
                 offre.getId(),
                 offre.getFileName(),
-                offre.getEmail(),
+                offre.getEmployeur().getEmail(),
                 offre.getNomEntreprise(),
                 offre.getPosition(),
                 offre.getDescriptionPosition(),
@@ -31,7 +34,9 @@ public record OffreDeStageDTO(
                 offre.getDateFinStage(),
                 offre.getAdresseEntreprise(),
                 offre.getStatut(),
-                offre.getCommentaireRejet()
+                offre.getCommentaireRejet(),
+                offre.getSalaire()//,
+                //offre.getEmployeur()
         );
     }
 

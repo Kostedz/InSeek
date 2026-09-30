@@ -78,6 +78,16 @@ public class UtilisateurService {
         return toDTO(user);
     }
 
+    public Utilisateur findEntityByEmail(String email) throws NotFoundException {
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email);
+
+        if (utilisateur == null) {
+            throw new NotFoundException("Utilisateur not found");
+        }
+
+        return utilisateur;
+    }
+
     public boolean registrationVerification(RegisterDTO dto ) throws BadRequestException {
 
         if (dto.prenom() == null || dto.prenom().isBlank()) {
@@ -148,4 +158,85 @@ public class UtilisateurService {
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
+
+    public Utilisateur toEntity(UtilisateurDTO utilisateurDTO) throws BadRequestException {
+        if (utilisateurDTO == null) {
+            return null;
+        }
+
+        Role role = Role.valueOf(utilisateurDTO.role());
+
+        Utilisateur user = utilisateurRepository.findByEmail(utilisateurDTO.email());
+
+        switch (user) {
+            case Etudiant etudiant -> {
+                return Etudiant.builder()
+                        .nom(etudiant.getNom())
+                        .prenom(etudiant.getPrenom())
+                        .email(etudiant.getEmail())
+                        .discipline(etudiant.getDiscipline())
+                        .password(etudiant.getPassword())
+                        .build();
+            }
+
+            case Employeur employeur -> {
+                return Employeur.builder()
+                        .nom(employeur.getNom())
+                        .prenom(employeur.getPrenom())
+                        .nomCompagnie(employeur.getNomCompagnie())
+                        .email(employeur.getEmail())
+                        .password(employeur.getPassword())
+                        .build();
+            }
+
+            case Professeur professeur -> {
+                return Professeur.builder()
+                        .nom(professeur.getNom())
+                        .prenom(professeur.getPrenom())
+                        .email(professeur.getEmail())
+                        .discipline(professeur.getDiscipline())
+                        .password(professeur.getPassword())
+                        .build();
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + user);
+        }
+    }
+        /*
+        if (role == Role.ETUDIANT) {
+            return Etudiant.builder()
+                    .nom(utilisateurDTO.nom())
+                    .prenom(utilisateurDTO.prenom())
+                    .email(utilisateurDTO.email())
+                    .discipline(Disciplines.valueOf(utilisateurDTO.affiliation()))
+                    .password(passwordEncoder.encode(utilisateurDTO.password()))
+                    .build();
+        }
+
+        if (role == Role.EMPLOYEUR) {
+            return Employeur.builder()
+                    .nom(utilisateurDTO.nom())
+                    .prenom(utilisateurDTO.prenom())
+                    .email(utilisateurDTO.email())
+                    .nomCompagnie(String.valueOf(utilisateurDTO.affiliation()))
+                    .password(passwordEncoder.encode(utilisateurDTO.password()))
+                    .build();
+        }
+
+        if (role == Role.PROFESSEUR) {
+            return Professeur.builder()
+                    .nom(utilisateurDTO.nom())
+                    .prenom(utilisateurDTO.prenom())
+                    .email(utilisateurDTO.email())
+                    .discipline(Disciplines.valueOf(registerDTO.affiliation()))
+                    .password(passwordEncoder.encode(registerDTO.password()))
+                    .build();
+        }
+
+
+        throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
+    }
+
+         */
 }
+
+
