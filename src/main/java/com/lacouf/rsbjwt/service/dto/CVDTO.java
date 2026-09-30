@@ -1,7 +1,9 @@
 package com.lacouf.rsbjwt.service.dto;
 
-public record CVDTO(String email, String nom) implements DocumentDTO {
-    public static CVDTO of(String email, String nom) {
-        return new CVDTO(email, nom);
+import com.lacouf.rsbjwt.model.CV;
+
+public record CVDTO(String email) implements DocumentDTO {
+    public static CVDTO of(CV cv) {
+        return new CVDTO(cv.getUtilisateur().getEmail());
     }
 }
