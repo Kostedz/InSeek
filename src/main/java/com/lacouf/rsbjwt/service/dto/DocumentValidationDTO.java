@@ -14,7 +14,7 @@ public record DocumentValidationDTO(
         return new DocumentValidationDTO(
                 document.getId(),
                 document.getFileName(),
-                document.getEmail(),
+                document.getUtilisateur().getEmail(),
                 document.getStatut(),
                 document.getCommentaireRejet()
         );

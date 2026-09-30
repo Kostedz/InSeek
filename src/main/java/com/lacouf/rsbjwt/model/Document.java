@@ -21,11 +21,14 @@ public abstract class Document {
     @Enumerated(EnumType.STRING)
     private Disciplines targetDiscipline;
 
+    @ManyToOne
+    @JoinColumn(name = "utilisateur_id")
+    protected Utilisateur utilisateur;
+
     @Lob
     @Basic(fetch = FetchType.LAZY)
     private byte[] data;
 
-    private String email;
     private String contentType;
     private long size;
 
