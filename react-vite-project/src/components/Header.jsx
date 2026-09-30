@@ -21,14 +21,14 @@ function Header({user}) {
     const isEmprunteur = isGestionnaire || role === "EMPRUNTEUR";
 
     const navLinkClass = ({isActive}) => [
-        "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors sm:w-auto sm:px-3",
+        "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors md:w-auto md:px-3",
         isActive
             ? "bg-pink text-ink"
             : "text-white/80 hover:bg-white/10 hover:text-white"
     ].join(" ");
 
     const loginLinkClass = ({isActive}) => [
-        "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-bold transition-colors sm:w-auto sm:px-3",
+        "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-bold transition-colors md:w-auto md:px-3",
         isActive
             ? "bg-pink text-ink"
             : "text-white/85 hover:bg-white/10 hover:text-white"
@@ -83,7 +83,7 @@ function Header({user}) {
 
                 <button
                     type="button"
-                    className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 text-white transition-colors hover:bg-white/10 sm:hidden"
+                    className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 text-white transition-colors hover:bg-white/10 md:hidden"
                     aria-controls="site-navigation"
                     aria-expanded={isMenuOpen}
                     aria-label={isMenuOpen ? t("navigation.closeMenu") : t("navigation.openMenu")}
@@ -103,29 +103,28 @@ function Header({user}) {
 
                 <nav
                     id="site-navigation"
-                    className={`${isMenuOpen ? "flex" : "hidden"} basis-full flex-col items-stretch gap-3 sm:ml-auto sm:flex sm:basis-auto sm:flex-row sm:items-center sm:gap-2`}
+                    className={`${isMenuOpen ? "flex" : "hidden"} basis-full flex-col items-stretch gap-3 md:ml-auto md:flex md:basis-auto md:flex-row md:items-center md:gap-2`}
                     aria-label={t("navigation.mainAriaLabel")}
                 >
-                    <ul className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center">
+                    <ul className="flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center">
                         <li><NavLink to="/" end className={navLinkClass} onClick={closeMenus}>{t("navigation.home")}</NavLink></li>
                         <li><NavLink to="/about" className={navLinkClass} onClick={closeMenus}>{t("navigation.about")}</NavLink></li>
                         {isEmprunteur && <li><NavLink to="/emprunteur" className={navLinkClass} onClick={closeMenus}>{t("navigation.borrower")}</NavLink></li>}
                         {isPrepose && <li><NavLink to="/prepose" className={navLinkClass} onClick={closeMenus}>{t("navigation.clerk")}</NavLink></li>}
-                        {isGestionnaire && <li><NavLink to="/gestionnaire" className={navLinkClass} onClick={closeMenus}>{t("navigation.manager")}</NavLink></li>}
-                        <li><NavLink to="/etudiant" className={navLinkClass}
-                                     onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink></li>
+                        <li><NavLink to="/gestionnaire" className={navLinkClass}
+                                     onClick={closeMenus}>Validation</NavLink></li>
                     </ul>
 
-                    <span className="flex h-6 w-full items-center justify-center sm:w-px" aria-hidden="true">
-                        <span className="h-px w-12 bg-white/20 sm:h-6 sm:w-px" />
+                    <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">
+                        <span className="h-px w-12 bg-white/20 md:h-6 md:w-px"/>
                     </span>
 
                     {isLoggedIn ? (
                         <>
-                        <div ref={userMenuRef} className="relative hidden w-full sm:block sm:w-auto">
+                            <div ref={userMenuRef} className="relative hidden w-full md:block md:w-auto">
                             <button
                                 type="button"
-                                className={`inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-center text-sm font-bold text-white transition-colors ${isUserMenuOpen ? "bg-white/10" : "bg-white/5"} hover:bg-white/10 focus:outline-none sm:w-auto`}
+                                className={`inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-center text-sm font-bold text-white transition-colors ${isUserMenuOpen ? "bg-white/10" : "bg-white/5"} hover:bg-white/10 focus:outline-none md:w-auto`}
                                 aria-haspopup="menu"
                                 aria-expanded={isUserMenuOpen}
                                 aria-controls="user-menu"
@@ -160,7 +159,7 @@ function Header({user}) {
                                 </div>
                             )}
                         </div>
-                        <div className="flex flex-col gap-2 sm:hidden">
+                            <div className="flex flex-col gap-2 md:hidden">
                             <div className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-center text-sm font-bold text-white">
                                 <span>{displayName || t("navigation.account")}</span>
                             </div>
@@ -185,14 +184,14 @@ function Header({user}) {
                         </div>
                         </>
                     ) : (
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center">
                             <button
                                 type="button"
                                 onClick={() => {
                                     switchLanguage();
                                     setIsMenuOpen(false);
                                 }}
-                                className="inline-flex w-full justify-center rounded-full border border-white/20 px-3 py-2 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white sm:w-auto"
+                                className="inline-flex w-full justify-center rounded-full border border-white/20 px-3 py-2 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-auto"
                                 aria-label={t("language.switchAriaLabel")}
                             >
                                 {t("language.switch")}
@@ -200,7 +199,8 @@ function Header({user}) {
                             <NavLink to="/login" onClick={closeMenus} className={loginLinkClass}>
                                 {t("navigation.login")}
                             </NavLink>
-                            <NavLink to="/register" onClick={closeMenus} className="w-full justify-center rounded-full bg-pink px-4 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-blush sm:w-auto">
+                            <NavLink to="/register" onClick={closeMenus}
+                                     className="w-full justify-center rounded-full bg-pink px-4 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-blush md:w-auto">
                                 {t("navigation.register")}
                             </NavLink>
                         </div>

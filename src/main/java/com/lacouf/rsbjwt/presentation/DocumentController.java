@@ -4,6 +4,7 @@ import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
+import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,5 +45,10 @@ public class DocumentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
+    }
+
+    @PostMapping("/stage")
+    public ResponseEntity<OffreDeStageDTO> findAllStages(){
+        return null;
     }
 }
