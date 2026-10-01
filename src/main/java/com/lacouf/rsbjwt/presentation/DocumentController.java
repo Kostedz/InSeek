@@ -57,4 +57,14 @@ public class DocumentController {
     public ResponseEntity<OffreDeStageDTO> findAllStages(){
         return null;
     }
+
+    @PostMapping("/stage/{id}")
+    public OffreDeStageDTO getOffreDeStageById(@PathVariable Long id){
+        return null;
+    }
+
+    @PostMapping("stage/{discipline}")
+    public ResponseEntity<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable String discipline){
+        return null;
+    }
 }
