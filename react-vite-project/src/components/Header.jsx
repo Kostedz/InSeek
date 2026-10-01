@@ -107,6 +107,10 @@ function Header({user}) {
                     <ul className="flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center">
                         <li><NavLink to="/" end className={navLinkClass} onClick={closeMenus}>{t("navigation.home")}</NavLink></li>
                         <li><NavLink to="/about" className={navLinkClass} onClick={closeMenus}>{t("navigation.about")}</NavLink></li>
+                        <li><NavLink to="/etudiant" className={navLinkClass}
+                                     onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink></li>
+                        <li><NavLink to="/employeur" className={navLinkClass}
+                                     onClick={closeMenus}>{t("navigation.publishOffer")}</NavLink></li>
                         <li><NavLink to="/gestionnaire" className={navLinkClass}
                                      onClick={closeMenus}>{t("navigation.validation")}</NavLink></li>
                     </ul>
