@@ -36,7 +36,7 @@ export const api = {
             );
             formData.append("formContent", formContentBlob);
 
-            return fetcher("/student/cv/upload", {
+            return fetcher("/documents/upload", {
                 method: "POST",
                 body: formData,
             });

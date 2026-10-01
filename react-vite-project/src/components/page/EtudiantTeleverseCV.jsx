@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import fetcher from "../../utils/fetcher.js";
+import { api } from "../../utils/api.js";
 
 export default function EtudiantTeleverseCV({ cvData, isAccountEmailValidated = true, onCvUpdated }) {
     const fileInputRef = useRef(null);
@@ -72,21 +72,8 @@ export default function EtudiantTeleverseCV({ cvData, isAccountEmailValidated = 
         setErrorMessage("");
         setSuccessMessage("");
 
-        const formData = new FormData();
-
-        formData.append("file", selectedFile);
-
-        const formContentBlob = new Blob(
-            [JSON.stringify({ type: "CV" })],
-            { type: "application/json" }
-        );
-        formData.append("formContent", formContentBlob);
-
         try {
-            const res = await fetcher("/documents/upload", {
-                method: "POST",
-                body: formData,
-            });
+            const res = await api.student.uploadCv(selectedFile);
 
             if (res.status === 403) {
                 setErrorMessage("Accès refusé. Veuillez d'abord valider votre compte par courriel avant de téléverser un CV.");
