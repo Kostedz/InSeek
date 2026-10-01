@@ -132,10 +132,10 @@ function Header({user}) {
                         <li><NavLink to="/" end className={navLinkClass} onClick={closeMenus}>{t("navigation.home")}</NavLink></li>
                         <li><NavLink to="/about" className={navLinkClass} onClick={closeMenus}>{t("navigation.about")}</NavLink></li>
                         {isEmprunteur && <li><NavLink to="/emprunteur" className={navLinkClass} onClick={closeMenus}>{t("navigation.borrower")}</NavLink></li>}
-                        <li><NavLink to="/employeur" className={navLinkClass} onClick={closeMenus}>Publier une
-                            offre</NavLink></li>
+                        <li><NavLink to="/employeur" className={navLinkClass}
+                                     onClick={closeMenus}>{t("navigation.publishOffer")}</NavLink></li>
                         <li><NavLink to="/etudiant" className={navLinkClass}
-                                     onClick={closeMenus}>Téléverser mon CV</NavLink></li>
+                                     onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink></li>
                     </ul>
 
                     <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">
