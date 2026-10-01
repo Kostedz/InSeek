@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.service.dto;
 
+import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.OffreDeStage;
 import com.lacouf.rsbjwt.model.StatutValidation;
 
@@ -17,8 +18,8 @@ public record OffreDeStageDTO(
         String adresseEntreprise,
         StatutValidation statut,
         String commentaireRejet,
-        Double salaire//,
-//        EmployeurDTO employeurDTO
+        Double salaire,
+        Disciplines targetDiscipline
 ) implements DocumentDTO {
 
 
@@ -35,8 +36,8 @@ public record OffreDeStageDTO(
                 offre.getAdresseEntreprise(),
                 offre.getStatut(),
                 offre.getCommentaireRejet(),
-                offre.getSalaire()//,
-                //offre.getEmployeur()
+                offre.getSalaire(),
+                offre.getTargetDiscipline()
         );
     }
 

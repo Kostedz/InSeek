@@ -17,6 +17,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 
 @Service
@@ -47,7 +48,7 @@ public class DocumentService {
         }
 
         logger.info(targetDiscipline);
-        Document document = createDocument(type, file, targetDiscipline, uploader);
+        Document document = createDocument(type, file, result, uploader);
 
         if (documentRepository.existsByFileNameAndTargetDiscipline(document.getFileName(), document.getTargetDiscipline())) {
             throw new BadRequestException("Document with the same name and target discipline already exists");
@@ -66,34 +67,45 @@ public class DocumentService {
         };
     }
 
-    private Document createDocument(String type, MultipartFile file, String targetDiscipline, Utilisateur uploader) throws BadRequestException, IOException, NotFoundException {
+    private Document createDocument(String type, MultipartFile file, JsonNode result, Utilisateur uploader) throws BadRequestException, IOException, NotFoundException {
+        String targetDiscipline;
 
         return switch (type) {
-            case "CV" -> CV.builder()
-                    .fileName(file.getOriginalFilename())
-                    .targetDiscipline(Disciplines.valueOf(targetDiscipline))
-                    .data(file.getBytes())
-                    .contentType(file.getContentType())
-                    .size(file.getSize())
-                    .utilisateur((Etudiant) uploader)
-                    .build();
+            case "CV" -> {
+                targetDiscipline = ((Etudiant) uploader).getDiscipline().toString();
+                yield CV.builder()
+                        .fileName(file.getOriginalFilename())
+                        .targetDiscipline(Disciplines.valueOf(targetDiscipline))
+                        .data(file.getBytes())
+                        .contentType(file.getContentType())
+                        .size(file.getSize())
+                        .utilisateur((Etudiant) uploader)
+                        .build();
+            }
 
-//            case "OffreDeStage" -> OffreDeStage.builder()
-//                    .fileName(file.getOriginalFilename())
-//                    .targetDiscipline(Disciplines.valueOf(targetDiscipline))
-//                    .data(file.getBytes())
-//                    .contentType(file.getContentType())
-//                    .size(file.getSize())
-//                    .email(uploader.email())
-//                    .employeur(1) //Ajouter id de employeur
-//                    .position()
-//                    .descriptionPosition()
-//                    .dateDebutStage()
-//                    .dateFinStage()
-//                    .adresseEntreprise()
-//                    .salaire()
-//                    .build();
-
+            case "OffreDeStage" -> {
+                String position = result.get("position").asString();
+                String descriptionPosition = result.get("descriptionPosition").asString();
+                LocalDate dateDebutStage = LocalDate.parse(result.get("dateDebutStage").asString());
+                LocalDate dateFinStage = LocalDate.parse(result.get("dateFintStage").asString());
+                String adresseEntreprise = result.get("adresseEntreprise").asString();
+                Double salaire = result.get("salaire").asDouble();
+                targetDiscipline = result.get("targetDiscipline").asString();
+                yield OffreDeStage.builder()
+                        .fileName(file.getOriginalFilename())
+                        .targetDiscipline(Disciplines.valueOf(targetDiscipline))
+                        .data(file.getBytes())
+                        .contentType(file.getContentType())
+                        .size(file.getSize())
+                        .employeur((Employeur) uploader)
+                        .position(position)
+                        .descriptionPosition(descriptionPosition)
+                        .dateDebutStage(dateDebutStage)
+                        .dateFinStage(dateFinStage)
+                        .adresseEntreprise(adresseEntreprise)
+                        .salaire(salaire)
+                        .build();
+            }
             default -> throw new BadRequestException("Invalid document type");
         };
     }
