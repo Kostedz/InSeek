@@ -1,13 +1,16 @@
-import React, { useState } from "react";
-import fetcher from "../../utils/fetcher.js";
+import React, { useState, useMemo } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { api } from "../../utils/api.js";
+import { FormValidator } from "../../utils/formValidator.js";
 import { RoleEnum } from "../../constants/role.js";
 import { DisciplineEnum } from "../../constants/disciplines.js";
-import { useTranslation } from "react-i18next";
 import Loading from "../Loading.jsx";
 
 export default function RegisterForm({ user, authChecked, setUser }) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+
     const [role, setRole] = useState(RoleEnum.ETUDIANT.value);
     const [formData, setFormData] = useState({
         prenom: "",
@@ -22,7 +25,9 @@ export default function RegisterForm({ user, authChecked, setUser }) {
     const [touched, setTouched] = useState({});
     const [serverError, setServerError] = useState(null);
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+
+    const isEmployer = role === RoleEnum.EMPLOYEUR.value;
+    const hasProgramme = role === RoleEnum.ETUDIANT.value || role === RoleEnum.PROFESSEUR.value;
 
     const programmes = [
         { value: DisciplineEnum.INFORMATIQUE.value, label: t("auth.register.disciplines.informatique") },
@@ -36,107 +41,44 @@ export default function RegisterForm({ user, authChecked, setUser }) {
         { value: DisciplineEnum.DESIGN_GRAPHIQUE.value, label: t("auth.register.disciplines.designGraphique") },
     ];
 
-    const isEmployer = role === RoleEnum.EMPLOYEUR.value;
-    const hasProgramme = role === RoleEnum.ETUDIANT.value || role === RoleEnum.PROFESSEUR.value;
+    const validate = (name, value, currentFormData = formData) => {
+        const errorMsg = FormValidator.validateField(name, value, currentFormData, isEmployer, t);
 
-    const REGEX = {
-        name: /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]{2,30}$/,
-        email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-        password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
-    };
-
-    const validateField = (name, value, currentFormData = formData) => {
-        let errorMsg = "";
-
-        switch (name) {
-            case "prenom":
-                if (!REGEX.name.test(value.trim())) {
-                    errorMsg = t("auth.register.errors.firstName");
-                }
-                break;
-            case "nom":
-                if (!REGEX.name.test(value.trim())) {
-                    errorMsg = t("auth.register.errors.lastName");
-                }
-                break;
-            case "email":
-                if (!REGEX.email.test(value.trim())) {
-                    errorMsg = t("auth.register.errors.email");
-                }
-                break;
-            case "password":
-                if (!REGEX.password.test(value)) {
-                    errorMsg = t("auth.register.errors.password");
-                }
-                break;
-            case "confirmPassword":
-                if (value !== currentFormData.password) {
-                    errorMsg = t("auth.register.errors.confirmPassword");
-                }
-                break;
-            case "entreprise":
-                if (isEmployer && value.trim() === "") {
-                    errorMsg = t("auth.register.errors.companyRequired");
-                }
-                break;
-            default:
-                break;
-        }
-
-        setFieldErrors((previousErrors) => {
-            const nextErrors = { ...previousErrors, [name]: errorMsg };
-
+        setFieldErrors((prev) => {
+            const next = { ...prev, [name]: errorMsg };
             if (name === "password" && currentFormData.confirmPassword) {
-                nextErrors.confirmPassword =
+                next.confirmPassword =
                     value === currentFormData.confirmPassword
                         ? ""
                         : t("auth.register.errors.confirmPassword");
             }
-
-            return nextErrors;
+            return next;
         });
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        const newFormData = { ...formData, [name]: value };
-        setFormData(newFormData);
+        const updatedData = { ...formData, [name]: value };
+        setFormData(updatedData);
 
         if (touched[name]) {
-            validateField(name, value, newFormData);
+            validate(name, value, updatedData);
         }
-
         if (name === "password" && touched.confirmPassword) {
-            validateField("confirmPassword", newFormData.confirmPassword, newFormData);
+            validate("confirmPassword", updatedData.confirmPassword, updatedData);
         }
     };
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
-        setTouched((previousTouched) => ({ ...previousTouched, [name]: true }));
-        validateField(name, value);
+        setTouched((prev) => ({ ...prev, [name]: true }));
+        validate(name, value);
     };
 
-    const isFormValid = React.useMemo(() => {
-        const isPrenomValid = REGEX.name.test(formData.prenom.trim());
-        const isNomValid = REGEX.nom ? REGEX.name.test(formData.nom.trim()) : true;
-        const isEmailValid = REGEX.email.test(formData.email.trim());
-        const isPasswordValid = REGEX.password.test(formData.password);
-        const isConfirmPasswordValid = formData.password === formData.confirmPassword && formData.confirmPassword !== "";
-        const isEntrepriseValid = isEmployer ? formData.entreprise.trim() !== "" : true;
-
-        const hasNoErrors = Object.values(fieldErrors).every((err) => !err);
-
-        return (
-            isPrenomValid &&
-            isNomValid &&
-            isEmailValid &&
-            isPasswordValid &&
-            isConfirmPasswordValid &&
-            isEntrepriseValid &&
-            hasNoErrors
-        );
-    }, [formData, role, fieldErrors]);
+    const isFormValid = useMemo(
+        () => FormValidator.isRegisterFormValid(formData, isEmployer, fieldErrors),
+        [formData, role, fieldErrors, isEmployer]
+    );
 
     const getRedirectPath = (userRole) => {
         switch (userRole) {
@@ -157,57 +99,32 @@ export default function RegisterForm({ user, authChecked, setUser }) {
         e.preventDefault();
         setServerError(null);
 
-        const allTouched = {
+        setTouched({
             prenom: true,
             nom: true,
             email: true,
             password: true,
             confirmPassword: true,
             entreprise: isEmployer,
-        };
-        setTouched(allTouched);
+        });
 
-        const currentFormData = formData;
-        validateField("prenom", currentFormData.prenom, currentFormData);
-        validateField("nom", currentFormData.nom, currentFormData);
-        validateField("email", currentFormData.email, currentFormData);
-        validateField("password", currentFormData.password, currentFormData);
-        validateField("confirmPassword", currentFormData.confirmPassword, currentFormData);
-        if (isEmployer) {
-            validateField("entreprise", currentFormData.entreprise, currentFormData);
+        if (!FormValidator.isRegisterFormValid(formData, isEmployer, fieldErrors)) {
+            return;
         }
-
-        const hasErrors =
-            !REGEX.name.test(currentFormData.prenom.trim()) ||
-            !REGEX.name.test(currentFormData.nom.trim()) ||
-            !REGEX.email.test(currentFormData.email.trim()) ||
-            !REGEX.password.test(currentFormData.password) ||
-            currentFormData.password !== currentFormData.confirmPassword ||
-            (isEmployer && !currentFormData.entreprise.trim());
-
-        if (hasErrors) return;
 
         setLoading(true);
 
         const payload = {
-            nom: currentFormData.nom.trim(),
-            prenom: currentFormData.prenom.trim(),
-            email: currentFormData.email.trim().toLowerCase(),
+            nom: formData.nom.trim(),
+            prenom: formData.prenom.trim(),
+            email: formData.email.trim().toLowerCase(),
             role: role.toUpperCase(),
-            password: currentFormData.password,
-            affiliation: hasProgramme ? currentFormData.programme : currentFormData.entreprise.trim(),
+            password: formData.password,
+            affiliation: hasProgramme ? formData.programme : formData.entreprise.trim(),
         };
 
         try {
-            // 1. Inscription du compte
-            const regResponse = await fetcher("/user/register", {
-                method: "POST",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json;charset=UTF-8",
-                },
-                body: JSON.stringify(payload),
-            });
+            const regResponse = await api.auth.register(payload);
 
             if (!regResponse.ok) {
                 switch (regResponse.status) {
@@ -222,17 +139,9 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                 }
             }
 
-            // 2. Connexion automatique immédiatement après l'inscription
-            const loginResponse = await fetcher("/user/login", {
-                method: "POST",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json;charset=UTF-8",
-                },
-                body: JSON.stringify({
-                    email: payload.email,
-                    password: payload.password,
-                }),
+            const loginResponse = await api.auth.login({
+                email: payload.email,
+                password: payload.password,
             });
 
             if (!loginResponse.ok) {
@@ -243,8 +152,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
             const loginData = await loginResponse.json();
             localStorage.setItem("token", loginData.accessToken || loginData.token);
 
-            // 3. Récupération des informations de la session utilisateur
-            const meResponse = await fetcher("user/me", {});
+            const meResponse = await api.auth.getMe();
             if (meResponse.ok) {
                 const userData = await meResponse.json();
                 if (setUser) {
@@ -285,27 +193,29 @@ export default function RegisterForm({ user, authChecked, setUser }) {
 
                 <div className="mb-5 sm:mb-6">
                     <div className="grid grid-cols-1 gap-1 sm:grid-cols-3">
-                        {Object.entries(RoleEnum).filter(([key, value]) => value.value !== "ROLE_GESTIONNAIRE").map(([key, value]) => (
-                            <button
-                                key={key}
-                                type="button"
-                                onClick={() => setRole(value.value)}
-                                aria-pressed={role === value.value}
-                                className={`flex items-center justify-center rounded-xl border p-2 text-center transition-all sm:flex-col sm:gap-1 sm:p-3 ${
-                                    role === value.value
-                                        ? "bg-ink border-ink text-white hover:bg-ink-soft"
-                                        : "bg-surface border-line text-ink-soft hover:border-pink"
-                                }`}
-                            >
-                                <span
-                                    className={`text-sm font-medium ${
-                                        role === value.value ? "text-white" : "text-ink-soft"
+                        {Object.entries(RoleEnum)
+                            .filter(([_, value]) => value.value !== "ROLE_GESTIONNAIRE")
+                            .map(([key, value]) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => setRole(value.value)}
+                                    aria-pressed={role === value.value}
+                                    className={`flex items-center justify-center rounded-xl border p-2 text-center transition-all sm:flex-col sm:gap-1 sm:p-3 ${
+                                        role === value.value
+                                            ? "bg-ink border-ink text-white hover:bg-ink-soft"
+                                            : "bg-surface border-line text-ink-soft hover:border-pink"
                                     }`}
                                 >
-                                    {t(`navigation.roles.${key.toLowerCase()}`)}
-                                </span>
-                            </button>
-                        ))}
+                                    <span
+                                        className={`text-sm font-medium ${
+                                            role === value.value ? "text-white" : "text-ink-soft"
+                                        }`}
+                                    >
+                                        {t(`navigation.roles.${key.toLowerCase()}`)}
+                                    </span>
+                                </button>
+                            ))}
                     </div>
                 </div>
 
@@ -393,10 +303,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                     </div>
 
                     <div>
-                        <label
-                            className="mb-1 block text-sm font-bold text-ink"
-                            htmlFor="confirmPassword"
-                        >
+                        <label className="mb-1 block text-sm font-bold text-ink" htmlFor="confirmPassword">
                             {t("auth.register.confirmPassword")}
                         </label>
                         <input
@@ -417,10 +324,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
 
                     {hasProgramme && (
                         <div>
-                            <label
-                                className="mb-1 block text-sm font-bold text-ink"
-                                htmlFor="programme"
-                            >
+                            <label className="mb-1 block text-sm font-bold text-ink" htmlFor="programme">
                                 {t("auth.register.programme")}
                             </label>
                             <select
@@ -441,10 +345,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
 
                     {isEmployer && (
                         <div>
-                            <label
-                                className="mb-1 block text-sm font-bold text-ink"
-                                htmlFor="entreprise"
-                            >
+                            <label className="mb-1 block text-sm font-bold text-ink" htmlFor="entreprise">
                                 {t("auth.register.company")}
                             </label>
                             <input
