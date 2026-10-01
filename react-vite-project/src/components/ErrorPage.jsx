@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useRouteError } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {translateMessage} from "../utils/i18nMessage.js";
 
 function ErrorPage({ error: propError }) {
   const { t } = useTranslation();
@@ -18,41 +19,35 @@ function ErrorPage({ error: propError }) {
       error?.status ||
       error?.response?.status ||
       (typeof error === "number" ? error : null) || 500;
+  const translatedErrorMessage = error?.key ? translateMessage(t, error) : null;
 
   const getErrorContent = (statusCode) => {
     switch (statusCode) {
+      case 400:
+      case 401:
       case 404:
         return {
-          code: "404",
-          title: t("errorPage.404.title"),
-          description:
-              error?.message ||
-              t("errorPage.404.description"),
+          code: String(statusCode),
+          title: t(`errorPage.${statusCode}.title`),
+          description: translatedErrorMessage || t(`errorPage.${statusCode}.description`),
         };
       case 403:
         return {
           code: "403",
           title: t("errorPage.403.title"),
-          description:
-              error?.message ||
-              t("errorPage.403.description"),
+          description: translatedErrorMessage || t("errorPage.403.description"),
         };
       case 500:
         return {
           code: "500",
           title: t("errorPage.500.title"),
-          description:
-              error?.message ||
-              t("errorPage.500.description"),
+          description: translatedErrorMessage || t("errorPage.500.description"),
         };
       default:
         return {
           code: statusCode ? String(statusCode) : t("errorPage.label"),
           title: t("errorPage.title"),
-          description:
-              error?.message ||
-              error?.statusText ||
-              t("errorPage.unexpected"),
+          description: translatedErrorMessage || t("errorPage.unexpected"),
         };
     }
   };

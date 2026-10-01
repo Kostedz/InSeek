@@ -1,10 +1,9 @@
 import React, { useState, useRef } from "react";
-import fetcher from "../../utils/fetcher.js";
-import {useTranslation} from "react-i18next";
+import {translateMessage} from "../../utils/i18nMessage.js";
+
 
 export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = true, onCvUpdated}) {
     const fileInputRef = useRef(null);
-    const {t} = useTranslation();
 
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -22,12 +21,12 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
         if (!file) return false;
 
         if (file.type !== "application/pdf") {
-            setErrorMessage(t("studentCv.errors.invalidFormat"));
+            setErrorMessage(translateMessage(t, "studentCv.errors.invalidFormat"));
             return false;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            setErrorMessage(t("studentCv.errors.fileTooLarge"));
+            setErrorMessage(translateMessage(t, "studentCv.errors.fileTooLarge"));
             return false;
         }
 
@@ -78,22 +77,22 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
             const res = await api.student.uploadCv(selectedFile);
 
             if (res.status === 403) {
-                setErrorMessage(t("studentCv.errors.emailNotValidated"));
+                setErrorMessage(translateMessage(t, "studentCv.errors.emailNotValidated"));
                 return;
             }
 
             if (!res.ok) {
-                throw new Error(t("studentCv.errors.uploadFailed"));
+                throw new Error(translateMessage(t, "studentCv.errors.uploadFailed"));
             }
 
             const responseData = await res.json();
 
             if (status === "VALIDATED") {
-                setSuccessMessage(t("studentCv.success.updated"));
+                setSuccessMessage(translateMessage(t, "studentCv.success.updated"));
             } else if (status === "REJECTED") {
-                setSuccessMessage(t("studentCv.success.corrected"));
+                setSuccessMessage(translateMessage(t, "studentCv.success.corrected"));
             } else {
-                setSuccessMessage(t("studentCv.success.uploaded"));
+                setSuccessMessage(translateMessage(t, "studentCv.success.uploaded"));
             }
 
             setSelectedFile(null);
@@ -103,7 +102,7 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
                 onCvUpdated(responseData);
             }
         } catch (err) {
-            setErrorMessage(err.message || t("studentCv.errors.connection"));
+            setErrorMessage(err.message || translateMessage(t, "studentCv.errors.connection"));
         } finally {
             setIsSubmitting(false);
         }
@@ -114,21 +113,21 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
             <div
                 className="mx-auto w-full max-w-3xl rounded-[2rem] border border-line bg-surface p-7 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-9">
                 <span
-                    className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">{t("studentCv.label")}</span>
-                <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("studentCv.title")}</h1>
-                <p className="mt-3 text-sm leading-7 text-ink-soft">{t("studentCv.description")}</p>
+                    className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">{translateMessage(t, "studentCv.label")}</span>
+                <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{translateMessage(t, "studentCv.title")}</h1>
+                <p className="mt-3 text-sm leading-7 text-ink-soft">{translateMessage(t, "studentCv.description")}</p>
 
                 {!isAccountEmailValidated && (
                     <p className="mt-6 rounded-xl border border-peach bg-peach/40 px-4 py-3 text-sm font-medium text-ink"
                        role="alert">
-                        {t("studentCv.emailNotValidated")}
+                        {translateMessage(t, "studentCv.emailNotValidated")}
                     </p>
                 )}
 
                 {status === "REJECTED" && rejectionComment && (
                     <p className="mt-6 rounded-xl border border-blush bg-blush/40 px-4 py-3 text-sm text-ink"
                        role="status">
-                        <strong>{t("studentCv.rejectionComment")}:</strong> {rejectionComment}
+                        <strong>{translateMessage(t, "studentCv.rejectionComment")}:</strong> {rejectionComment}
                     </p>
                 )}
 
@@ -152,10 +151,10 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
                         />
                         <label htmlFor="cv-file"
                                className="cursor-pointer text-sm font-bold text-ink underline decoration-pink decoration-4 underline-offset-4">
-                            {t("studentCv.chooseFile")}
+                            {translateMessage(t, "studentCv.chooseFile")}
                         </label>
-                        <p className="mt-2 text-sm text-ink-soft">{t("studentCv.dropFile")}</p>
-                        <p className="mt-1 text-xs text-ink-soft">{t("studentCv.maximumSize")}</p>
+                        <p className="mt-2 text-sm text-ink-soft">{translateMessage(t, "studentCv.dropFile")}</p>
+                        <p className="mt-1 text-xs text-ink-soft">{translateMessage(t, "studentCv.maximumSize")}</p>
                         {selectedFile &&
                             <p className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
                                role="status">{selectedFile.name}</p>}
@@ -177,7 +176,7 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
                         disabled={!selectedFile || !isAccountEmailValidated || isSubmitting}
                         className="w-full rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {isSubmitting ? t("studentCv.submitting") : t("studentCv.submit")}
+                        {isSubmitting ? translateMessage(t, "studentCv.submitting") : translateMessage(t, "studentCv.submit")}
                     </button>
                 </form>
             </div>

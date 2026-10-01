@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../utils/api.js";
 import { FormValidator } from "../../utils/formValidator.js";
 import Loading from "../Loading.jsx";
+import {translateMessage} from "../../utils/i18nMessage.js";
 
 const LoginForm = ({ user, authChecked, setUser }) => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
       if (trimmedValue && !FormValidator.REGEX.email.test(trimmedValue)) {
         setWarnings((prev) => ({
           ...prev,
-          email: t("auth.login.invalidEmail")
+          email: "auth.login.invalidEmail"
         }));
       } else {
         setWarnings((prev) => ({ ...prev, email: "" }));
@@ -72,14 +73,14 @@ const LoginForm = ({ user, authChecked, setUser }) => {
           case 400:
           case 401:
           case 404:
-            setApiError(t("auth.login.invalidCredentials"));
+            setApiError("auth.login.invalidCredentials");
             break;
           case 403:
-            setApiError(t("auth.login.forbidden"));
+            setApiError("auth.login.forbidden");
             break;
           case 500:
           default:
-            setApiError(t("errors.serverUnavailable"));
+            setApiError("errors.serverUnavailable");
             break;
         }
         return;
@@ -90,7 +91,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
 
       const userResponse = await api.auth.getMe();
       if (!userResponse.ok) {
-        setApiError(t("errors.serverUnavailable"));
+        setApiError("errors.serverUnavailable");
         return;
       }
 
@@ -103,7 +104,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
       navigate(getRedirectPathByRole(userData.role));
     } catch (error) {
       console.error("Login Error:", error);
-      setApiError(t("errors.serverUnavailable"));
+      setApiError("errors.serverUnavailable");
     } finally {
       setLoading(false);
     }
@@ -116,7 +117,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
     if (!FormValidator.REGEX.email.test(formData.email)) {
       setWarnings((prev) => ({
         ...prev,
-        email: t("auth.login.invalidEmail")
+        email: "auth.login.invalidEmail"
       }));
       return;
     }
@@ -147,58 +148,58 @@ const LoginForm = ({ user, authChecked, setUser }) => {
             </p>
           </div>
 
-          {apiError && (
-              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
-                {apiError}
-              </div>
-          )}
+                {apiError && (
+                    <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+                      {translateMessage(t, apiError)}
+                    </div>
+                )}
 
-          <form id="login-form" className="space-y-5" onSubmit={handleSubmit} noValidate>
-            <div>
-              <label htmlFor="email" className="mb-2 block text-sm font-bold text-ink">
-                {t("auth.login.email")}
-              </label>
-              <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  className={`w-full rounded-xl border bg-canvas px-4 py-3 text-sm text-ink outline-none transition focus:ring-4 focus:ring-pink/40 ${
-                      warnings.email ? "border-red-500 focus:border-red-500" : "border-line focus:border-lavender"
-                  }`}
-                  placeholder={t("auth.login.emailPlaceholder")}
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChanges}
-                  aria-invalid={Boolean(warnings.email)}
-                  required
-              />
-              {warnings.email && (
-                  <p className="mt-2 text-sm font-medium text-red-600">{warnings.email}</p>
-              )}
-            </div>
+                <form id="login-form" className="space-y-5" onSubmit={handleSubmit} noValidate>
+                  <div>
+                    <label htmlFor="email" className="mb-2 block text-sm font-bold text-ink">
+                      {t("auth.login.email")}
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        className={`w-full rounded-xl border bg-canvas px-4 py-3 text-sm text-ink outline-none transition focus:ring-4 focus:ring-pink/40 ${
+                            warnings.email ? "border-red-500 focus:border-red-500" : "border-line focus:border-lavender"
+                        }`}
+                        placeholder={t("auth.login.emailPlaceholder")}
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChanges}
+                        aria-invalid={Boolean(warnings.email)}
+                        required
+                    />
+                    {warnings.email && (
+                        <p className="mt-2 text-sm font-medium text-red-600">{translateMessage(t, warnings.email)}</p>
+                    )}
+                  </div>
 
-            <div>
-              <label htmlFor="password" className="mb-2 block text-sm font-bold text-ink">
-                {t("auth.login.password")}
-              </label>
-              <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  className={`w-full rounded-xl border bg-canvas px-4 py-3 text-sm text-ink outline-none transition focus:ring-4 focus:ring-pink/40 ${
-                      warnings.password ? "border-red-500 focus:border-red-500" : "border-line focus:border-lavender"
-                  }`}
-                  placeholder="••••••••"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChanges}
-                  aria-invalid={Boolean(warnings.password)}
-                  required
-              />
-              {warnings.password && (
-                  <p className="mt-2 text-sm font-medium text-red-600">{warnings.password}</p>
-              )}
-            </div>
+                  <div>
+                    <label htmlFor="password" className="mb-2 block text-sm font-bold text-ink">
+                      {t("auth.login.password")}
+                    </label>
+                    <input
+                        id="password"
+                        type="password"
+                        autoComplete="current-password"
+                        className={`w-full rounded-xl border bg-canvas px-4 py-3 text-sm text-ink outline-none transition focus:ring-4 focus:ring-pink/40 ${
+                            warnings.password ? "border-red-500 focus:border-red-500" : "border-line focus:border-lavender"
+                        }`}
+                        placeholder="••••••••"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChanges}
+                        aria-invalid={Boolean(warnings.password)}
+                        required
+                    />
+                    {warnings.password && (
+                        <p className="mt-2 text-sm font-medium text-red-600">{translateMessage(t, warnings.password)}</p>
+                    )}
+                  </div>
 
             <button
                 type="submit"
