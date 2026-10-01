@@ -1,8 +1,6 @@
 package com.lacouf.rsbjwt.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +24,8 @@ public class OffreDeStage extends Document{
     @JoinColumn(name = "employeur_id") // Ajout
     private Employeur employeur; // Ajout
     //private Etudiant edtudiant // Au cas ou on veut envoyer une offre a un etuuant specifique
+    @Enumerated(EnumType.STRING)
+    private Disciplines discipline;
 
     @Builder
     public OffreDeStage(Long id, String fileName, Disciplines targetDiscipline,
