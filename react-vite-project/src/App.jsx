@@ -11,14 +11,13 @@ import EmprunteurHome from "./components/page/EmprunteurHome.jsx";
 import PreposeHome from "./components/page/PreposeHome.jsx";
 import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
-import { useTranslation } from "react-i18next";
+import {createTranslationMessage} from "./utils/i18nMessage.js";
 
 function App() {
   const [user, setUser] = useState({})
   const [authChecked, setAuthChecked] = useState(() => !localStorage.getItem('token'))
   const [error, setError] = useState(null)
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   let token = localStorage.getItem('token')
 
@@ -34,13 +33,13 @@ function App() {
                     case 401:
                       localStorage.clear();
                       setUser(null);
-                      throw new Error(t("errors.unauthorized"));
+                      throw {status: 401, ...createTranslationMessage("errors.unauthorized")};
                     case 403:
-                      throw new Error(t("errors.forbidden"));
+                      throw {status: 403, ...createTranslationMessage("errors.forbidden")};
                     case 404:
-                      throw new Error(t("errors.notFound"));
+                      throw {status: 404, ...createTranslationMessage("errors.notFound")};
                     default:
-                      throw new Error(t("errors.requestFailedGeneric"));
+                      throw {status: res.status, ...createTranslationMessage("errors.requestFailedGeneric")};
                   }
                 }
                 const data = await res.json();
@@ -48,7 +47,7 @@ function App() {
                 setUser(newUser)
               }
             ).catch(async (err) => {
-              setError(err)
+            setError(err?.key ? err : createTranslationMessage("errors.requestFailedGeneric"))
               navigate('/error')
             }).finally(() => {
               setAuthChecked(true)
@@ -56,7 +55,7 @@ function App() {
 
         } catch (err) {
           if (!error) {
-            setError(err)
+            setError(err?.key ? err : createTranslationMessage("errors.requestFailedGeneric"))
             navigate('/error')
           }
           setAuthChecked(true)
@@ -64,7 +63,7 @@ function App() {
       } else {
         setAuthChecked(true)
       }
-    }, [token, t]
+      }, [token]
   );
 
   return (

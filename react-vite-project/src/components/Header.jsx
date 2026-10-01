@@ -112,7 +112,7 @@ function Header({user}) {
                         {isEmprunteur && <li><NavLink to="/emprunteur" className={navLinkClass} onClick={closeMenus}>{t("navigation.borrower")}</NavLink></li>}
                         {isPrepose && <li><NavLink to="/prepose" className={navLinkClass} onClick={closeMenus}>{t("navigation.clerk")}</NavLink></li>}
                         <li><NavLink to="/gestionnaire" className={navLinkClass}
-                                     onClick={closeMenus}>Validation</NavLink></li>
+                                     onClick={closeMenus}>{t("navigation.validation")}</NavLink></li>
                     </ul>
 
                     <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">

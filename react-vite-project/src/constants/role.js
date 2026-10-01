@@ -1,6 +1,6 @@
 export const RoleEnum = Object.freeze({
-    PROFESSEUR: { value: "ROLE_PROFESSEUR", label: "Professeur"},
-    ETUDIANT: { value: "ROLE_ETUDIANT", label: "Étudiant"},
-    EMPLOYEUR: { value: "ROLE_EMPLOYEUR", label: "Employeur"},
-    GESTIONNAIRE: { value: "ROLE_GESTIONNAIRE", label: "Gestionnaire"},
+    PROFESSEUR: {value: "ROLE_PROFESSEUR"},
+    ETUDIANT: {value: "ROLE_ETUDIANT"},
+    EMPLOYEUR: {value: "ROLE_EMPLOYEUR"},
+    GESTIONNAIRE: {value: "ROLE_GESTIONNAIRE"},
 })

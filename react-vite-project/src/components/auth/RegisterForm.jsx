@@ -5,6 +5,7 @@ import { RoleEnum } from "../../constants/role.js";
 import { DisciplineEnum } from "../../constants/disciplines.js";
 import { useTranslation } from "react-i18next";
 import Loading from "../Loading.jsx";
+import {translateMessage, createTranslationMessage} from "../../utils/i18nMessage.js";
 
 export default function RegisterForm({ user, authChecked, setUser }) {
     const { t } = useTranslation();
@@ -46,37 +47,37 @@ export default function RegisterForm({ user, authChecked, setUser }) {
     };
 
     const validateField = (name, value, currentFormData = formData) => {
-        let errorMsg = "";
+        let errorMsg = null;
 
         switch (name) {
             case "prenom":
                 if (!REGEX.name.test(value.trim())) {
-                    errorMsg = t("auth.register.errors.firstName");
+                    errorMsg = "auth.register.errors.firstName";
                 }
                 break;
             case "nom":
                 if (!REGEX.name.test(value.trim())) {
-                    errorMsg = t("auth.register.errors.lastName");
+                    errorMsg = "auth.register.errors.lastName";
                 }
                 break;
             case "email":
                 if (!REGEX.email.test(value.trim())) {
-                    errorMsg = t("auth.register.errors.email");
+                    errorMsg = "auth.register.errors.email";
                 }
                 break;
             case "password":
                 if (!REGEX.password.test(value)) {
-                    errorMsg = t("auth.register.errors.password");
+                    errorMsg = "auth.register.errors.password";
                 }
                 break;
             case "confirmPassword":
                 if (value !== currentFormData.password) {
-                    errorMsg = t("auth.register.errors.confirmPassword");
+                    errorMsg = "auth.register.errors.confirmPassword";
                 }
                 break;
             case "entreprise":
                 if (isEmployer && value.trim() === "") {
-                    errorMsg = t("auth.register.errors.companyRequired");
+                    errorMsg = "auth.register.errors.companyRequired";
                 }
                 break;
             default:
@@ -89,8 +90,8 @@ export default function RegisterForm({ user, authChecked, setUser }) {
             if (name === "password" && currentFormData.confirmPassword) {
                 nextErrors.confirmPassword =
                     value === currentFormData.confirmPassword
-                        ? ""
-                        : t("auth.register.errors.confirmPassword");
+                        ? null
+                        : "auth.register.errors.confirmPassword";
             }
 
             return nextErrors;
@@ -212,13 +213,13 @@ export default function RegisterForm({ user, authChecked, setUser }) {
             if (!regResponse.ok) {
                 switch (regResponse.status) {
                     case 400:
-                        throw new Error(t("auth.register.errors.invalidData"));
+                        throw createTranslationMessage("auth.register.errors.invalidData");
                     case 401:
-                        throw new Error(t("auth.register.errors.unauthorized"));
+                        throw createTranslationMessage("auth.register.errors.unauthorized");
                     case 404:
-                        throw new Error(t("auth.register.errors.unavailable"));
+                        throw createTranslationMessage("auth.register.errors.unavailable");
                     default:
-                        throw new Error(t("auth.register.errors.submit"));
+                        throw createTranslationMessage("auth.register.errors.submit");
                 }
             }
 
@@ -255,7 +256,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                 navigate(getRedirectPath(payload.role));
             }
         } catch (err) {
-            setServerError(err.message);
+            setServerError(err?.key || "auth.register.errors.submit");
         } finally {
             setLoading(false);
         }
@@ -327,7 +328,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                                 className={inputClass("prenom")}
                             />
                             {touched.prenom && fieldErrors.prenom && (
-                                <p className="mt-1 text-xs text-error">{fieldErrors.prenom}</p>
+                                <p className="mt-1 text-xs text-error">{translateMessage(t, fieldErrors.prenom)}</p>
                             )}
                         </div>
 
@@ -347,7 +348,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                                 className={inputClass("nom")}
                             />
                             {touched.nom && fieldErrors.nom && (
-                                <p className="mt-1 text-xs text-error">{fieldErrors.nom}</p>
+                                <p className="mt-1 text-xs text-error">{translateMessage(t, fieldErrors.nom)}</p>
                             )}
                         </div>
                     </div>
@@ -368,7 +369,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                             className={inputClass("email")}
                         />
                         {touched.email && fieldErrors.email && (
-                            <p className="mt-1 text-xs text-error">{fieldErrors.email}</p>
+                            <p className="mt-1 text-xs text-error">{translateMessage(t, fieldErrors.email)}</p>
                         )}
                     </div>
 
@@ -388,7 +389,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                             className={inputClass("password")}
                         />
                         {touched.password && fieldErrors.password && (
-                            <p className="mt-1 text-xs text-error">{fieldErrors.password}</p>
+                            <p className="mt-1 text-xs text-error">{translateMessage(t, fieldErrors.password)}</p>
                         )}
                     </div>
 
@@ -411,7 +412,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                             className={inputClass("confirmPassword")}
                         />
                         {touched.confirmPassword && fieldErrors.confirmPassword && (
-                            <p className="mt-1 text-xs text-error">{fieldErrors.confirmPassword}</p>
+                            <p className="mt-1 text-xs text-error">{translateMessage(t, fieldErrors.confirmPassword)}</p>
                         )}
                     </div>
 
@@ -459,14 +460,14 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                                 className={inputClass("entreprise")}
                             />
                             {touched.entreprise && fieldErrors.entreprise && (
-                                <p className="mt-1 text-xs text-error">{fieldErrors.entreprise}</p>
+                                <p className="mt-1 text-xs text-error">{translateMessage(t, fieldErrors.entreprise)}</p>
                             )}
                         </div>
                     )}
 
                     {serverError && (
                         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-error">
-                            {serverError}
+                            {translateMessage(t, serverError)}
                         </div>
                     )}
 

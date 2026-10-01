@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import fetcher from "../../utils/fetcher";
 import { useTranslation } from "react-i18next";
 import Loading from "../Loading.jsx";
+import {translateMessage} from "../../utils/i18nMessage.js";
 
 const LoginForm = ({ user, authChecked, setUser }) => {
   const navigate = useNavigate();
@@ -14,11 +15,11 @@ const LoginForm = ({ user, authChecked, setUser }) => {
   });
 
   const [warnings, setWarnings] = useState({
-    email: '',
-    password: ''
+    email: null,
+    password: null
   });
 
-  const [apiError, setApiError] = useState("");
+  const [apiError, setApiError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const validateEmail = (emailVal) => {
@@ -28,7 +29,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
 
   const handleChanges = (e) => {
     const { name, value } = e.target;
-    setApiError("");
+    setApiError(null);
 
     const trimmedValue = value.trim();
     setFormData({ ...formData, [name]: trimmedValue });
@@ -37,24 +38,24 @@ const LoginForm = ({ user, authChecked, setUser }) => {
         if (trimmedValue && !validateEmail(trimmedValue)) {
         setWarnings(prev => ({
           ...prev,
-          email: t("auth.login.invalidEmail")
+          email: "auth.login.invalidEmail"
         }));
       } else {
-        setWarnings(prev => ({ ...prev, email: "" }));
+          setWarnings(prev => ({...prev, email: null}));
       }
     } else {
-      setWarnings(prev => ({ ...prev, [name]: "" }));
+      setWarnings(prev => ({...prev, [name]: null}));
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setApiError("");
+    setApiError(null);
 
     if (!validateEmail(formData.email)) {
       setWarnings(prev => ({
         ...prev,
-        email: t("auth.login.invalidEmail")
+        email: "auth.login.invalidEmail"
       }));
       return;
     }
@@ -82,14 +83,14 @@ const LoginForm = ({ user, authChecked, setUser }) => {
           case 400:
           case 401:
           case 404:
-            setApiError(t("auth.login.invalidCredentials"));
+            setApiError("auth.login.invalidCredentials");
             break;
           case 403:
-            setApiError(t("auth.login.forbidden"));
+            setApiError("auth.login.forbidden");
             break;
           case 500:
           default:
-            setApiError(t("errors.serverUnavailable"));
+            setApiError("errors.serverUnavailable");
             break;
         }
         setLoading(false);
@@ -101,7 +102,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
 
       const userResponse = await fetcher('user/me', {});
       if (!userResponse.ok) {
-        setApiError(t("errors.serverUnavailable"));
+        setApiError("errors.serverUnavailable");
         setLoading(false);
         return;
       }
@@ -120,7 +121,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
 
     } catch (error) {
       console.error("Login Error:", error);
-      setApiError(t("errors.serverUnavailable"));
+      setApiError("errors.serverUnavailable");
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
 
                 {apiError && (
                     <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
-                      {apiError}
+                      {translateMessage(t, apiError)}
                     </div>
                 )}
 
@@ -173,7 +174,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
                         required
                     />
                     {warnings.email && (
-                        <p className="mt-2 text-sm font-medium text-red-600">{warnings.email}</p>
+                        <p className="mt-2 text-sm font-medium text-red-600">{translateMessage(t, warnings.email)}</p>
                     )}
                   </div>
 
@@ -196,7 +197,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
                         required
                     />
                     {warnings.password && (
-                        <p className="mt-2 text-sm font-medium text-red-600">{warnings.password}</p>
+                        <p className="mt-2 text-sm font-medium text-red-600">{translateMessage(t, warnings.password)}</p>
                     )}
                   </div>
 
