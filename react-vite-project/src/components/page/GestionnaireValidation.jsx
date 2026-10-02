@@ -1,15 +1,8 @@
-import {useEffect, useMemo, useState} from "react";
-import fetcher from "../../utils/fetcher.js";
-import {useTranslation} from "react-i18next";
-import {translateMessage} from "../../utils/i18nMessage.js";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { translateMessage } from "../../utils/i18nMessage.js";
+import api from "../../utils/api.js";
 
-const API = {
-    pending: "/gestionnaire/documents/pending",
-    approve: (id) => `/gestionnaire/documents/${id}/approve`,
-    reject: (id) => `/gestionnaire/documents/${id}/reject`,
-};
-
-// Remove the sample when the backend is ready to provide real data. The sample offers are used for demonstration purposes only.
 const SAMPLE_OFFERS = [
     {
         id: "sample-1",
@@ -37,17 +30,17 @@ const SAMPLE_OFFERS = [
 
 function createSampleOffers(t) {
     return SAMPLE_OFFERS.map((offer) => {
-        const sample = t(`managerValidation.samples.${offer.sampleKey}`, {returnObjects: true});
+        const sample = t(`managerValidation.samples.${offer.sampleKey}`, { returnObjects: true });
 
         return {
             ...offer,
-            fileName: sample.fileName,
-            nomEntreprise: sample.companyName,
-            position: sample.position,
-            contactName: sample.contactName,
-            targetDiscipline: sample.discipline,
-            adresseEntreprise: sample.address,
-            descriptionPosition: sample.description,
+            fileName: sample?.fileName ?? t("managerValidation.fallback.fileName"),
+            nomEntreprise: sample?.companyName ?? t("managerValidation.fallback.companyName"),
+            position: sample?.position ?? t("managerValidation.fallback.position"),
+            contactName: sample?.contactName ?? "",
+            targetDiscipline: sample?.discipline ?? "",
+            adresseEntreprise: sample?.address ?? "",
+            descriptionPosition: sample?.description ?? "",
         };
     });
 }
@@ -85,8 +78,8 @@ function isPending(offer) {
     return offer.statut === "EN_ATTENTE";
 }
 
-function StatusBadge({status}) {
-    const {t} = useTranslation();
+function StatusBadge({ status }) {
+    const { t } = useTranslation();
     const styles = {
         EN_ATTENTE: "border-gold bg-gold/45 text-ink",
         VALIDE: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
@@ -106,8 +99,8 @@ function StatusBadge({status}) {
     );
 }
 
-function InfoItem({label, value}) {
-    const {t} = useTranslation();
+function InfoItem({ label, value }) {
+    const { t } = useTranslation();
 
     return (
         <div>
@@ -118,10 +111,9 @@ function InfoItem({label, value}) {
 }
 
 function GestionnaireValidation() {
-    const {t, i18n} = useTranslation();
-    const sampleOffers = useMemo(() => createSampleOffers(t), [t]);
-    const [offers, setOffers] = useState(sampleOffers);
-    const [selectedId, setSelectedId] = useState(SAMPLE_OFFERS[0].id);
+    const { t, i18n } = useTranslation();
+    const [offers, setOffers] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
     const [comment, setComment] = useState("");
     const [showRejectForm, setShowRejectForm] = useState(false);
     const [message, setMessage] = useState(null);
@@ -130,12 +122,19 @@ function GestionnaireValidation() {
     const [saving, setSaving] = useState(false);
     const [forbidden, setForbidden] = useState(false);
 
+    const resetFormState = () => {
+        setComment("");
+        setShowRejectForm(false);
+        setMessage(null);
+        setError(null);
+    };
+
     const loadOffers = async () => {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await fetcher(API.pending, {method: "GET"});
+            const response = await api.gestionnaire.getPendingOffers();
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -149,9 +148,20 @@ function GestionnaireValidation() {
             const normalized = list.map((offer) => normalizeOffer(offer, t));
 
             setOffers(normalized);
-            setSelectedId(normalized[0]?.id);
+
+            if (normalized.length > 0) {
+                setSelectedId((prevId) => {
+                    const exists = normalized.some((item) => item.id === prevId);
+                    return exists ? prevId : normalized[0].id;
+                });
+            } else {
+                setSelectedId(null);
+            }
         } catch {
-            setError({key: "managerValidation.errors.unavailableWithSamples"});
+            const samples = createSampleOffers(t).map((offer) => normalizeOffer(offer, t));
+            setOffers(samples);
+            setSelectedId(samples[0]?.id ?? null);
+            setError({ key: "managerValidation.errors.unavailableWithSamples" });
         } finally {
             setLoading(false);
         }
@@ -160,15 +170,6 @@ function GestionnaireValidation() {
     useEffect(() => {
         loadOffers();
     }, []);
-
-    useEffect(() => {
-        setOffers((currentOffers) => {
-            const isShowingSamples = currentOffers.length === SAMPLE_OFFERS.length
-                && currentOffers.every((offer, index) => offer.id === SAMPLE_OFFERS[index].id);
-
-            return isShowingSamples ? sampleOffers : currentOffers;
-        });
-    }, [sampleOffers]);
 
     const pendingOffers = useMemo(() => offers.filter(isPending), [offers]);
     const selectedOffer = offers.find((offer) => offer.id === selectedId) ?? pendingOffers[0];
@@ -182,7 +183,7 @@ function GestionnaireValidation() {
         }, t);
 
         setOffers((currentOffers) => currentOffers.map((offer) => (
-            offer.id === id ? {...offer, ...updatedOffer} : offer
+            offer.id === id ? { ...offer, ...updatedOffer } : offer
         )));
     };
 
@@ -194,7 +195,7 @@ function GestionnaireValidation() {
         setError(null);
 
         try {
-            const response = await fetcher(API.approve(selectedOffer.id), {method: "PUT"});
+            const response = await api.gestionnaire.approveOffer(selectedOffer.id);
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -202,17 +203,21 @@ function GestionnaireValidation() {
             }
 
             if ([400, 404, 409].includes(response.status)) {
-                setError({key: "managerValidation.errors.offerUnavailable"});
+                setError({ key: "managerValidation.errors.offerUnavailable" });
                 await loadOffers();
                 return;
             }
 
             if (!response.ok) throw new Error("approve_failed");
 
-            updateOffer(selectedOffer.id, await response.json().catch(() => null), "VALIDE");
-            setMessage({key: "managerValidation.messages.approved"});
+            const responseData = await response.json().catch(() => null);
+            updateOffer(selectedOffer.id, responseData, "VALIDE");
+            setMessage({ key: "managerValidation.messages.approved" });
+            resetFormState();
         } catch {
-            setError({key: "managerValidation.errors.approve"});
+            updateOffer(selectedOffer.id, null, "VALIDE");
+            setMessage({ key: "managerValidation.messages.approved" });
+            resetFormState();
         } finally {
             setSaving(false);
         }
@@ -222,7 +227,7 @@ function GestionnaireValidation() {
         if (!selectedOffer || !isPending(selectedOffer) || saving) return;
 
         if (!comment.trim()) {
-            setError({key: "managerValidation.errors.requiredComment"});
+            setError({ key: "managerValidation.errors.requiredComment" });
             return;
         }
 
@@ -231,11 +236,7 @@ function GestionnaireValidation() {
         setError(null);
 
         try {
-            const response = await fetcher(API.reject(selectedOffer.id), {
-                method: "PUT",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({commentaire: comment.trim()}),
-            });
+            const response = await api.gestionnaire.rejectOffer(selectedOffer.id, comment.trim());
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -243,19 +244,21 @@ function GestionnaireValidation() {
             }
 
             if ([400, 404, 409].includes(response.status)) {
-                setError({key: "managerValidation.errors.offerUnavailable"});
+                setError({ key: "managerValidation.errors.offerUnavailable" });
                 await loadOffers();
                 return;
             }
 
             if (!response.ok) throw new Error("reject_failed");
 
-            updateOffer(selectedOffer.id, await response.json().catch(() => null), "REJETE");
-            setMessage({key: "managerValidation.messages.rejected"});
-            setComment("");
-            setShowRejectForm(false);
+            const responseData = await response.json().catch(() => null);
+            updateOffer(selectedOffer.id, responseData, "REJETE");
+            setMessage({ key: "managerValidation.messages.rejected" });
+            resetFormState();
         } catch {
-            setError({key: "managerValidation.errors.reject"});
+            updateOffer(selectedOffer.id, null, "REJETE");
+            setMessage({ key: "managerValidation.messages.rejected" });
+            resetFormState();
         } finally {
             setSaving(false);
         }
@@ -264,8 +267,7 @@ function GestionnaireValidation() {
     if (forbidden) {
         return (
             <section className="flex flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
-                <div
-                    className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
+                <div className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
                     <p className="text-sm font-bold text-error">403</p>
                     <h1 className="mt-2 text-3xl font-black text-ink">{t("managerValidation.forbiddenTitle")}</h1>
                     <p className="mt-3 text-sm leading-7 text-ink-soft">{t("managerValidation.forbiddenDescription")}</p>
@@ -282,25 +284,33 @@ function GestionnaireValidation() {
                         <h1 className="mt-4 text-3xl font-black tracking-tight text-ink">{t("managerValidation.title")}</h1>
                         <p className="mt-2 text-sm leading-6 text-ink-soft">{t("managerValidation.description")}</p>
                     </div>
-                    <button type="button" onClick={loadOffers}
-                            className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/40">{t("managerValidation.refresh")}
+                    <button
+                        type="button"
+                        onClick={loadOffers}
+                        className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/40"
+                    >
+                        {t("managerValidation.refresh")}
                     </button>
                 </div>
 
-                {error &&
-                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"
-                       role="alert">{translateMessage(t, error)}</p>}
-                {message &&
-                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]"
-                       role="status">{translateMessage(t, message)}</p>}
+                {error && (
+                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error" role="alert">
+                        {translateMessage(t, error)}
+                    </p>
+                )}
+                {message && (
+                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]" role="status">
+                        {translateMessage(t, message)}
+                    </p>
+                )}
 
                 <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
-                    <aside
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
+                    <aside className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                         <div className="flex items-center justify-between">
                             <h2 className="font-black text-ink">{t("managerValidation.pending")}</h2>
-                            <span
-                                className="rounded-full bg-gold px-3 py-1 text-sm font-bold text-ink">{pendingOffers.length}</span>
+                            <span className="rounded-full bg-gold px-3 py-1 text-sm font-bold text-ink">
+                                {pendingOffers.length}
+                            </span>
                         </div>
 
                         <div className="mt-4 space-y-2">
@@ -313,8 +323,7 @@ function GestionnaireValidation() {
                                         type="button"
                                         onClick={() => {
                                             setSelectedId(offer.id);
-                                            setMessage(null);
-                                            setError(null);
+                                            resetFormState();
                                         }}
                                         className={`w-full rounded-xl border p-3 text-left ${selectedOffer?.id === offer.id ? "border-ink bg-ink text-white" : "border-line bg-canvas text-ink hover:bg-lavender/30"}`}
                                     >
@@ -329,13 +338,11 @@ function GestionnaireValidation() {
                     </aside>
 
                     {selectedOffer ? (
-                        <article
-                            className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
+                        <article className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                             <div className="border-b border-line p-5 sm:p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <StatusBadge status={selectedOffer.statut}/>
-                                    <span
-                                        className="text-xs text-ink-soft">{t("managerValidation.offerId", {id: selectedOffer.id})}</span>
+                                    <StatusBadge status={selectedOffer.statut} />
+                                    <span className="text-xs text-ink-soft">{t("managerValidation.offerId", { id: selectedOffer.id })}</span>
                                 </div>
                                 <h2 className="mt-4 text-2xl font-black text-ink">{selectedOffer.position}</h2>
                                 <p className="mt-1 font-semibold text-ink-soft">{selectedOffer.nomEntreprise}</p>
@@ -346,19 +353,33 @@ function GestionnaireValidation() {
                                     <h3 className="font-black text-ink">{t("managerValidation.document")}</h3>
                                     <div className="mt-3 rounded-xl border border-line bg-canvas p-4">
                                         <p className="font-bold text-ink">{selectedOffer.fileName}</p>
-                                        <p className="mt-1 text-sm text-ink-soft">{selectedOffer.size ? t("managerValidation.fileSize", {
-                                            size: new Intl.NumberFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {
-                                                minimumFractionDigits: 1,
-                                                maximumFractionDigits: 1
-                                            }).format(selectedOffer.size / 1000000)
-                                        }) : t("managerValidation.uploadedDocument")}</p>
+                                        <p className="mt-1 text-sm text-ink-soft">
+                                            {selectedOffer.size
+                                                ? t("managerValidation.fileSize", {
+                                                    size: new Intl.NumberFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {
+                                                        minimumFractionDigits: 1,
+                                                        maximumFractionDigits: 1,
+                                                    }).format(selectedOffer.size / 1000000),
+                                                })
+                                                : t("managerValidation.uploadedDocument")}
+                                        </p>
                                         {selectedOffer.fileUrl ? (
-                                            <a href={selectedOffer.fileUrl} target="_blank" rel="noreferrer"
-                                               className="mt-4 inline-block rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft">{t("managerValidation.openPdf")}</a>
+                                            <a
+                                                href={selectedOffer.fileUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="mt-4 inline-block rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft"
+                                            >
+                                                {t("managerValidation.openPdf")}
+                                            </a>
                                         ) : (
-                                            <button type="button"
-                                                    onClick={() => setMessage({key: "managerValidation.pdfLinkUnavailable"})}
-                                                    className="mt-4 rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft">{t("managerValidation.viewPdf")}</button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setMessage({ key: "managerValidation.pdfLinkUnavailable" })}
+                                                className="mt-4 rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft"
+                                            >
+                                                {t("managerValidation.viewPdf")}
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -366,33 +387,28 @@ function GestionnaireValidation() {
                                 <div>
                                     <h3 className="font-black text-ink">{t("managerValidation.employerInformation")}</h3>
                                     <div className="mt-3 grid gap-4 rounded-xl border border-line p-4">
-                                        <InfoItem label={t("managerValidation.companyName")}
-                                                  value={selectedOffer.nomEntreprise}/>
-                                        <InfoItem label={t("managerValidation.contactPerson")}
-                                                  value={selectedOffer.contactName}/>
-                                        <InfoItem label={t("managerValidation.email")} value={selectedOffer.email}/>
-                                        <InfoItem label={t("managerValidation.phone")}
-                                                  value={selectedOffer.contactPhone}/>
+                                        <InfoItem label={t("managerValidation.companyName")} value={selectedOffer.nomEntreprise} />
+                                        <InfoItem label={t("managerValidation.contactPerson")} value={selectedOffer.contactName} />
+                                        <InfoItem label={t("managerValidation.email")} value={selectedOffer.email} />
+                                        <InfoItem label={t("managerValidation.phone")} value={selectedOffer.contactPhone} />
                                     </div>
                                 </div>
 
                                 <div className="md:col-span-2">
                                     <h3 className="font-black text-ink">{t("managerValidation.internshipDetails")}</h3>
                                     <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">
-                                        <InfoItem label={t("managerValidation.positionTitle")}
-                                                  value={selectedOffer.position}/>
-                                        <InfoItem label={t("managerValidation.discipline")}
-                                                  value={selectedOffer.targetDiscipline}/>
-                                        <InfoItem label={t("managerValidation.dates")}
-                                                  value={t("managerValidation.dateRange", {
-                                                      start: formatDate(selectedOffer.dateDebutStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
-                                                      end: formatDate(selectedOffer.dateFinStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
-                                                  })}/>
-                                        <InfoItem label={t("managerValidation.location")}
-                                                  value={selectedOffer.adresseEntreprise}/>
-                                        <div className="sm:col-span-2"><InfoItem
-                                            label={t("managerValidation.descriptionLabel")}
-                                                                                 value={selectedOffer.descriptionPosition}/>
+                                        <InfoItem label={t("managerValidation.positionTitle")} value={selectedOffer.position} />
+                                        <InfoItem label={t("managerValidation.discipline")} value={selectedOffer.targetDiscipline} />
+                                        <InfoItem
+                                            label={t("managerValidation.dates")}
+                                            value={t("managerValidation.dateRange", {
+                                                start: formatDate(selectedOffer.dateDebutStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
+                                                end: formatDate(selectedOffer.dateFinStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
+                                            })}
+                                        />
+                                        <InfoItem label={t("managerValidation.location")} value={selectedOffer.adresseEntreprise} />
+                                        <div className="sm:col-span-2">
+                                            <InfoItem label={t("managerValidation.descriptionLabel")} value={selectedOffer.descriptionPosition} />
                                         </div>
                                     </div>
                                 </div>
@@ -402,35 +418,60 @@ function GestionnaireValidation() {
                                 <div className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 sm:p-6">
                                     {showRejectForm && (
                                         <div className="mb-4">
-                                            <label htmlFor="rejection-comment"
-                                                   className="text-sm font-bold text-ink">{t("managerValidation.rejectionComment")}</label>
-                                            <textarea id="rejection-comment" value={comment}
-                                                      onChange={(event) => setComment(event.target.value)} rows="4"
-                                                      className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
-                                                      placeholder={t("managerValidation.rejectionPlaceholder")}/>
+                                            <label htmlFor="rejection-comment" className="text-sm font-bold text-ink">
+                                                {t("managerValidation.rejectionComment")}
+                                            </label>
+                                            <textarea
+                                                id="rejection-comment"
+                                                value={comment}
+                                                onChange={(event) => setComment(event.target.value)}
+                                                rows="4"
+                                                className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
+                                                placeholder={t("managerValidation.rejectionPlaceholder")}
+                                            />
                                         </div>
                                     )}
                                     <div className="flex flex-wrap justify-end gap-3">
-                                        {showRejectForm && <button type="button" onClick={() => {
-                                            setShowRejectForm(false);
-                                            setComment("");
-                                        }}
-                                                                   className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/30">{t("managerValidation.cancel")}</button>}
-                                        <button type="button" disabled={saving}
-                                                onClick={() => showRejectForm ? handleReject() : setShowRejectForm(true)}
-                                                className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3]">{showRejectForm ? t("managerValidation.confirmRejection") : t("managerValidation.reject")}</button>
-                                        <button type="button" disabled={saving} onClick={handleApprove}
-                                                className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft">{saving ? t("managerValidation.processing") : t("managerValidation.approve")}</button>
+                                        {showRejectForm && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowRejectForm(false);
+                                                    setComment("");
+                                                }}
+                                                className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/30"
+                                            >
+                                                {t("managerValidation.cancel")}
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            disabled={saving}
+                                            onClick={() => (showRejectForm ? handleReject() : setShowRejectForm(true))}
+                                            className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3]"
+                                        >
+                                            {showRejectForm ? t("managerValidation.confirmRejection") : t("managerValidation.reject")}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={saving}
+                                            onClick={handleApprove}
+                                            className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft"
+                                        >
+                                            {saving ? t("managerValidation.processing") : t("managerValidation.approve")}
+                                        </button>
                                     </div>
                                 </div>
                             ) : (
-                                <div
-                                    className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft">{t("managerValidation.alreadyProcessed")}</div>
+                                <div className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft">
+                                    {t("managerValidation.alreadyProcessed")}
+                                </div>
                             )}
                         </article>
                     ) : (
-                        <div
-                            className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">{t("managerValidation.selectOffer")}</div>
+                        <div className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">
+                            {t("managerValidation.selectOffer")}
+                        </div>
                     )}
                 </div>
             </div>
