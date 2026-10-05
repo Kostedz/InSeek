@@ -158,49 +158,6 @@ public class UtilisateurService {
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
-
-    public Utilisateur toEntity(UtilisateurDTO utilisateurDTO) throws BadRequestException {
-        if (utilisateurDTO == null) {
-            return null;
-        }
-
-        Role role = Role.valueOf(utilisateurDTO.role());
-
-        Utilisateur user = utilisateurRepository.findByEmail(utilisateurDTO.email());
-
-        switch (user) {
-            case Etudiant etudiant -> {
-                return Etudiant.builder()
-                        .nom(etudiant.getNom())
-                        .prenom(etudiant.getPrenom())
-                        .email(etudiant.getEmail())
-                        .discipline(etudiant.getDiscipline())
-                        .password(etudiant.getPassword())
-                        .build();
-            }
-
-            case Employeur employeur -> {
-                return Employeur.builder()
-                        .nom(employeur.getNom())
-                        .prenom(employeur.getPrenom())
-                        .nomCompagnie(employeur.getNomCompagnie())
-                        .email(employeur.getEmail())
-                        .password(employeur.getPassword())
-                        .build();
-            }
-
-            case Professeur professeur -> {
-                return Professeur.builder()
-                        .nom(professeur.getNom())
-                        .prenom(professeur.getPrenom())
-                        .email(professeur.getEmail())
-                        .discipline(professeur.getDiscipline())
-                        .password(professeur.getPassword())
-                        .build();
-            }
-            default -> throw new IllegalStateException("Unexpected value: " + user);
-        }
-    }
         /*
         if (role == Role.ETUDIANT) {
             return Etudiant.builder()
