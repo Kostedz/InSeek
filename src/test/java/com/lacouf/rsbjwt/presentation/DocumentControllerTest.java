@@ -134,4 +134,15 @@ public class DocumentControllerTest {
                 .andExpect(status().isInternalServerError());
 
     }
+
+    @Test
+    @DisplayName("Upload document CV par POST /documents/upload - Invalid JWT")
+    void uploadDocumentInvalidJwt() throws Exception {
+        when(authService.validateJwt(any(HttpServletRequest.class))).thenReturn(false);
+        mockMvc.perform(MockMvcRequestBuilders.multipart("/documents/upload")
+                        .file(file)
+                        .file(formContent)
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isBadRequest());
+    }
 }
