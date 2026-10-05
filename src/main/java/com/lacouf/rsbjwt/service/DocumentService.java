@@ -42,9 +42,11 @@ public class DocumentService {
         if (type.equals("CV")) {
             logger.info("Uploader is an instance of Etudiant: " + uploader);
             targetDiscipline = ((Etudiant) uploader).getDiscipline().toString();
-        } else {
+        } else if (type.equals("OffreDeStage")) {
             logger.info("Uploader is not an instance of EtudiantDTO: " + uploader);
             targetDiscipline = result.get("targetDiscipline").asString();
+        } else {
+            throw new BadRequestException("Invalid document type");
         }
 
         logger.info(targetDiscipline);
