@@ -158,42 +158,6 @@ public class UtilisateurService {
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
-        /*
-        if (role == Role.ETUDIANT) {
-            return Etudiant.builder()
-                    .nom(utilisateurDTO.nom())
-                    .prenom(utilisateurDTO.prenom())
-                    .email(utilisateurDTO.email())
-                    .discipline(Disciplines.valueOf(utilisateurDTO.affiliation()))
-                    .password(passwordEncoder.encode(utilisateurDTO.password()))
-                    .build();
-        }
-
-        if (role == Role.EMPLOYEUR) {
-            return Employeur.builder()
-                    .nom(utilisateurDTO.nom())
-                    .prenom(utilisateurDTO.prenom())
-                    .email(utilisateurDTO.email())
-                    .nomCompagnie(String.valueOf(utilisateurDTO.affiliation()))
-                    .password(passwordEncoder.encode(utilisateurDTO.password()))
-                    .build();
-        }
-
-        if (role == Role.PROFESSEUR) {
-            return Professeur.builder()
-                    .nom(utilisateurDTO.nom())
-                    .prenom(utilisateurDTO.prenom())
-                    .email(utilisateurDTO.email())
-                    .discipline(Disciplines.valueOf(registerDTO.affiliation()))
-                    .password(passwordEncoder.encode(registerDTO.password()))
-                    .build();
-        }
-
-
-        throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
-    }
-
-         */
 }
 
 
