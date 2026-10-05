@@ -5,6 +5,7 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import com.lacouf.rsbjwt.service.AuthService;
+import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.UtilisateurDTO;
@@ -38,6 +39,9 @@ class UtilisateurControllerTest {
 
     @MockitoBean
     PasswordEncoder passwordEncoder;
+
+    @MockitoBean
+    DocumentService documentService;
 
     // TESTER registerUser()
 
