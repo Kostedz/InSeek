@@ -12,6 +12,7 @@ import PreposeHome from "./components/page/PreposeHome.jsx";
 import GestionnaireHome from "./components/page/GestionnaireHome.jsx";
 import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
 import EmployeurOffres from "./components/page/EmployeurOffres.jsx";
+import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
 import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import { useTranslation } from "react-i18next";
