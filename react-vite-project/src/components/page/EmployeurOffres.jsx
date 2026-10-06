@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {createTranslationMessage, translateMessage} from "../../utils/i18nMessage.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -180,13 +181,16 @@ function Icon({name, className = "h-5 w-5"}) {
 }
 
 function Field({id, label, required = false, error, className = "", children}) {
+    const {t} = useTranslation();
+
     return (
         <div className={className}>
             <label htmlFor={id} className="mb-2 block text-sm font-bold text-ink">
                 {label} {required && <span className="text-error" aria-hidden="true">*</span>}
             </label>
             {children}
-            {error && <p className="mt-1.5 text-xs font-semibold text-error" role="alert">{error}</p>}
+            {error &&
+                <p className="mt-1.5 text-xs font-semibold text-error" role="alert">{translateMessage(t, error)}</p>}
         </div>
     );
 }
@@ -310,11 +314,11 @@ export default function EmployeurOffres({
 
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
         if (!isPdf) {
-            setFileError(t("employerOffers.errors.invalidFormat"));
+            setFileError("employerOffers.errors.invalidFormat");
             return false;
         }
         if (file.size > MAX_FILE_SIZE) {
-            setFileError(t("employerOffers.errors.fileTooLarge"));
+            setFileError("employerOffers.errors.fileTooLarge");
             return false;
         }
         setSelectedFile(file);
@@ -337,26 +341,26 @@ export default function EmployeurOffres({
     const validateForm = () => {
         const errors = {};
         const requiredFields = {
-            nomEntreprise: t("employerOffers.errors.companyRequired"),
-            position: t("employerOffers.errors.positionRequired"),
-            targetDiscipline: t("employerOffers.errors.disciplineRequired"),
-            adresseEntreprise: t("employerOffers.errors.addressRequired"),
-            dateDebutStage: t("employerOffers.errors.startDateRequired"),
-            dateFinStage: t("employerOffers.errors.endDateRequired"),
-            descriptionPosition: t("employerOffers.errors.descriptionRequired"),
+            nomEntreprise: "employerOffers.errors.companyRequired",
+            position: "employerOffers.errors.positionRequired",
+            targetDiscipline: "employerOffers.errors.disciplineRequired",
+            adresseEntreprise: "employerOffers.errors.addressRequired",
+            dateDebutStage: "employerOffers.errors.startDateRequired",
+            dateFinStage: "employerOffers.errors.endDateRequired",
+            descriptionPosition: "employerOffers.errors.descriptionRequired",
         };
 
         Object.entries(requiredFields).forEach(([field, message]) => {
             if (!String(formValues[field] ?? "").trim()) errors[field] = message;
         });
         if (formValues.email && !/^\S+@\S+\.\S+$/.test(formValues.email)) {
-            errors.email = t("employerOffers.errors.invalidEmail");
+            errors.email = "employerOffers.errors.invalidEmail";
         }
         if (formValues.dateDebutStage && formValues.dateFinStage && formValues.dateFinStage < formValues.dateDebutStage) {
-            errors.dateFinStage = t("employerOffers.errors.endDateAfterStart");
+            errors.dateFinStage = "employerOffers.errors.endDateAfterStart";
         }
         if (formValues.descriptionPosition.trim().length > 0 && formValues.descriptionPosition.trim().length < 40) {
-            errors.descriptionPosition = t("employerOffers.errors.descriptionTooShort");
+            errors.descriptionPosition = "employerOffers.errors.descriptionTooShort";
         }
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
@@ -368,17 +372,17 @@ export default function EmployeurOffres({
         setFormError("");
 
         if (!isAccountEmailValidated) {
-            setFormError(t("employerOffers.errors.accountNotValidated"));
+            setFormError("employerOffers.errors.accountNotValidated");
             return;
         }
         if (isOfferReadOnly) {
             setFormError(selectedOffer?.statut === "EN_ATTENTE"
-                ? t("employerOffers.errors.pendingReadOnly")
-                : t("employerOffers.errors.rejectedReadOnly"));
+                ? "employerOffers.errors.pendingReadOnly"
+                : "employerOffers.errors.rejectedReadOnly");
             return;
         }
         if (!selectedFile) {
-            setFileError(t("employerOffers.errors.fileRequired"));
+            setFileError("employerOffers.errors.fileRequired");
         }
         if (!validateForm() || !selectedFile) return;
 
@@ -399,11 +403,11 @@ export default function EmployeurOffres({
                     formData,
                 });
                 if (response?.status === 403) {
-                    setFormError(t("employerOffers.errors.accountMustBeValidated"));
+                    setFormError("employerOffers.errors.accountMustBeValidated");
                     return;
                 }
                 if (response?.ok === false) {
-                    throw new Error(t("employerOffers.errors.submissionFailed"));
+                    throw createTranslationMessage("employerOffers.errors.submissionFailed");
                 }
             } else {
                 await new Promise((resolve) => window.setTimeout(resolve, 650));
@@ -430,10 +434,10 @@ export default function EmployeurOffres({
             setSelectedFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
             setSuccessMessage(isNewOffer
-                ? t("employerOffers.success.created")
-                : t("employerOffers.success.updated"));
+                ? "employerOffers.success.created"
+                : "employerOffers.success.updated");
         } catch (error) {
-            setFormError(error?.message || t("employerOffers.errors.submissionConnection"));
+            setFormError(error?.key || "employerOffers.errors.submissionConnection");
         } finally {
             setIsSubmitting(false);
         }
@@ -574,10 +578,10 @@ export default function EmployeurOffres({
                         {successMessage && <div
                             className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
                             role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
-                            className="font-semibold">{successMessage}</p></div>}
+                            className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
                         {formError && <div
                             className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
-                            role="alert">{formError}</div>}
+                            role="alert">{translateMessage(t, formError)}</div>}
 
                         <form className="mt-7 space-y-8" onSubmit={handleSubmit} noValidate>
                             <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
@@ -644,7 +648,7 @@ export default function EmployeurOffres({
                                         </div>
                                     )}
                                     {fileError && <p className="mt-2 text-sm font-semibold text-error"
-                                                     role="alert">{fileError}</p>}
+                                                     role="alert">{translateMessage(t, fileError)}</p>}
                                 </div>
 
                                 <div>

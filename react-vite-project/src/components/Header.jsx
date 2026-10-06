@@ -17,8 +17,6 @@ function Header({user}) {
     const displayName = [firstName, lastName].filter(Boolean).join(" ");
     const isLoggedIn = Boolean(user?.isLoggedIn);
     const isGestionnaire = role === "GESTIONNAIRE";
-    const isPrepose = isGestionnaire || role === "PREPOSE";
-    const isEmprunteur = isGestionnaire || role === "EMPRUNTEUR";
 
     const navLinkClass = ({isActive}) => [
         "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors md:w-auto md:px-3",
@@ -109,8 +107,6 @@ function Header({user}) {
                     <ul className="flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center">
                         <li><NavLink to="/" end className={navLinkClass} onClick={closeMenus}>{t("navigation.home")}</NavLink></li>
                         <li><NavLink to="/about" className={navLinkClass} onClick={closeMenus}>{t("navigation.about")}</NavLink></li>
-                        {isEmprunteur && <li><NavLink to="/emprunteur" className={navLinkClass} onClick={closeMenus}>{t("navigation.borrower")}</NavLink></li>}
-                        {isPrepose && <li><NavLink to="/prepose" className={navLinkClass} onClick={closeMenus}>{t("navigation.clerk")}</NavLink></li>}
                         <li><NavLink to="/gestionnaire" className={navLinkClass}
                                      onClick={closeMenus}>{t("navigation.validation")}</NavLink></li>
                     </ul>

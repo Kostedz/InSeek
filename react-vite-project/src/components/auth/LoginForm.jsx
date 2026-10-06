@@ -45,16 +45,15 @@ const LoginForm = ({ user, authChecked, setUser }) => {
   };
 
   const getRedirectPathByRole = (role) => {
-    switch (role) {
-      case "ROLE_EMPRUNTEUR":
-        return "/emprunteur";
-      case "ROLE_PREPOSE":
-        return "/prepose";
-      case "ROLE_GESTIONNAIRE":
+    const normalizedRole = String(role ?? "").replace(/^ROLE_/, "").toUpperCase();
+
+    switch (normalizedRole) {
+      case "GESTIONNAIRE":
         return "/gestionnaire";
-      case "ROLE_ETUDIANT":
       case "ETUDIANT":
         return "/etudiant";
+      case "EMPLOYEUR":
+        return "/employeur";
       default:
         return "/";
     }

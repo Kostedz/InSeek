@@ -43,7 +43,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
     ];
 
     const validate = (name, value, currentFormData = formData) => {
-        const errorMsg = FormValidator.validateField(name, value, currentFormData, isEmployer, t);
+        const errorMsg = FormValidator.validateField(name, value, currentFormData, isEmployer);
 
         setFieldErrors((prev) => {
             const next = { ...prev, [name]: errorMsg };
@@ -51,7 +51,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                 next.confirmPassword =
                     value === currentFormData.confirmPassword
                         ? ""
-                        : t("auth.register.errors.confirmPassword");
+                        : "auth.register.errors.confirmPassword";
             }
             return next;
         });
@@ -164,7 +164,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                 navigate(getRedirectPath(payload.role));
             }
         } catch (err) {
-            setServerError(err.message);
+            setServerError(err?.key || "auth.register.errors.submit");
         } finally {
             setLoading(false);
         }

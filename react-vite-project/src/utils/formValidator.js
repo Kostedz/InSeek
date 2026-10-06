@@ -5,36 +5,36 @@ export class FormValidator {
         password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/,
     };
 
-    static validateField(name, value, formData, isEmployer, t) {
+    static validateField(name, value, formData, isEmployer) {
         switch (name) {
             case "prenom":
                 if (!this.REGEX.name.test(value.trim())) {
-                    return t("auth.register.errors.firstName");
+                    return "auth.register.errors.firstName";
                 }
                 break;
             case "nom":
                 if (!this.REGEX.name.test(value.trim())) {
-                    return t("auth.register.errors.lastName");
+                    return "auth.register.errors.lastName";
                 }
                 break;
             case "email":
                 if (!this.REGEX.email.test(value.trim())) {
-                    return t("auth.register.errors.email");
+                    return "auth.register.errors.email";
                 }
                 break;
             case "password":
                 if (!this.REGEX.password.test(value)) {
-                    return t("auth.register.errors.password");
+                    return "auth.register.errors.password";
                 }
                 break;
             case "confirmPassword":
                 if (value !== formData.password) {
-                    return t("auth.register.errors.confirmPassword");
+                    return "auth.register.errors.confirmPassword";
                 }
                 break;
             case "entreprise":
                 if (isEmployer && value.trim() === "") {
-                    return t("auth.register.errors.companyRequired");
+                    return "auth.register.errors.companyRequired";
                 }
                 break;
             default:

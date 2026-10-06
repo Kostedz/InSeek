@@ -1,8 +1,11 @@
 import React, { useState, useRef } from "react";
+import {useTranslation} from "react-i18next";
+import {api} from "../../utils/api.js";
 import {translateMessage} from "../../utils/i18nMessage.js";
 
 
 export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = true, onCvUpdated}) {
+    const {t} = useTranslation();
     const fileInputRef = useRef(null);
 
     const [selectedFile, setSelectedFile] = useState(null);
@@ -21,12 +24,12 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
         if (!file) return false;
 
         if (file.type !== "application/pdf") {
-            setErrorMessage(translateMessage(t, "studentCv.errors.invalidFormat"));
+            setErrorMessage("studentCv.errors.invalidFormat");
             return false;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            setErrorMessage(translateMessage(t, "studentCv.errors.fileTooLarge"));
+            setErrorMessage("studentCv.errors.fileTooLarge");
             return false;
         }
 
@@ -77,22 +80,22 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
             const res = await api.student.uploadCv(selectedFile);
 
             if (res.status === 403) {
-                setErrorMessage(translateMessage(t, "studentCv.errors.emailNotValidated"));
+                setErrorMessage("studentCv.errors.emailNotValidated");
                 return;
             }
 
             if (!res.ok) {
-                throw new Error(translateMessage(t, "studentCv.errors.uploadFailed"));
+                throw {key: "studentCv.errors.uploadFailed"};
             }
 
             const responseData = await res.json();
 
             if (status === "VALIDATED") {
-                setSuccessMessage(translateMessage(t, "studentCv.success.updated"));
+                setSuccessMessage("studentCv.success.updated");
             } else if (status === "REJECTED") {
-                setSuccessMessage(translateMessage(t, "studentCv.success.corrected"));
+                setSuccessMessage("studentCv.success.corrected");
             } else {
-                setSuccessMessage(translateMessage(t, "studentCv.success.uploaded"));
+                setSuccessMessage("studentCv.success.uploaded");
             }
 
             setSelectedFile(null);
@@ -102,7 +105,7 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
                 onCvUpdated(responseData);
             }
         } catch (err) {
-            setErrorMessage(err.message || translateMessage(t, "studentCv.errors.connection"));
+            setErrorMessage(err?.key || "studentCv.errors.connection");
         } finally {
             setIsSubmitting(false);
         }
@@ -162,12 +165,12 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
 
                     {errorMessage && (
                         <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-medium text-error" role="alert">
-                            {errorMessage}
+                            {translateMessage(t, errorMessage)}
                         </p>
                     )}
                     {successMessage && (
                         <p className="rounded-xl border border-lemon bg-lemon/45 px-4 py-3 text-sm font-medium text-ink" role="status">
-                            {successMessage}
+                            {translateMessage(t, successMessage)}
                         </p>
                     )}
 
