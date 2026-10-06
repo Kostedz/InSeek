@@ -122,7 +122,7 @@ function GestionnaireCvValidation() {
             setCvs(normalized);
             setSelectedId(normalized[0]?.id);
         } catch {
-            setError("Impossible de charger les CV pour le moment.");
+            setError("Le serveur est indisponible. Les données d’exemple sont affichées.");
         } finally {
             setLoading(false);
         }
