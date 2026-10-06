@@ -3,10 +3,7 @@ package com.lacouf.rsbjwt.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
@@ -22,6 +19,7 @@ public class OffreDeStage extends Document{
     private LocalDate dateFinStage;
     private String adresseEntreprise;
     private Double salaire; // Ajout
+    @ToString.Exclude
     @ManyToOne // Ajout
     @JoinColumn(name = "employeur_id") // Ajout
     private Employeur employeur; // Ajout
