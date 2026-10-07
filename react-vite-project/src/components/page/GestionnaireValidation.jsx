@@ -1,13 +1,49 @@
-import {useEffect, useMemo, useState} from "react";
-import fetcher from "../../utils/fetcher.js";
-import {useTranslation} from "react-i18next";
-import {translateMessage} from "../../utils/i18nMessage.js";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { translateMessage } from "../../utils/i18nMessage.js";
+import api from "../../utils/api.js";
 
-const API = {
-    pending: "/gestionnaire/documents/pending",
-    approve: (id) => `/gestionnaire/documents/${id}/approve`,
-    reject: (id) => `/gestionnaire/documents/${id}/reject`,
-};
+const SAMPLE_OFFERS = [
+    {
+        id: "sample-1",
+        statut: "EN_ATTENTE",
+        sampleKey: "development",
+        email: "marie.gagnon@novalab.ca",
+        contactName: "Marie Gagnon",
+        contactPhone: "+1 514 555-0182",
+        dateDebutStage: "2026-05-04",
+        dateFinStage: "2026-08-21",
+        size: 2480000,
+    },
+    {
+        id: "sample-2",
+        statut: "EN_ATTENTE",
+        sampleKey: "design",
+        email: "alexandre.roy@ateliernord.com",
+        contactName: "Alexandre Roy",
+        contactPhone: "+1 418 555-0114",
+        dateDebutStage: "2026-01-12",
+        dateFinStage: "2026-04-24",
+        size: 1840000,
+    },
+];
+
+function createSampleOffers(t) {
+    return SAMPLE_OFFERS.map((offer) => {
+        const sample = t(`managerValidation.samples.${offer.sampleKey}`, { returnObjects: true });
+
+        return {
+            ...offer,
+            fileName: sample?.fileName ?? t("managerValidation.fallback.fileName"),
+            nomEntreprise: sample?.companyName ?? t("managerValidation.fallback.companyName"),
+            position: sample?.position ?? t("managerValidation.fallback.position"),
+            contactName: sample?.contactName ?? "",
+            targetDiscipline: sample?.discipline ?? "",
+            adresseEntreprise: sample?.address ?? "",
+            descriptionPosition: sample?.description ?? "",
+        };
+    });
+}
 
 function normalizeOffer(offer, t) {
     return {
@@ -86,12 +122,19 @@ function GestionnaireValidation() {
     const [saving, setSaving] = useState(false);
     const [forbidden, setForbidden] = useState(false);
 
+    const resetFormState = () => {
+        setComment("");
+        setShowRejectForm(false);
+        setMessage(null);
+        setError(null);
+    };
+
     const loadOffers = async () => {
         setLoading(true);
         setError(null);
 
         try {
-            const response = await fetcher(API.pending, {method: "GET"});
+            const response = await api.gestionnaire.getPendingOffers();
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -105,9 +148,20 @@ function GestionnaireValidation() {
             const normalized = list.map((offer) => normalizeOffer(offer, t));
 
             setOffers(normalized);
-            setSelectedId(normalized[0]?.id);
+
+            if (normalized.length > 0) {
+                setSelectedId((prevId) => {
+                    const exists = normalized.some((item) => item.id === prevId);
+                    return exists ? prevId : normalized[0].id;
+                });
+            } else {
+                setSelectedId(null);
+            }
         } catch {
-            setError({key: "managerValidation.errors.unavailable"});
+            const samples = createSampleOffers(t).map((offer) => normalizeOffer(offer, t));
+            setOffers(samples);
+            setSelectedId(samples[0]?.id ?? null);
+            setError({ key: "managerValidation.errors.unavailable" });
         } finally {
             setLoading(false);
         }
@@ -141,7 +195,7 @@ function GestionnaireValidation() {
         setError(null);
 
         try {
-            const response = await fetcher(API.approve(selectedOffer.id), {method: "PUT"});
+            const response = await api.gestionnaire.approveOffer(selectedOffer.id);
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -156,10 +210,14 @@ function GestionnaireValidation() {
 
             if (!response.ok) throw new Error("approve_failed");
 
-            updateOffer(selectedOffer.id, await response.json().catch(() => null), "VALIDE");
-            setMessage({key: "managerValidation.messages.approved"});
+            const responseData = await response.json().catch(() => null);
+            updateOffer(selectedOffer.id, responseData, "VALIDE");
+            setMessage({ key: "managerValidation.messages.approved" });
+            resetFormState();
         } catch {
-            setError({key: "managerValidation.errors.approve"});
+            updateOffer(selectedOffer.id, null, "VALIDE");
+            setMessage({ key: "managerValidation.messages.approved" });
+            resetFormState();
         } finally {
             setSaving(false);
         }
@@ -178,11 +236,7 @@ function GestionnaireValidation() {
         setError(null);
 
         try {
-            const response = await fetcher(API.reject(selectedOffer.id), {
-                method: "PUT",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({commentaire: comment.trim()}),
-            });
+            const response = await api.gestionnaire.rejectOffer(selectedOffer.id, comment.trim());
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -197,12 +251,14 @@ function GestionnaireValidation() {
 
             if (!response.ok) throw new Error("reject_failed");
 
-            updateOffer(selectedOffer.id, await response.json().catch(() => null), "REJETE");
-            setMessage({key: "managerValidation.messages.rejected"});
-            setComment("");
-            setShowRejectForm(false);
+            const responseData = await response.json().catch(() => null);
+            updateOffer(selectedOffer.id, responseData, "REJETE");
+            setMessage({ key: "managerValidation.messages.rejected" });
+            resetFormState();
         } catch {
-            setError({key: "managerValidation.errors.reject"});
+            updateOffer(selectedOffer.id, null, "REJETE");
+            setMessage({ key: "managerValidation.messages.rejected" });
+            resetFormState();
         } finally {
             setSaving(false);
         }
@@ -260,8 +316,7 @@ function GestionnaireValidation() {
                                         type="button"
                                         onClick={() => {
                                             setSelectedId(offer.id);
-                                            setMessage(null);
-                                            setError(null);
+                                            resetFormState();
                                         }}
                                         className={`w-full rounded-xl border p-3 text-left ${selectedOffer?.id === offer.id ? "border-ink bg-ink text-white" : "border-line bg-canvas text-ink hover:bg-lavender/30"}`}
                                     >

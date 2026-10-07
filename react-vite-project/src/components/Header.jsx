@@ -5,7 +5,9 @@ import { useTranslation } from "react-i18next";
 function Header({user}) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const userMenuRef = useRef(null);
+    const lastScrollYRef = useRef(0);
     const { t, i18n } = useTranslation();
     const currentLanguage = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const nextLanguage = currentLanguage === "fr" ? "en" : "fr";
@@ -54,6 +56,26 @@ function Header({user}) {
             document.removeEventListener("keydown", closeUserMenuOnEscape);
         };
     }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            const previousScrollY = lastScrollYRef.current;
+
+            if (isMenuOpen || currentScrollY <= 8) {
+                setIsHeaderVisible(true);
+            } else if (currentScrollY > previousScrollY) {
+                setIsHeaderVisible(false);
+            } else if (currentScrollY < previousScrollY) {
+                setIsHeaderVisible(true);
+            }
+
+            lastScrollYRef.current = currentScrollY;
+        };
+
+        window.addEventListener("scroll", handleScroll, {passive: true});
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, [isMenuOpen]);
 
     const closeMenus = () => {
         setIsMenuOpen(false);

@@ -69,6 +69,24 @@ export const api = {
             }),
         },
     },
+
+    gestionnaire: {
+        getPendingOffers: () =>
+            fetcher("/gestionnaire/documents/pending", { method: "GET" }),
+
+        approveOffer: (id) =>
+            fetcher(`/gestionnaire/documents/${id}/approve`, { method: "PUT" }),
+
+        rejectOffer: (id, comment) =>
+            fetcher(`/gestionnaire/documents/${id}/reject`, {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify({ commentaire: comment }),
+            }),
+    },
 };
 
 export default api;
