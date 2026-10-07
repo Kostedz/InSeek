@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtAuthenticationEntryPoint;
@@ -20,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -63,9 +65,39 @@ class GestionaireControllerTest {
     void listPendingDocuments_retourne200() throws Exception {
 
         DocumentValidationDTO doc1 = new DocumentValidationDTO(
-                1L, "cv_alice.pdf", "alice@mail.com", StatutValidation.EN_ATTENTE, null);
+                1L,
+                "cv_alice.pdf",
+                "alice@mail.com",
+                StatutValidation.EN_ATTENTE,
+                null,
+                1024L,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
         DocumentValidationDTO doc2 = new DocumentValidationDTO(
-                2L, "offre_ubisoft.pdf", "ubisoft@mail.com", StatutValidation.EN_ATTENTE, null);
+                2L,
+                "offre_ubisoft.pdf",
+                "ubisoft@mail.com",
+                StatutValidation.EN_ATTENTE,
+                null,
+                2048L,
+                "Ubisoft",
+                "Développeur Java",
+                "Marie Tremblay",
+                "514-555-1234",
+                LocalDate.of(2026, 5, 4),
+                LocalDate.of(2026, 8, 28),
+                Disciplines.INFORMATIQUE,
+                "123 rue Saint-Laurent, Montréal",
+                "Développement de jeux vidéo"
+        );
 
         when(gestionnaireService.listPendingDocuments()).thenReturn(List.of(doc1, doc2));
 
@@ -73,7 +105,11 @@ class GestionaireControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].fileName").value("cv_alice.pdf"))
-                .andExpect(jsonPath("$[1].fileName").value("offre_ubisoft.pdf"));
+                .andExpect(jsonPath("$[0].nomEntreprise").doesNotExist())
+                .andExpect(jsonPath("$[1].fileName").value("offre_ubisoft.pdf"))
+                .andExpect(jsonPath("$[1].nomEntreprise").value("Ubisoft"))
+                .andExpect(jsonPath("$[1].position").value("Développeur Java"))
+                .andExpect(jsonPath("$[1].targetDiscipline").value("INFORMATIQUE"));
     }
 
     @Test
@@ -92,7 +128,22 @@ class GestionaireControllerTest {
     void approveDocument_succes_retourne200() throws Exception {
 
         DocumentValidationDTO dto = new DocumentValidationDTO(
-                1L, "cv_alice.pdf", "alice@mail.com", StatutValidation.VALIDE, null);
+                1L,
+                "cv_alice.pdf",
+                "alice@mail.com",
+                StatutValidation.VALIDE,
+                null,
+                1024L,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
 
         when(gestionnaireService.approveDocument(1L)).thenReturn(dto);
 
@@ -129,8 +180,22 @@ class GestionaireControllerTest {
     void rejectDocument_succes_retourne200() throws Exception {
 
         DocumentValidationDTO dto = new DocumentValidationDTO(
-                1L, "cv_alice.pdf", "alice@mail.com", StatutValidation.REJETE, "Format non professionnel");
-
+                1L,
+                "cv_alice.pdf",
+                "alice@mail.com",
+                StatutValidation.REJETE,
+                "Format non professionnel",
+                1024L,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
         when(gestionnaireService.rejectDocument(eq(1L), any())).thenReturn(dto);
 
         mockMvc.perform(
