@@ -1,9 +1,6 @@
 package com.lacouf.rsbjwt.repository;
 
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Document;
-import com.lacouf.rsbjwt.model.OffreDeStage;
-import com.lacouf.rsbjwt.model.StatutValidation;
+import com.lacouf.rsbjwt.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,4 +27,6 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             ORDER BY o.id DESC
             """)
     List<OffreDeStage> findOffersByEmployer(@Param("employeur") com.lacouf.rsbjwt.model.Utilisateur employeur);
+
+    CV findByUtilisateur(Utilisateur utilisateur);
 }

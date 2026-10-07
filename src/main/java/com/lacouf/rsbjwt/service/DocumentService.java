@@ -34,6 +34,7 @@ public class DocumentService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
 
+    @Transactional
     public DocumentDTO saveDocument(MultipartFile file, String formContent, HttpServletRequest request) throws BadRequestException, IOException, NotFoundException {
         String email = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
         Utilisateur uploader = utilisateurService.findEntityByEmail(email);
@@ -47,15 +48,21 @@ public class DocumentService {
         //String email = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
         //Utilisateur uploader = utilisateurService.findEntityByEmail(email);
         String targetDiscipline;
+
+        CV existingCV = documentRepository.findByUtilisateur(uploader);
+        if (existingCV != null && existingCV.getStatut().equals(StatutValidation.VALIDE)) {
+            documentRepository.delete(existingCV);
+        }
+
         logger.info("Form content: " + formContent);
         logger.info("Type: " + type);
         logger.info("Uploader: " + uploader);
         if (type.equals("CV")) {
+            logger.info("Uploader is submitting a CV: " + uploader);
+            targetDiscipline = targetDisciplineForCv(uploader, result).toString();
+        } else if (type.equals("OffreDeStage")) {
             logger.info("Uploader is an instance of Etudiant: " + uploader);
             targetDiscipline = ((Etudiant) uploader).getDiscipline().toString();
-        } else if (type.equals("OffreDeStage")) {
-            logger.info("Uploader is not an instance of EtudiantDTO: " + uploader);
-            targetDiscipline = result.get("targetDiscipline").asString();
         } else {
             throw new BadRequestException("Invalid document type");
         }
@@ -85,14 +92,14 @@ public class DocumentService {
 
         return switch (type) {
             case "CV" -> {
-                targetDiscipline = ((Etudiant) uploader).getDiscipline().toString();
+                targetDiscipline = targetDisciplineForCv(uploader, result).toString();
                 yield CV.builder()
                         .fileName(file.getOriginalFilename())
                         .targetDiscipline(Disciplines.valueOf(targetDiscipline))
                         .data(file.getBytes())
                         .contentType(file.getContentType())
                         .size(file.getSize())
-                        .utilisateur((Etudiant) uploader)
+                        .utilisateur(uploader)
                         .build();
             }
 
@@ -124,6 +131,29 @@ public class DocumentService {
             }
             default -> throw new BadRequestException("Invalid document type");
         };
+    }
+
+    private Disciplines targetDisciplineForCv(Utilisateur uploader, JsonNode result) throws BadRequestException {
+        if (uploader instanceof Etudiant etudiant) {
+            return etudiant.getDiscipline();
+        }
+
+        if (uploader instanceof Gestionnaire) {
+            String requestedDiscipline = result.get("targetDiscipline") == null
+                    ? null
+                    : result.get("targetDiscipline").asString();
+            if (requestedDiscipline == null || requestedDiscipline.isBlank()) {
+                return Disciplines.INFORMATIQUE;
+            }
+
+            try {
+                return Disciplines.valueOf(requestedDiscipline);
+            } catch (IllegalArgumentException exception) {
+                throw new BadRequestException("Discipline de CV invalide");
+            }
+        }
+
+        throw new BadRequestException("Seul un étudiant ou le compte développeur peut téléverser un CV");
     }
 
     @Transactional

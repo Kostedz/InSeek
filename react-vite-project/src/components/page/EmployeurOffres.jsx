@@ -71,11 +71,11 @@ function normalizeDiscipline(value) {
     return match?.[0] ?? rawValue;
 }
 
-function formValuesFromOffer(offer) {
-    if (!offer) return {...EMPTY_FORM};
+function formValuesFromOffer(offer, defaultCompanyName = "") {
+    if (!offer) return {...EMPTY_FORM, nomEntreprise: defaultCompanyName};
 
     return {
-        nomEntreprise: offer.nomEntreprise ?? "",
+        nomEntreprise: defaultCompanyName || offer.nomEntreprise || "",
         contactName: offer.contactName ?? "",
         email: offer.email ?? "",
         contactPhone: offer.contactPhone ?? "",
@@ -216,11 +216,18 @@ export default function EmployeurOffres({
                                             isAccountEmailValidated = true,
                                             canManageOffers = true,
                                             onSubmit,
+                                            user,
                                             companyName = "",
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
     const {t, i18n} = useTranslation();
+    const employerCompanyName = String(
+        user?.nomCompagnie
+        ?? user?.companyName
+        ?? companyName
+        ?? ""
+    ).trim();
     const usesRemoteOffers = offers === undefined;
     const [remoteOffers, setRemoteOffers] = useState(null);
     const [isLoadingOffers, setIsLoadingOffers] = useState(usesRemoteOffers);
@@ -231,7 +238,7 @@ export default function EmployeurOffres({
     ), [displayedOffers]);
     const [offerList, setOfferList] = useState(initialOffers);
     const [selectedId, setSelectedId] = useState(initialOffers[0]?.id ?? null);
-    const [formValues, setFormValues] = useState(() => formValuesFromOffer(initialOffers[0]));
+    const [formValues, setFormValues] = useState(() => formValuesFromOffer(initialOffers[0], employerCompanyName));
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
@@ -287,12 +294,12 @@ export default function EmployeurOffres({
         setOfferList(initialOffers);
         setSelectedId(initialOffers[0]?.id ?? null);
         setIsNewOffer(!initialOffers[0]);
-        setFormValues(formValuesFromOffer(initialOffers[0]));
-    }, [initialOffers]);
+        setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
+    }, [initialOffers, employerCompanyName]);
 
     useEffect(() => {
         if (!isNewOffer) {
-            setFormValues(formValuesFromOffer(selectedOffer));
+            setFormValues(formValuesFromOffer(selectedOffer, employerCompanyName));
             setSelectedFile(null);
             setFieldErrors({});
             setFileError("");
@@ -300,7 +307,7 @@ export default function EmployeurOffres({
             setSuccessMessage("");
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
-    }, [selectedId, isNewOffer]);
+    }, [selectedId, isNewOffer, employerCompanyName]);
 
     const selectOffer = (offer) => {
         setIsNewOffer(false);
@@ -311,7 +318,7 @@ export default function EmployeurOffres({
     const startNewOffer = () => {
         setIsNewOffer(true);
         setSelectedId(null);
-        setFormValues({...EMPTY_FORM, nomEntreprise: companyName});
+        setFormValues({...EMPTY_FORM, nomEntreprise: employerCompanyName});
         setSelectedFile(null);
         setFieldErrors({});
         setFileError("");
@@ -412,7 +419,7 @@ export default function EmployeurOffres({
         setIsSubmitting(true);
         const formData = buildOfferSubmissionFormData({
             file: selectedFile,
-            fields: formValues,
+            fields: {...formValues, nomEntreprise: employerCompanyName || formValues.nomEntreprise},
             offerId: selectedOffer?.id,
         });
 
@@ -687,14 +694,6 @@ export default function EmployeurOffres({
                                     <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
                                     <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
                                     <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                                        <Field id="nomEntreprise" label={t("employerOffers.fields.companyName")}
-                                               required
-                                               error={fieldErrors.nomEntreprise}>
-                                            <input id="nomEntreprise" name="nomEntreprise"
-                                                   value={formValues.nomEntreprise} onChange={updateField}
-                                                   className={inputClass(fieldErrors.nomEntreprise)}
-                                                   placeholder="Ex. Atelier Nord"/>
-                                        </Field>
                                         <Field id="position" label={t("employerOffers.fields.position")} required
                                                error={fieldErrors.position}>
                                             <input id="position" name="position" value={formValues.position}

@@ -13,7 +13,7 @@ import lombok.Setter;
 public class CV extends Document {
 
     @Builder
-    public CV(Long id, String fileName, Disciplines targetDiscipline, byte[] data, String contentType, long size, Etudiant utilisateur) {
+    public CV(Long id, String fileName, Disciplines targetDiscipline, byte[] data, String contentType, long size, Utilisateur utilisateur) {
         super(id, fileName, targetDiscipline, utilisateur, data, contentType, size, StatutValidation.EN_ATTENTE, null);
     }
 }
