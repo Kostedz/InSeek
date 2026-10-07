@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../utils/api.js";
+import ValidationTabs from "./ValidationTabs.jsx";
 
 const EXAMPLE_CVS = [
     {
@@ -249,6 +250,8 @@ function GestionnaireCvValidation() {
                         Actualiser
                     </button>
                 </div>
+
+                <ValidationTabs activeTab={"cvs"} />
 
                 {error && (
                     <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error" role="alert">

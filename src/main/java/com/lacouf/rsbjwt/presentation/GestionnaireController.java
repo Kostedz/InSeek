@@ -19,10 +19,15 @@ public class GestionnaireController {
     private final GestionnaireService gestionnaireService;
 
     @GetMapping("/documents/pending")
-    public ResponseEntity<List<DocumentValidationDTO>> listPendingDocuments() {
-        List<DocumentValidationDTO> pendingDocuments = gestionnaireService.listPendingDocuments();
-        return ResponseEntity.ok(pendingDocuments);
+    public ResponseEntity<List<DocumentValidationDTO>> listPendingDocuments( @RequestParam String type) {
+        try {
+            List<DocumentValidationDTO> pendingDocuments = gestionnaireService.listPendingDocuments(type);
+            return ResponseEntity.ok(pendingDocuments);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
+
 
     @PutMapping("/documents/{documentId}/approve")
     public ResponseEntity<DocumentValidationDTO> approveDocument(@PathVariable Long documentId) {

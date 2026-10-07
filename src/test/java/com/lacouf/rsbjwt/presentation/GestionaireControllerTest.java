@@ -24,8 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -61,7 +60,7 @@ class GestionaireControllerTest {
 
 
     @Test
-    @DisplayName("GET /gestionnaire/documents/pending retourne 200 et la liste des documents en attente")
+    @DisplayName("GET /gestionnaire/documents/pending/{type} retourne 200 et la liste des documents en attente")
     void listPendingDocuments_retourne200() throws Exception {
 
         DocumentValidationDTO doc1 = new DocumentValidationDTO(
@@ -99,7 +98,7 @@ class GestionaireControllerTest {
                 "Développement de jeux vidéo"
         );
 
-        when(gestionnaireService.listPendingDocuments()).thenReturn(List.of(doc1, doc2));
+        when(gestionnaireService.listPendingDocuments(anyString())).thenReturn(List.of(doc1, doc2));
 
         mockMvc.perform(get("/gestionnaire/documents/pending"))
                 .andExpect(status().isOk())
@@ -116,7 +115,7 @@ class GestionaireControllerTest {
     @DisplayName("GET /gestionnaire/documents/pending retourne 200 et une liste vide s'il n'y a rien en attente")
     void listPendingDocuments_listeVide_retourne200() throws Exception {
 
-        when(gestionnaireService.listPendingDocuments()).thenReturn(List.of());
+        when(gestionnaireService.listPendingDocuments(anyString())).thenReturn(List.of());
 
         mockMvc.perform(get("/gestionnaire/documents/pending"))
                 .andExpect(status().isOk())
