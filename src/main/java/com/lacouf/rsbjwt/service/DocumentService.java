@@ -19,6 +19,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.List;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -128,6 +129,94 @@ public class DocumentService {
             }
             default -> throw new BadRequestException("Invalid document type");
         };
+    }
+
+    public List<OffreDeStageDTO> findAllOffreDeStage(){
+        return documentRepository.findAllOffreStage().
+                stream().
+                map(o -> new OffreDeStageDTO(
+                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                )).toList();
+    }
+
+    public OffreDeStageDTO findOffreDeStageById(Long id){
+        return documentRepository.findOffreStageById(id).
+                map(o -> new OffreDeStageDTO(
+                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                )).
+                orElseThrow(() -> new RuntimeException("Stage n'a pas été trouvé"));
+    }
+
+    public List<OffreDeStageDTO> findOffreDeStageByCompagnieName(String nomCompagnie){
+            return documentRepository.findOffreStagedByNomCompagnie(nomCompagnie).
+                    stream().
+                    map(o -> new OffreDeStageDTO(
+                            o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                            o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                            o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                            o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                    )).toList();
+    }
+
+    public List<OffreDeStageDTO> findOffreDeStageDiscipline(Disciplines discipline){
+        return documentRepository.findOffreStageByTargetDiscipline(discipline).
+                stream().
+                map(o -> new OffreDeStageDTO(
+                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                )).toList();
+    }
+
+    public List<OffreDeStageDTO> findOffreDeStageByPosition(String position){
+        return documentRepository.findOffreStageByPosition(position).
+                stream().
+                map(o -> new OffreDeStageDTO(
+                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                )).toList();
+    }
+
+    public List<OffreDeStageDTO> findOffreDeStageByMinimumSalaire(Double salaire){
+        return documentRepository.findOffreStageByMinimumSalaire(salaire).
+                stream().
+                map(o -> new OffreDeStageDTO(
+                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                )).toList();
+    }
+
+    public List<OffreDeStageDTO> findOffreDeStageByDateDebutStage(LocalDate dateDebut){
+        return documentRepository.findOffreStageByDateDebutStage(dateDebut).
+                stream().
+                map(o -> new OffreDeStageDTO(
+                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                )).toList();
+    }
+
+    public List<OffreDeStageDTO> findOffreDeStageByDateFinStage(LocalDate dateFin){
+        return documentRepository.findOffreStageByDateFinStage(dateFin).
+                stream().
+                map(o -> new OffreDeStageDTO(
+                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
+                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
+                )).toList();
     }
 
     private Disciplines targetDisciplineForCv(Utilisateur uploader, JsonNode result) throws BadRequestException {

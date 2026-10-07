@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
@@ -55,23 +56,23 @@ public class DocumentController {
     }
 
     @GetMapping("/documents/stage")
-    public ResponseEntity<OffreDeStageDTO> findAllStages(){
-        return null;
+    public List<OffreDeStageDTO> findAllStages(){
+        return documentService.findAllOffreDeStage();
     }
 
     @GetMapping("/documents/stage/{id}")
     public OffreDeStageDTO getOffreDeStageById(@PathVariable Long id){
-        return null;
+        return documentService.findOffreDeStageById(id);
     }
 
-    @GetMapping("/documents/stage/{discipline}")
-    public ResponseEntity<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable String discipline){
-        return null;
+    @GetMapping("/documents/stage/discipline/{discipline}")
+    public List<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable Disciplines discipline){
+        return documentService.findOffreDeStageDiscipline(discipline);
     }
 
-    @GetMapping("/documents/stage/{compagnie}")
-    public ResponseEntity<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie){
-        return null;
+    @GetMapping("/documents/stage/compagine/{compagnie}")
+    public List<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie){
+        return documentService.findOffreDeStageByCompagnieName(compagnie);
     }
 
     @GetMapping("/employeur/offres")
