@@ -100,7 +100,7 @@ class GestionaireControllerTest {
 
         when(gestionnaireService.listPendingDocuments(anyString())).thenReturn(List.of(doc1, doc2));
 
-        mockMvc.perform(get("/gestionnaire/documents/pending"))
+        mockMvc.perform(get("/gestionnaire/documents/pending").queryParam("type", "CV"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].fileName").value("cv_alice.pdf"))
@@ -117,7 +117,7 @@ class GestionaireControllerTest {
 
         when(gestionnaireService.listPendingDocuments(anyString())).thenReturn(List.of());
 
-        mockMvc.perform(get("/gestionnaire/documents/pending"))
+        mockMvc.perform(get("/gestionnaire/documents/pending").queryParam("type", "CV"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
