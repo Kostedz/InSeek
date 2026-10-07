@@ -207,7 +207,6 @@ const resources = {
                 detailsStepTitle: "2. Informations sur le stage",
                 detailsStepDescription: "Ces informations seront associées à votre offre et affichées aux étudiants après approbation.",
                 fields: {
-                    companyName: "Nom de l’entreprise",
                     position: "Titre du stage",
                     discipline: "Discipline",
                     selectDiscipline: "Sélectionnez une discipline",
@@ -595,7 +594,6 @@ const resources = {
                 detailsStepTitle: "2. Internship details",
                 detailsStepDescription: "This information will be associated with your offer and shown to students after approval.",
                 fields: {
-                    companyName: "Company name",
                     position: "Internship title",
                     discipline: "Discipline",
                     selectDiscipline: "Select a discipline",
