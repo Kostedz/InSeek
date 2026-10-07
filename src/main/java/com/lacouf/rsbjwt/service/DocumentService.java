@@ -46,8 +46,7 @@ public class DocumentService {
             return saveEmployerOffer(file, formContent, request, null);
         }
 
-        String email = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
-        Utilisateur uploader = utilisateurService.findEntityByEmail(email);
+
         String targetDiscipline;
 
         CV existingCV = documentRepository.findByUtilisateur(uploader);

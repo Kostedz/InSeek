@@ -74,4 +74,14 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             WHERE o.id = :id
             """)
     Optional<OffreDeStage> findOffreStageById(Long id);
+
+    @Query("""
+            SELECT o
+            FROM OffreDeStage o
+            WHERE o.utilisateur = :employeur
+            ORDER BY o.id DESC
+            """)
+    List<OffreDeStage> findOffersByEmployer(@Param("employeur") com.lacouf.rsbjwt.model.Utilisateur employeur);
+
+    CV findByUtilisateur(Utilisateur utilisateur);
 }
