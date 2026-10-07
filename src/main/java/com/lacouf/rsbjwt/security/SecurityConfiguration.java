@@ -5,6 +5,7 @@ import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -39,6 +40,9 @@ public class SecurityConfiguration {
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
 
+    @Value("${app.dev.enabled:false}")
+    private boolean devEnabled;
+
     private static final String H2_CONSOLE_PATH = "/h2-console/**";
     private static final String USER_LOGIN_PATH = "/user/login";
     private static final String USER_REGISTER_PATH = "/user/register";
@@ -51,6 +55,13 @@ public class SecurityConfiguration {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, UtilisateurRepository utilisateurRepository) throws Exception {
+        String[] documentUploadRoles = devEnabled
+                ? new String[]{Role.ETUDIANT.name(), Role.EMPLOYEUR.name(), Role.GESTIONNAIRE.name()}
+                : new String[]{Role.ETUDIANT.name(), Role.EMPLOYEUR.name()};
+        String[] employerWriteRoles = devEnabled
+                ? new String[]{Role.EMPLOYEUR.name(), Role.GESTIONNAIRE.name()}
+                : new String[]{Role.EMPLOYEUR.name()};
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -64,9 +75,9 @@ public class SecurityConfiguration {
                         // Use Role enum names for authorities
                         .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name(), Role.ETUDIANT.name(), Role.EMPLOYEUR.name(), Role.PROFESSEUR.name())
                         .requestMatchers(ETUDIANT_PATH).hasAuthority(Role.ETUDIANT.name())
-                        .requestMatchers(POST, "/documents/upload").hasAnyAuthority(Role.ETUDIANT.name(), Role.EMPLOYEUR.name())
+                        .requestMatchers(POST, "/documents/upload").hasAnyAuthority(documentUploadRoles)
                         .requestMatchers(GET, "/employeur/offres").permitAll()
-                        .requestMatchers(PUT, "/employeur/offres/**").hasAuthority(Role.EMPLOYEUR.name())
+                        .requestMatchers(PUT, "/employeur/offres/**").hasAnyAuthority(employerWriteRoles)
                         .requestMatchers(PROFESSEUR_PATH).hasAuthority(Role.PROFESSEUR.name())
                         .requestMatchers(GESTIONNAIRE_PATH).hasAuthority(Role.GESTIONNAIRE.name())
                         .anyRequest().authenticated() // Changed from denyAll() to authenticated() - more common, adjust if denyAll is strictly needed
