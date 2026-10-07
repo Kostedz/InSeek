@@ -257,7 +257,7 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
                         <input
                             ref={fileInputRef}
                             id="cv-file"
-                            type="file"
+                            type="CV"
                             accept="application/pdf,.pdf"
                             onChange={handleFileChange}
                             disabled={!isAccountEmailValidated}

@@ -106,7 +106,7 @@ function GestionnaireCvValidation() {
         setError("");
 
         try {
-            const response = await api.gestionnaire.getPendingCvs();
+            const response = await api.gestionnaire.getPendingDocuments("CV");
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -152,7 +152,7 @@ function GestionnaireCvValidation() {
         setError("");
 
         try {
-            const response = await api.gestionnaire.approveCv(selectedCv.id);
+            const response = await api.gestionnaire.approveDocument(selectedCv.id);
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -189,7 +189,7 @@ function GestionnaireCvValidation() {
         setError("");
 
         try {
-            const response = await api.gestionnaire.rejectCv(selectedCv.id, comment.trim());
+            const response = await api.gestionnaire.rejectDocument(selectedCv.id, comment.trim());
 
             if (response.status === 403) {
                 setForbidden(true);

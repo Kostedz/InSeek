@@ -71,13 +71,15 @@ export const api = {
     },
 
     gestionnaire: {
-        getPendingOffers: () =>
-            fetcher("/gestionnaire/documents/pending", { method: "GET" }),
+        getPendingDocuments: (type) => {
+            const query = type ? `?type=${encodeURIComponent(type)}` : "";
+            return fetcher(`/gestionnaire/documents/pending/${query}`, { method: "GET" });
+        },
 
-        approveOffer: (id) =>
+        approveDocument: (id) =>
             fetcher(`/gestionnaire/documents/${id}/approve`, { method: "PUT" }),
 
-        rejectOffer: (id, comment) =>
+        rejectDocument: (id, comment) =>
             fetcher(`/gestionnaire/documents/${id}/reject`, {
                 method: "PUT",
                 headers: {
