@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -19,10 +20,14 @@ public class OffreDeStage extends Document{
     private LocalDate dateDebutStage;
     private LocalDate dateFinStage;
     private String adresseEntreprise;
-    private Double salaire; // Ajout
-    @ManyToOne // Ajout
-    @JoinColumn(name = "employeur_id") // Ajout
-    private Employeur employeur; // Ajout
+    private Double salaire;
+    private String contactName;
+    private String contactPhone;
+    private int version = 1;
+    private LocalDateTime updatedAt;
+    @ManyToOne
+    @JoinColumn(name = "employeur_id")
+    private Utilisateur employeur;
     //private Etudiant edtudiant // Au cas ou on veut envoyer une offre a un etuuant specifique
     @Enumerated(EnumType.STRING)
     private Disciplines discipline;
@@ -30,19 +35,26 @@ public class OffreDeStage extends Document{
     @Builder
     public OffreDeStage(Long id, String fileName, Disciplines targetDiscipline,
                         byte[] data, String contentType, long size,
-                        Employeur employeur,
+                        Utilisateur employeur,
+                        String nomEntreprise,
                         String position, String descriptionPosition,
-                        LocalDate dateDebutStage, LocalDate dateFinStage, String adresseEntreprise,Double salaire) {
+                        LocalDate dateDebutStage, LocalDate dateFinStage, String adresseEntreprise, Double salaire,
+                        String contactName, String contactPhone) {
 
         super(id, fileName, targetDiscipline, employeur, data, contentType, size, StatutValidation.EN_ATTENTE, null);
 
-        this.nomEntreprise = employeur.getNomCompagnie();
+        this.nomEntreprise = nomEntreprise == null || nomEntreprise.isBlank()
+                ? employeur instanceof Employeur employer ? employer.getNomCompagnie() : employeur.getNom()
+                : nomEntreprise;
         this.position = position;
         this.descriptionPosition = descriptionPosition;
         this.dateDebutStage = dateDebutStage;
         this.dateFinStage = dateFinStage;
         this.adresseEntreprise = adresseEntreprise;
         this.salaire = salaire;
+        this.contactName = contactName;
+        this.contactPhone = contactPhone;
+        this.updatedAt = LocalDateTime.now();
     }
 
 }

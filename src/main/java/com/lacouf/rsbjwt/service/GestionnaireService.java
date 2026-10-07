@@ -17,6 +17,7 @@
     public class GestionnaireService {
         private final DocumentRepository documentRepository;
 
+        @Transactional(readOnly = true)
         public List<DocumentValidationDTO> listPendingDocuments() {
             return documentRepository.findByStatut(StatutValidation.EN_ATTENTE)
                     .stream()

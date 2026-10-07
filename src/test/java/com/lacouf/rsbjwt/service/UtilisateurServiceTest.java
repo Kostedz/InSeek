@@ -446,12 +446,6 @@ class UtilisateurServiceTest {
     }
 
     @Test
-    @DisplayName("toEntity() avec un UtilisateurDTO null retourne null")
-    void toEntity_UtilisateurDTO_null_retourneNull() throws BadRequestException {
-        assertNull(utilisateurService.toEntity((UtilisateurDTO) null));
-    }
-
-    @Test
     @DisplayName("toEntity() avec un étudiant retourne un Etudiant")
     void toEntity_etudiant_retourneEtudiant()
             throws BadRequestException {

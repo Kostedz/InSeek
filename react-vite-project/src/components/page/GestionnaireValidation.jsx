@@ -78,8 +78,8 @@ function isPending(offer) {
     return offer.statut === "EN_ATTENTE";
 }
 
-function StatusBadge({ status }) {
-    const { t } = useTranslation();
+function StatusBadge({status}) {
+    const {t} = useTranslation();
     const styles = {
         EN_ATTENTE: "border-gold bg-gold/45 text-ink",
         VALIDE: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
@@ -99,8 +99,8 @@ function StatusBadge({ status }) {
     );
 }
 
-function InfoItem({ label, value }) {
-    const { t } = useTranslation();
+function InfoItem({label, value}) {
+    const {t} = useTranslation();
 
     return (
         <div>
@@ -111,7 +111,7 @@ function InfoItem({ label, value }) {
 }
 
 function GestionnaireValidation() {
-    const { t, i18n } = useTranslation();
+    const {t, i18n} = useTranslation();
     const [offers, setOffers] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [comment, setComment] = useState("");
@@ -161,7 +161,7 @@ function GestionnaireValidation() {
             const samples = createSampleOffers(t).map((offer) => normalizeOffer(offer, t));
             setOffers(samples);
             setSelectedId(samples[0]?.id ?? null);
-            setError({ key: "managerValidation.errors.unavailableWithSamples" });
+            setError({ key: "managerValidation.errors.unavailable" });
         } finally {
             setLoading(false);
         }
@@ -183,7 +183,7 @@ function GestionnaireValidation() {
         }, t);
 
         setOffers((currentOffers) => currentOffers.map((offer) => (
-            offer.id === id ? { ...offer, ...updatedOffer } : offer
+            offer.id === id ? {...offer, ...updatedOffer} : offer
         )));
     };
 
@@ -203,7 +203,7 @@ function GestionnaireValidation() {
             }
 
             if ([400, 404, 409].includes(response.status)) {
-                setError({ key: "managerValidation.errors.offerUnavailable" });
+                setError({key: "managerValidation.errors.offerUnavailable"});
                 await loadOffers();
                 return;
             }
@@ -227,7 +227,7 @@ function GestionnaireValidation() {
         if (!selectedOffer || !isPending(selectedOffer) || saving) return;
 
         if (!comment.trim()) {
-            setError({ key: "managerValidation.errors.requiredComment" });
+            setError({key: "managerValidation.errors.requiredComment"});
             return;
         }
 
@@ -244,7 +244,7 @@ function GestionnaireValidation() {
             }
 
             if ([400, 404, 409].includes(response.status)) {
-                setError({ key: "managerValidation.errors.offerUnavailable" });
+                setError({key: "managerValidation.errors.offerUnavailable"});
                 await loadOffers();
                 return;
             }
@@ -267,7 +267,8 @@ function GestionnaireValidation() {
     if (forbidden) {
         return (
             <section className="flex flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
+                <div
+                    className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
                     <p className="text-sm font-bold text-error">403</p>
                     <h1 className="mt-2 text-3xl font-black text-ink">{t("managerValidation.forbiddenTitle")}</h1>
                     <p className="mt-3 text-sm leading-7 text-ink-soft">{t("managerValidation.forbiddenDescription")}</p>
@@ -284,33 +285,25 @@ function GestionnaireValidation() {
                         <h1 className="mt-4 text-3xl font-black tracking-tight text-ink">{t("managerValidation.title")}</h1>
                         <p className="mt-2 text-sm leading-6 text-ink-soft">{t("managerValidation.description")}</p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={loadOffers}
-                        className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/40"
-                    >
-                        {t("managerValidation.refresh")}
+                    <button type="button" onClick={loadOffers}
+                            className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/40">{t("managerValidation.refresh")}
                     </button>
                 </div>
 
-                {error && (
-                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error" role="alert">
-                        {translateMessage(t, error)}
-                    </p>
-                )}
-                {message && (
-                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]" role="status">
-                        {translateMessage(t, message)}
-                    </p>
-                )}
+                {error &&
+                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"
+                       role="alert">{translateMessage(t, error)}</p>}
+                {message &&
+                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]"
+                       role="status">{translateMessage(t, message)}</p>}
 
                 <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
-                    <aside className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
+                    <aside
+                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                         <div className="flex items-center justify-between">
                             <h2 className="font-black text-ink">{t("managerValidation.pending")}</h2>
-                            <span className="rounded-full bg-gold px-3 py-1 text-sm font-bold text-ink">
-                                {pendingOffers.length}
-                            </span>
+                            <span
+                                className="rounded-full bg-gold px-3 py-1 text-sm font-bold text-ink">{pendingOffers.length}</span>
                         </div>
 
                         <div className="mt-4 space-y-2">
@@ -338,11 +331,13 @@ function GestionnaireValidation() {
                     </aside>
 
                     {selectedOffer ? (
-                        <article className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
+                        <article
+                            className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                             <div className="border-b border-line p-5 sm:p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <StatusBadge status={selectedOffer.statut} />
-                                    <span className="text-xs text-ink-soft">{t("managerValidation.offerId", { id: selectedOffer.id })}</span>
+                                    <StatusBadge status={selectedOffer.statut}/>
+                                    <span
+                                        className="text-xs text-ink-soft">{t("managerValidation.offerId", {id: selectedOffer.id})}</span>
                                 </div>
                                 <h2 className="mt-4 text-2xl font-black text-ink">{selectedOffer.position}</h2>
                                 <p className="mt-1 font-semibold text-ink-soft">{selectedOffer.nomEntreprise}</p>
@@ -353,33 +348,19 @@ function GestionnaireValidation() {
                                     <h3 className="font-black text-ink">{t("managerValidation.document")}</h3>
                                     <div className="mt-3 rounded-xl border border-line bg-canvas p-4">
                                         <p className="font-bold text-ink">{selectedOffer.fileName}</p>
-                                        <p className="mt-1 text-sm text-ink-soft">
-                                            {selectedOffer.size
-                                                ? t("managerValidation.fileSize", {
-                                                    size: new Intl.NumberFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {
-                                                        minimumFractionDigits: 1,
-                                                        maximumFractionDigits: 1,
-                                                    }).format(selectedOffer.size / 1000000),
-                                                })
-                                                : t("managerValidation.uploadedDocument")}
-                                        </p>
+                                        <p className="mt-1 text-sm text-ink-soft">{selectedOffer.size ? t("managerValidation.fileSize", {
+                                            size: new Intl.NumberFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {
+                                                minimumFractionDigits: 1,
+                                                maximumFractionDigits: 1
+                                            }).format(selectedOffer.size / 1000000)
+                                        }) : t("managerValidation.uploadedDocument")}</p>
                                         {selectedOffer.fileUrl ? (
-                                            <a
-                                                href={selectedOffer.fileUrl}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="mt-4 inline-block rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft"
-                                            >
-                                                {t("managerValidation.openPdf")}
-                                            </a>
+                                            <a href={selectedOffer.fileUrl} target="_blank" rel="noreferrer"
+                                               className="mt-4 inline-block rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft">{t("managerValidation.openPdf")}</a>
                                         ) : (
-                                            <button
-                                                type="button"
-                                                onClick={() => setMessage({ key: "managerValidation.pdfLinkUnavailable" })}
-                                                className="mt-4 rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft"
-                                            >
-                                                {t("managerValidation.viewPdf")}
-                                            </button>
+                                            <button type="button"
+                                                    onClick={() => setMessage({key: "managerValidation.pdfLinkUnavailable"})}
+                                                    className="mt-4 rounded-lg bg-ink px-3 py-2 text-sm font-bold text-white hover:bg-ink-soft">{t("managerValidation.viewPdf")}</button>
                                         )}
                                     </div>
                                 </div>
@@ -387,28 +368,33 @@ function GestionnaireValidation() {
                                 <div>
                                     <h3 className="font-black text-ink">{t("managerValidation.employerInformation")}</h3>
                                     <div className="mt-3 grid gap-4 rounded-xl border border-line p-4">
-                                        <InfoItem label={t("managerValidation.companyName")} value={selectedOffer.nomEntreprise} />
-                                        <InfoItem label={t("managerValidation.contactPerson")} value={selectedOffer.contactName} />
-                                        <InfoItem label={t("managerValidation.email")} value={selectedOffer.email} />
-                                        <InfoItem label={t("managerValidation.phone")} value={selectedOffer.contactPhone} />
+                                        <InfoItem label={t("managerValidation.companyName")}
+                                                  value={selectedOffer.nomEntreprise}/>
+                                        <InfoItem label={t("managerValidation.contactPerson")}
+                                                  value={selectedOffer.contactName}/>
+                                        <InfoItem label={t("managerValidation.email")} value={selectedOffer.email}/>
+                                        <InfoItem label={t("managerValidation.phone")}
+                                                  value={selectedOffer.contactPhone}/>
                                     </div>
                                 </div>
 
                                 <div className="md:col-span-2">
                                     <h3 className="font-black text-ink">{t("managerValidation.internshipDetails")}</h3>
                                     <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">
-                                        <InfoItem label={t("managerValidation.positionTitle")} value={selectedOffer.position} />
-                                        <InfoItem label={t("managerValidation.discipline")} value={selectedOffer.targetDiscipline} />
-                                        <InfoItem
-                                            label={t("managerValidation.dates")}
-                                            value={t("managerValidation.dateRange", {
-                                                start: formatDate(selectedOffer.dateDebutStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
-                                                end: formatDate(selectedOffer.dateFinStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
-                                            })}
-                                        />
-                                        <InfoItem label={t("managerValidation.location")} value={selectedOffer.adresseEntreprise} />
-                                        <div className="sm:col-span-2">
-                                            <InfoItem label={t("managerValidation.descriptionLabel")} value={selectedOffer.descriptionPosition} />
+                                        <InfoItem label={t("managerValidation.positionTitle")}
+                                                  value={selectedOffer.position}/>
+                                        <InfoItem label={t("managerValidation.discipline")}
+                                                  value={selectedOffer.targetDiscipline}/>
+                                        <InfoItem label={t("managerValidation.dates")}
+                                                  value={t("managerValidation.dateRange", {
+                                                      start: formatDate(selectedOffer.dateDebutStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
+                                                      end: formatDate(selectedOffer.dateFinStage, i18n.resolvedLanguage) ?? t("managerValidation.emptyValue"),
+                                                  })}/>
+                                        <InfoItem label={t("managerValidation.location")}
+                                                  value={selectedOffer.adresseEntreprise}/>
+                                        <div className="sm:col-span-2"><InfoItem
+                                            label={t("managerValidation.descriptionLabel")}
+                                                                                 value={selectedOffer.descriptionPosition}/>
                                         </div>
                                     </div>
                                 </div>
@@ -418,60 +404,35 @@ function GestionnaireValidation() {
                                 <div className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 sm:p-6">
                                     {showRejectForm && (
                                         <div className="mb-4">
-                                            <label htmlFor="rejection-comment" className="text-sm font-bold text-ink">
-                                                {t("managerValidation.rejectionComment")}
-                                            </label>
-                                            <textarea
-                                                id="rejection-comment"
-                                                value={comment}
-                                                onChange={(event) => setComment(event.target.value)}
-                                                rows="4"
-                                                className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
-                                                placeholder={t("managerValidation.rejectionPlaceholder")}
-                                            />
+                                            <label htmlFor="rejection-comment"
+                                                   className="text-sm font-bold text-ink">{t("managerValidation.rejectionComment")}</label>
+                                            <textarea id="rejection-comment" value={comment}
+                                                      onChange={(event) => setComment(event.target.value)} rows="4"
+                                                      className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
+                                                      placeholder={t("managerValidation.rejectionPlaceholder")}/>
                                         </div>
                                     )}
                                     <div className="flex flex-wrap justify-end gap-3">
-                                        {showRejectForm && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowRejectForm(false);
-                                                    setComment("");
-                                                }}
-                                                className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/30"
-                                            >
-                                                {t("managerValidation.cancel")}
-                                            </button>
-                                        )}
-                                        <button
-                                            type="button"
-                                            disabled={saving}
-                                            onClick={() => (showRejectForm ? handleReject() : setShowRejectForm(true))}
-                                            className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3]"
-                                        >
-                                            {showRejectForm ? t("managerValidation.confirmRejection") : t("managerValidation.reject")}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={saving}
-                                            onClick={handleApprove}
-                                            className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft"
-                                        >
-                                            {saving ? t("managerValidation.processing") : t("managerValidation.approve")}
-                                        </button>
+                                        {showRejectForm && <button type="button" onClick={() => {
+                                            setShowRejectForm(false);
+                                            setComment("");
+                                        }}
+                                                                   className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/30">{t("managerValidation.cancel")}</button>}
+                                        <button type="button" disabled={saving}
+                                                onClick={() => showRejectForm ? handleReject() : setShowRejectForm(true)}
+                                                className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3]">{showRejectForm ? t("managerValidation.confirmRejection") : t("managerValidation.reject")}</button>
+                                        <button type="button" disabled={saving} onClick={handleApprove}
+                                                className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft">{saving ? t("managerValidation.processing") : t("managerValidation.approve")}</button>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft">
-                                    {t("managerValidation.alreadyProcessed")}
-                                </div>
+                                <div
+                                    className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft">{t("managerValidation.alreadyProcessed")}</div>
                             )}
                         </article>
                     ) : (
-                        <div className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">
-                            {t("managerValidation.selectOffer")}
-                        </div>
+                        <div
+                            className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">{t("managerValidation.selectOffer")}</div>
                     )}
                 </div>
             </div>

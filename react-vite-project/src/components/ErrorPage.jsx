@@ -1,10 +1,11 @@
 import React from "react";
-import { Link, useRouteError } from "react-router-dom";
+import {Link, useLocation, useRouteError} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {translateMessage} from "../utils/i18nMessage.js";
 
 function ErrorPage({ error: propError }) {
   const { t } = useTranslation();
+  const location = useLocation();
 
   let routeError = null;
   try {
@@ -13,7 +14,7 @@ function ErrorPage({ error: propError }) {
     routeError = null;
   }
 
-  const error = propError || routeError;
+  const error = propError || location.state?.error || routeError;
 
   const status =
       error?.status ||
