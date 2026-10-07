@@ -47,6 +47,7 @@ public class DocumentServiceTest {
     private MockHttpServletRequest request;
     private Etudiant etudiant;
     private Employeur employeur;
+    private Gestionnaire gestionnaire;
 
     @BeforeEach
     public void setUp() {
@@ -96,6 +97,14 @@ public class DocumentServiceTest {
                 .nom("Entreprise")
                 .prenom("Test")
                 .build();
+
+        gestionnaire = new Gestionnaire(
+                null,
+                "Dev",
+                "InSeek",
+                "dev@inseek.local",
+                "password"
+        );
     }
 
     @Test
@@ -112,6 +121,19 @@ public class DocumentServiceTest {
         verify(jwtTokenProvider).getEmailFromJWT("fake-jwt");
         verify(utilisateurService).findEntityByEmail("test@example.com");
         verify(documentRepository).existsByFileNameAndTargetDiscipline("cv.pdf", Disciplines.INFORMATIQUE);
+        verify(documentRepository).save(any(CV.class));
+    }
+
+    @Test
+    @DisplayName("saveDocument - should allow the development manager to submit a CV")
+    public void testSaveDocumentCvAsDevelopmentManager() throws NotFoundException, BadRequestException, IOException {
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("dev@inseek.local");
+        when(utilisateurService.findEntityByEmail("dev@inseek.local")).thenReturn(gestionnaire);
+        when(documentRepository.existsByFileNameAndTargetDiscipline("cv.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
+
+        DocumentDTO result = documentService.saveDocument(fileCV, formContentCV, request);
+
+        assertInstanceOf(CVDTO.class, result);
         verify(documentRepository).save(any(CV.class));
     }
 

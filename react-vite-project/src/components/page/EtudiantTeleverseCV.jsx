@@ -3,6 +3,14 @@ import {useTranslation} from "react-i18next";
 import {api} from "../../utils/api.js";
 import {translateMessage} from "../../utils/i18nMessage.js";
 
+function normalizeStatus(status) {
+    const normalized = String(status ?? "").toUpperCase();
+    if (["VALIDATED", "VALIDÉ", "VALIDE", "APPROVED"].includes(normalized)) return "VALIDE";
+    if (["REJECTED", "REJETÉ", "REJETE", "REJECT"].includes(normalized)) return "REJETE";
+    if (["PENDING", "EN_ATTENTE", "EN ATTENTE"].includes(normalized)) return "EN_ATTENTE";
+    return "NOT_SUBMITTED";
+}
+
 
 export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = true, onCvUpdated}) {
     const {t} = useTranslation();
@@ -13,9 +21,17 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentCv, setCurrentCv] = useState(cvData ?? null);
 
-    const status = cvData?.status || "NOT_SUBMITTED";
-    const rejectionComment = cvData?.rejectionComment || "";
+    const status = normalizeStatus(currentCv?.statut ?? currentCv?.status);
+    const rejectionComment = currentCv?.commentaireRejet ?? currentCv?.rejectionComment ?? "";
+    const fileName = currentCv?.fileName ?? currentCv?.filename ?? "";
+    const statusLabels = {
+        EN_ATTENTE: translateMessage(t, "studentCv.status.pending"),
+        VALIDE: translateMessage(t, "studentCv.status.approved"),
+        REJETE: translateMessage(t, "studentCv.status.rejected"),
+        NOT_SUBMITTED: translateMessage(t, "studentCv.status.none"),
+    };
 
     const validateFile = (file) => {
         setErrorMessage("");
@@ -90,9 +106,15 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
 
             const responseData = await res.json();
 
-            if (status === "VALIDATED") {
+            const uploadedCv = {
+                ...responseData,
+                fileName: responseData.fileName ?? selectedFile.name,
+                statut: responseData.statut ?? responseData.status ?? "EN_ATTENTE",
+            };
+
+            if (status === "VALIDE") {
                 setSuccessMessage("studentCv.success.updated");
-            } else if (status === "REJECTED") {
+            } else if (status === "REJETE") {
                 setSuccessMessage("studentCv.success.corrected");
             } else {
                 setSuccessMessage("studentCv.success.uploaded");
@@ -102,8 +124,9 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
             if (fileInputRef.current) fileInputRef.current.value = "";
 
             if (onCvUpdated) {
-                onCvUpdated(responseData);
+                onCvUpdated(uploadedCv);
             }
+            setCurrentCv(uploadedCv);
         } catch (err) {
             setErrorMessage(err?.key || "studentCv.errors.connection");
         } finally {
@@ -127,12 +150,62 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
                     </p>
                 )}
 
-                {status === "REJECTED" && rejectionComment && (
-                    <p className="mt-6 rounded-xl border border-blush bg-blush/40 px-4 py-3 text-sm text-ink"
-                       role="status">
-                        <strong>{translateMessage(t, "studentCv.rejectionComment")}:</strong> {rejectionComment}
-                    </p>
-                )}
+                <section className="mt-8 rounded-2xl border border-line bg-canvas p-5 sm:p-6"
+                         aria-labelledby="student-cv-request-title">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h2 id="student-cv-request-title" className="text-lg font-black text-ink">
+                            {translateMessage(t, "studentCv.previousRequest")}
+                        </h2>
+                        {currentCv && (
+                            <span
+                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${
+                                    status === "VALIDE"
+                                        ? "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]"
+                                        : status === "REJETE"
+                                            ? "border-[#eab0bf] bg-[#fff0f3] text-error"
+                                            : "border-gold bg-gold/45 text-ink"
+                                }`}>
+                                {statusLabels[status] ?? status}
+                            </span>
+                        )}
+                    </div>
+
+                    {currentCv ? (
+                        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
+                                    {translateMessage(t, "studentCv.request")}
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-ink">
+                                    {translateMessage(t, "studentCv.requestSubmitted")}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
+                                    {translateMessage(t, "studentCv.fileName")}
+                                </p>
+                                <p className="mt-1 break-words text-sm font-semibold text-ink">{fileName}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
+                                    {translateMessage(t, "studentCv.statusLabel")}
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-ink">{statusLabels[status] ?? status}</p>
+                            </div>
+                            {status === "REJETE" && rejectionComment && (
+                                <div className="rounded-xl border border-blush bg-blush/40 px-4 py-3 sm:col-span-3"
+                                     role="status">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
+                                        {translateMessage(t, "studentCv.rejectionReason")}
+                                    </p>
+                                    <p className="mt-1 text-sm leading-6 text-ink">{rejectionComment}</p>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="mt-4 text-sm text-ink-soft">{translateMessage(t, "studentCv.noPreviousRequest")}</p>
+                    )}
+                </section>
 
                 <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
                     <div
