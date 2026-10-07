@@ -1,5 +1,9 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {createTranslationMessage, translateMessage} from "../../utils/i18nMessage.js";
+import api from "../../utils/api.js";
+import Loading from "../Loading.jsx";
+import ErrorPage from "../ErrorPage.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -28,27 +32,7 @@ const EMPTY_FORM = {
     dateFinStage: "",
     descriptionPosition: "",
 };
-
-const DEMO_OFFERS = [
-    {
-        id: "offre-demo-17",
-        statut: "EN_ATTENTE",
-        fileName: "offre-stage-developpement.pdf",
-        nomEntreprise: "Atelier Nord",
-        position: "Stagiaire en développement web",
-        descriptionPosition: "Contribuer au développement de fonctionnalités web et aux tests automatisés avec l’équipe produit.",
-        dateDebutStage: "2027-01-11",
-        dateFinStage: "2027-04-30",
-        adresseEntreprise: "1450, rue Saint-Urbain, Montréal, QC",
-        salaire: 22.5,
-        email: "marie.gagnon@ateliernord.ca",
-        contactName: "Marie Gagnon",
-        contactPhone: "+1 514 555-0182",
-        targetDiscipline: "INFORMATIQUE",
-        version: 1,
-        updatedAt: "2026-09-28",
-    },
-];
+const EMPTY_OFFERS = [];
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
@@ -87,11 +71,11 @@ function normalizeDiscipline(value) {
     return match?.[0] ?? rawValue;
 }
 
-function formValuesFromOffer(offer) {
-    if (!offer) return {...EMPTY_FORM};
+function formValuesFromOffer(offer, defaultCompanyName = "") {
+    if (!offer) return {...EMPTY_FORM, nomEntreprise: defaultCompanyName};
 
     return {
-        nomEntreprise: offer.nomEntreprise ?? "",
+        nomEntreprise: defaultCompanyName || offer.nomEntreprise || "",
         contactName: offer.contactName ?? "",
         email: offer.email ?? "",
         contactPhone: offer.contactPhone ?? "",
@@ -180,13 +164,16 @@ function Icon({name, className = "h-5 w-5"}) {
 }
 
 function Field({id, label, required = false, error, className = "", children}) {
+    const {t} = useTranslation();
+
     return (
         <div className={className}>
             <label htmlFor={id} className="mb-2 block text-sm font-bold text-ink">
                 {label} {required && <span className="text-error" aria-hidden="true">*</span>}
             </label>
             {children}
-            {error && <p className="mt-1.5 text-xs font-semibold text-error" role="alert">{error}</p>}
+            {error &&
+                <p className="mt-1.5 text-xs font-semibold text-error" role="alert">{translateMessage(t, error)}</p>}
         </div>
     );
 }
@@ -218,21 +205,40 @@ export function buildOfferSubmissionFormData({file, fields, offerId}) {
     return formData;
 }
 
+function errorForOfferStatus(status) {
+    if (status === 401) return createTranslationMessage("errors.unauthorized");
+    if (status === 403) return createTranslationMessage("errors.forbidden");
+    return createTranslationMessage("employerOffers.errors.loadFailed");
+}
+
 export default function EmployeurOffres({
                                             offers,
                                             isAccountEmailValidated = true,
+                                            canManageOffers = true,
                                             onSubmit,
+                                            user,
                                             companyName = "",
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
     const {t, i18n} = useTranslation();
+    const employerCompanyName = String(
+        user?.nomCompagnie
+        ?? user?.companyName
+        ?? companyName
+        ?? ""
+    ).trim();
+    const usesRemoteOffers = offers === undefined;
+    const [remoteOffers, setRemoteOffers] = useState(null);
+    const [isLoadingOffers, setIsLoadingOffers] = useState(usesRemoteOffers);
+    const [loadError, setLoadError] = useState(null);
+    const displayedOffers = usesRemoteOffers ? (remoteOffers ?? EMPTY_OFFERS) : offers;
     const initialOffers = useMemo(() => (
-        (offers === undefined ? DEMO_OFFERS : offers).map(normalizeOffer)
-    ), [offers]);
+        (displayedOffers ?? []).map(normalizeOffer)
+    ), [displayedOffers]);
     const [offerList, setOfferList] = useState(initialOffers);
     const [selectedId, setSelectedId] = useState(initialOffers[0]?.id ?? null);
-    const [formValues, setFormValues] = useState(() => formValuesFromOffer(initialOffers[0]));
+    const [formValues, setFormValues] = useState(() => formValuesFromOffer(initialOffers[0], employerCompanyName));
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
@@ -243,7 +249,7 @@ export default function EmployeurOffres({
     const [isNewOffer, setIsNewOffer] = useState(!initialOffers[0]);
 
     const selectedOffer = offerList.find((offer) => offer.id === selectedId) ?? null;
-    const isOfferReadOnly = ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
+    const isOfferReadOnly = !canManageOffers || ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
     const pendingCount = offerList.filter((offer) => offer.statut === "EN_ATTENTE").length;
     const publishedCount = offerList.filter((offer) => offer.statut === "VALIDE").length;
     const editorTitleKey = isNewOffer
@@ -257,15 +263,43 @@ export default function EmployeurOffres({
                     : "employerOffers.editor.editTitle";
 
     useEffect(() => {
+        if (!usesRemoteOffers) return undefined;
+
+        let isMounted = true;
+        api.employer.offers.list()
+            .then(async (response) => {
+                if (!response.ok) {
+                    const error = errorForOfferStatus(response.status);
+                    error.status = response.status;
+                    throw error;
+                }
+                const data = await response.json();
+                if (isMounted) setRemoteOffers(Array.isArray(data) ? data : []);
+            })
+            .catch((error) => {
+                if (isMounted) {
+                    setLoadError(error?.key ? error : createTranslationMessage("employerOffers.errors.loadFailed"));
+                }
+            })
+            .finally(() => {
+                if (isMounted) setIsLoadingOffers(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [usesRemoteOffers]);
+
+    useEffect(() => {
         setOfferList(initialOffers);
         setSelectedId(initialOffers[0]?.id ?? null);
         setIsNewOffer(!initialOffers[0]);
-        setFormValues(formValuesFromOffer(initialOffers[0]));
-    }, [initialOffers]);
+        setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
+    }, [initialOffers, employerCompanyName]);
 
     useEffect(() => {
         if (!isNewOffer) {
-            setFormValues(formValuesFromOffer(selectedOffer));
+            setFormValues(formValuesFromOffer(selectedOffer, employerCompanyName));
             setSelectedFile(null);
             setFieldErrors({});
             setFileError("");
@@ -273,7 +307,7 @@ export default function EmployeurOffres({
             setSuccessMessage("");
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
-    }, [selectedId, isNewOffer]);
+    }, [selectedId, isNewOffer, employerCompanyName]);
 
     const selectOffer = (offer) => {
         setIsNewOffer(false);
@@ -284,7 +318,7 @@ export default function EmployeurOffres({
     const startNewOffer = () => {
         setIsNewOffer(true);
         setSelectedId(null);
-        setFormValues({...EMPTY_FORM, nomEntreprise: companyName});
+        setFormValues({...EMPTY_FORM, nomEntreprise: employerCompanyName});
         setSelectedFile(null);
         setFieldErrors({});
         setFileError("");
@@ -310,11 +344,11 @@ export default function EmployeurOffres({
 
         const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
         if (!isPdf) {
-            setFileError(t("employerOffers.errors.invalidFormat"));
+            setFileError("employerOffers.errors.invalidFormat");
             return false;
         }
         if (file.size > MAX_FILE_SIZE) {
-            setFileError(t("employerOffers.errors.fileTooLarge"));
+            setFileError("employerOffers.errors.fileTooLarge");
             return false;
         }
         setSelectedFile(file);
@@ -337,26 +371,26 @@ export default function EmployeurOffres({
     const validateForm = () => {
         const errors = {};
         const requiredFields = {
-            nomEntreprise: t("employerOffers.errors.companyRequired"),
-            position: t("employerOffers.errors.positionRequired"),
-            targetDiscipline: t("employerOffers.errors.disciplineRequired"),
-            adresseEntreprise: t("employerOffers.errors.addressRequired"),
-            dateDebutStage: t("employerOffers.errors.startDateRequired"),
-            dateFinStage: t("employerOffers.errors.endDateRequired"),
-            descriptionPosition: t("employerOffers.errors.descriptionRequired"),
+            nomEntreprise: "employerOffers.errors.companyRequired",
+            position: "employerOffers.errors.positionRequired",
+            targetDiscipline: "employerOffers.errors.disciplineRequired",
+            adresseEntreprise: "employerOffers.errors.addressRequired",
+            dateDebutStage: "employerOffers.errors.startDateRequired",
+            dateFinStage: "employerOffers.errors.endDateRequired",
+            descriptionPosition: "employerOffers.errors.descriptionRequired",
         };
 
         Object.entries(requiredFields).forEach(([field, message]) => {
             if (!String(formValues[field] ?? "").trim()) errors[field] = message;
         });
         if (formValues.email && !/^\S+@\S+\.\S+$/.test(formValues.email)) {
-            errors.email = t("employerOffers.errors.invalidEmail");
+            errors.email = "employerOffers.errors.invalidEmail";
         }
         if (formValues.dateDebutStage && formValues.dateFinStage && formValues.dateFinStage < formValues.dateDebutStage) {
-            errors.dateFinStage = t("employerOffers.errors.endDateAfterStart");
+            errors.dateFinStage = "employerOffers.errors.endDateAfterStart";
         }
         if (formValues.descriptionPosition.trim().length > 0 && formValues.descriptionPosition.trim().length < 40) {
-            errors.descriptionPosition = t("employerOffers.errors.descriptionTooShort");
+            errors.descriptionPosition = "employerOffers.errors.descriptionTooShort";
         }
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
@@ -368,57 +402,63 @@ export default function EmployeurOffres({
         setFormError("");
 
         if (!isAccountEmailValidated) {
-            setFormError(t("employerOffers.errors.accountNotValidated"));
+            setFormError("employerOffers.errors.accountNotValidated");
             return;
         }
         if (isOfferReadOnly) {
             setFormError(selectedOffer?.statut === "EN_ATTENTE"
-                ? t("employerOffers.errors.pendingReadOnly")
-                : t("employerOffers.errors.rejectedReadOnly"));
+                ? "employerOffers.errors.pendingReadOnly"
+                : "employerOffers.errors.rejectedReadOnly");
             return;
         }
         if (!selectedFile) {
-            setFileError(t("employerOffers.errors.fileRequired"));
+            setFileError("employerOffers.errors.fileRequired");
         }
         if (!validateForm() || !selectedFile) return;
 
         setIsSubmitting(true);
         const formData = buildOfferSubmissionFormData({
             file: selectedFile,
-            fields: formValues,
+            fields: {...formValues, nomEntreprise: employerCompanyName || formValues.nomEntreprise},
             offerId: selectedOffer?.id,
         });
 
         try {
-            if (onSubmit) {
-                const response = await onSubmit({
+            const submitOffer = onSubmit ?? (async ({offerId, mode, formData}) => {
+                const response = mode === "update"
+                    ? await api.employer.offers.update(offerId, formData)
+                    : await api.employer.offers.create(formData);
+
+                if (!response.ok) return {response};
+
+                const offer = await response.json();
+                setRemoteOffers((current) => mode === "update"
+                    ? (current ?? []).map((item) => item.id === offer.id ? offer : item)
+                    : [offer, ...(current ?? [])]);
+
+                return {response, offer};
+            });
+
+            const result = await submitOffer({
                     offerId: selectedOffer?.id ?? null,
                     mode: isNewOffer ? "create" : "update",
                     fields: formValues,
                     file: selectedFile,
                     formData,
                 });
-                if (response?.status === 403) {
-                    setFormError(t("employerOffers.errors.accountMustBeValidated"));
-                    return;
-                }
-                if (response?.ok === false) {
-                    throw new Error(t("employerOffers.errors.submissionFailed"));
-                }
-            } else {
-                await new Promise((resolve) => window.setTimeout(resolve, 650));
+            const response = result?.response ?? result;
+            if (response?.status === 403) {
+                setFormError("employerOffers.errors.accountMustBeValidated");
+                return;
+            }
+            if (response?.ok === false) {
+                throw createTranslationMessage("employerOffers.errors.submissionFailed");
             }
 
-            const submittedOffer = normalizeOffer({
-                ...(selectedOffer ?? {}),
-                ...formValues,
-                id: selectedOffer?.id ?? `local-${Date.now()}`,
-                fileName: selectedFile.name,
-                statut: "EN_ATTENTE",
-                commentaireRejet: "",
-                version: (selectedOffer?.version ?? 0) + 1,
-                updatedAt: new Date().toISOString(),
-            });
+            if (!result?.offer) {
+                throw createTranslationMessage("employerOffers.errors.submissionFailed");
+            }
+            const submittedOffer = normalizeOffer(result.offer);
             setOfferList((current) => {
                 const exists = current.some((offer) => offer.id === submittedOffer.id);
                 return exists
@@ -430,14 +470,17 @@ export default function EmployeurOffres({
             setSelectedFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
             setSuccessMessage(isNewOffer
-                ? t("employerOffers.success.created")
-                : t("employerOffers.success.updated"));
+                ? "employerOffers.success.created"
+                : "employerOffers.success.updated");
         } catch (error) {
-            setFormError(error?.message || t("employerOffers.errors.submissionConnection"));
+            setFormError(error?.key || "employerOffers.errors.submissionConnection");
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    if (isLoadingOffers) return <Loading/>;
+    if (loadError) return <ErrorPage error={loadError}/>;
 
     return (
         <section className="flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -490,11 +533,11 @@ export default function EmployeurOffres({
                                 <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
                                 <h2 className="mt-2 text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
                             </div>
-                            <button type="button" onClick={startNewOffer}
+                            {canManageOffers && <button type="button" onClick={startNewOffer}
                                     className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
                                     aria-label={t("employerOffers.newOfferAriaLabel")}>
                                 <Icon name="plus" className="h-5 w-5"/>
-                            </button>
+                            </button>}
                         </div>
                         <p className="mt-3 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
 
@@ -531,10 +574,10 @@ export default function EmployeurOffres({
                             ))}
                         </div>
 
-                        <button type="button" onClick={startNewOffer}
+                        {canManageOffers && <button type="button" onClick={startNewOffer}
                                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40">
                             <Icon name="plus" className="h-4 w-4"/> {t("employerOffers.newOffer")}
-                        </button>
+                        </button>}
                     </aside>
 
                     <div ref={formRef}
@@ -574,10 +617,10 @@ export default function EmployeurOffres({
                         {successMessage && <div
                             className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
                             role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
-                            className="font-semibold">{successMessage}</p></div>}
+                            className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
                         {formError && <div
                             className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
-                            role="alert">{formError}</div>}
+                            role="alert">{translateMessage(t, formError)}</div>}
 
                         <form className="mt-7 space-y-8" onSubmit={handleSubmit} noValidate>
                             <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
@@ -644,21 +687,13 @@ export default function EmployeurOffres({
                                         </div>
                                     )}
                                     {fileError && <p className="mt-2 text-sm font-semibold text-error"
-                                                     role="alert">{fileError}</p>}
+                                                     role="alert">{translateMessage(t, fileError)}</p>}
                                 </div>
 
                                 <div>
                                     <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
                                     <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
                                     <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                                        <Field id="nomEntreprise" label={t("employerOffers.fields.companyName")}
-                                               required
-                                               error={fieldErrors.nomEntreprise}>
-                                            <input id="nomEntreprise" name="nomEntreprise"
-                                                   value={formValues.nomEntreprise} onChange={updateField}
-                                                   className={inputClass(fieldErrors.nomEntreprise)}
-                                                   placeholder="Ex. Atelier Nord"/>
-                                        </Field>
                                         <Field id="position" label={t("employerOffers.fields.position")} required
                                                error={fieldErrors.position}>
                                             <input id="position" name="position" value={formValues.position}
@@ -726,11 +761,13 @@ export default function EmployeurOffres({
                                 {isOfferReadOnly ? (
                                     <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft"><Icon
                                         name="info"
-                                        className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.readOnlyMessage", {
-                                        status: selectedOffer?.statut === "EN_ATTENTE"
-                                            ? t("employerOffers.status.pendingLower")
-                                            : t("employerOffers.status.rejectedLower")
-                                    })}</p>
+                                        className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
+                                        ? t("employerOffers.readOnlyMessage", {
+                                            status: selectedOffer?.statut === "EN_ATTENTE"
+                                                ? t("employerOffers.status.pendingLower")
+                                                : t("employerOffers.status.rejectedLower")
+                                        })
+                                        : t("employerOffers.viewerReadOnlyMessage")}</p>
                                 ) : (
                                     <>
                                         <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft"><Icon

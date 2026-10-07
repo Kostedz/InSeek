@@ -39,5 +39,13 @@ public class InSeekApplication implements CommandLineRunner {
 
         RegisterDTO registerDTO1 = new RegisterDTO("Ubi", "Soft", "ubisoft@mail.com", Role.EMPLOYEUR, "123456Aa@", "UbiSoft");
         utilisateurService.register(registerDTO1);
+
+        RegisterDTO registerDTO2 = new RegisterDTO("Admin", "Jean", "gestionnaire@inseek.com", Role.GESTIONNAIRE, "123456Aa@", "");
+        utilisateurService.register(registerDTO2);
+
+        MultipartFile file = new MockMultipartFile("cv.pdf", "cv.pdf", "application/pdf", "Dummy CV content".getBytes());
+        //DocumentDTO doc = documentService.saveDocument(file, "{\"type\":\"CV\",\"email\":\"bib@a.com\",\"targetDiscipline\":\"INFORMATIQUE\"}");
+
+
     }
 }

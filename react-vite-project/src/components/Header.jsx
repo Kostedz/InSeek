@@ -18,8 +18,8 @@ function Header({user}) {
     const lastName = user?.lastName ?? user?.nom ?? "";
     const displayName = [firstName, lastName].filter(Boolean).join(" ");
     const isLoggedIn = Boolean(user?.isLoggedIn);
-    const isGestionnaire = role === "GESTIONNAIRE";
-    const isEmprunteur = isGestionnaire || role === "EMPRUNTEUR";
+    const isDevAccess = Boolean(user?.isDevAccess);
+    const canAccessRole = (requiredRole) => isLoggedIn && (isDevAccess || role === requiredRole);
 
     const navLinkClass = ({isActive}) => [
         "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors md:w-auto md:px-3",
@@ -88,8 +88,7 @@ function Header({user}) {
     };
 
     return (
-        <header
-            className={`sticky top-0 z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)] transition-transform duration-300 ease-out ${isHeaderVisible ? "translate-y-0" : "-translate-y-full"}`}>
+        <header className="sticky top-0 z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)]">
             <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
                 <Link to="/" className="group -my-1 flex shrink-0 items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-white/10 focus:outline-none" onClick={closeMenus}>
                     <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-lemon text-xl font-black text-ink">
@@ -131,11 +130,15 @@ function Header({user}) {
                     <ul className="flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center">
                         <li><NavLink to="/" end className={navLinkClass} onClick={closeMenus}>{t("navigation.home")}</NavLink></li>
                         <li><NavLink to="/about" className={navLinkClass} onClick={closeMenus}>{t("navigation.about")}</NavLink></li>
-                        {isEmprunteur && <li><NavLink to="/emprunteur" className={navLinkClass} onClick={closeMenus}>{t("navigation.borrower")}</NavLink></li>}
-                        <li><NavLink to="/employeur" className={navLinkClass}
-                                     onClick={closeMenus}>{t("navigation.publishOffer")}</NavLink></li>
-                        <li><NavLink to="/etudiant" className={navLinkClass}
-                                     onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink></li>
+                        {canAccessRole("ETUDIANT") && <li><NavLink to="/etudiant" className={navLinkClass}
+                                                                   onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink>
+                        </li>}
+                        {canAccessRole("EMPLOYEUR") && <li><NavLink to="/employeur" className={navLinkClass}
+                                                                    onClick={closeMenus}>{t("navigation.publishOffer")}</NavLink>
+                        </li>}
+                        {canAccessRole("GESTIONNAIRE") && <li><NavLink to="/gestionnaire" className={navLinkClass}
+                                                                       onClick={closeMenus}>{t("navigation.validation")}</NavLink>
+                        </li>}
                     </ul>
 
                     <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">

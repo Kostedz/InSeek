@@ -2,11 +2,7 @@ package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Employeur;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Professeur;
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
@@ -114,6 +110,7 @@ public class UtilisateurService {
             case Etudiant etudiant -> EtudiantDTO.of(etudiant);
             case Employeur employeur -> EmployeurDTO.of(employeur);
             case Professeur professeur -> ProfesseurDTO.of(professeur);
+            case com.lacouf.rsbjwt.model.Gestionnaire gestionnaire -> GestionnaireDTO.of(gestionnaire);
             default -> throw new BadRequestException(
                     "Type d'entité non pris en charge pour la conversion en DTO."
             );
@@ -155,88 +152,17 @@ public class UtilisateurService {
                     .build();
         }
 
-
-        throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
-    }
-
-    public Utilisateur toEntity(UtilisateurDTO utilisateurDTO) throws BadRequestException {
-        if (utilisateurDTO == null) {
-            return null;
-        }
-
-        Role role = Role.valueOf(utilisateurDTO.role());
-
-        Utilisateur user = utilisateurRepository.findByEmail(utilisateurDTO.email());
-
-        switch (user) {
-            case Etudiant etudiant -> {
-                return Etudiant.builder()
-                        .nom(etudiant.getNom())
-                        .prenom(etudiant.getPrenom())
-                        .email(etudiant.getEmail())
-                        .discipline(etudiant.getDiscipline())
-                        .password(etudiant.getPassword())
-                        .build();
-            }
-
-            case Employeur employeur -> {
-                return Employeur.builder()
-                        .nom(employeur.getNom())
-                        .prenom(employeur.getPrenom())
-                        .nomCompagnie(employeur.getNomCompagnie())
-                        .email(employeur.getEmail())
-                        .password(employeur.getPassword())
-                        .build();
-            }
-
-            case Professeur professeur -> {
-                return Professeur.builder()
-                        .nom(professeur.getNom())
-                        .prenom(professeur.getPrenom())
-                        .email(professeur.getEmail())
-                        .discipline(professeur.getDiscipline())
-                        .password(professeur.getPassword())
-                        .build();
-            }
-            default -> throw new IllegalStateException("Unexpected value: " + user);
-        }
-    }
-        /*
-        if (role == Role.ETUDIANT) {
-            return Etudiant.builder()
-                    .nom(utilisateurDTO.nom())
-                    .prenom(utilisateurDTO.prenom())
-                    .email(utilisateurDTO.email())
-                    .discipline(Disciplines.valueOf(utilisateurDTO.affiliation()))
-                    .password(passwordEncoder.encode(utilisateurDTO.password()))
-                    .build();
-        }
-
-        if (role == Role.EMPLOYEUR) {
-            return Employeur.builder()
-                    .nom(utilisateurDTO.nom())
-                    .prenom(utilisateurDTO.prenom())
-                    .email(utilisateurDTO.email())
-                    .nomCompagnie(String.valueOf(utilisateurDTO.affiliation()))
-                    .password(passwordEncoder.encode(utilisateurDTO.password()))
-                    .build();
-        }
-
-        if (role == Role.PROFESSEUR) {
-            return Professeur.builder()
-                    .nom(utilisateurDTO.nom())
-                    .prenom(utilisateurDTO.prenom())
-                    .email(utilisateurDTO.email())
-                    .discipline(Disciplines.valueOf(registerDTO.affiliation()))
-                    .password(passwordEncoder.encode(registerDTO.password()))
-                    .build();
+        if (registerDTO.role() == Role.GESTIONNAIRE) {
+            return new Gestionnaire(
+                    null,
+                    registerDTO.nom(),
+                    registerDTO.prenom(),
+                    registerDTO.email(),
+                    passwordEncoder.encode(registerDTO.password())
+            );
         }
 
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
-
-         */
 }
-
-

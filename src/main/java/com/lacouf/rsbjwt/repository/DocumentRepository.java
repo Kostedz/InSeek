@@ -1,11 +1,9 @@
 package com.lacouf.rsbjwt.repository;
 
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Document;
-import com.lacouf.rsbjwt.model.OffreDeStage;
-import com.lacouf.rsbjwt.model.StatutValidation;
+import com.lacouf.rsbjwt.model.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;

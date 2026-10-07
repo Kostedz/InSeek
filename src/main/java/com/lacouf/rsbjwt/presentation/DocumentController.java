@@ -2,7 +2,6 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
@@ -10,6 +9,7 @@ import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,8 +24,8 @@ public class DocumentController {
     private final DocumentService documentService;
     private final AuthService authService;
 
-    @PostMapping("/upload")
-    public ResponseEntity<DocumentDTO> uploadDocument(@RequestPart("file") MultipartFile file, @RequestPart("formContent") String formContent, HttpServletRequest request) {
+    @PostMapping("/documents/upload")
+    public ResponseEntity<?> uploadDocument(@RequestPart("file") MultipartFile file, @RequestPart("formContent") String formContent, HttpServletRequest request) {
         try {
             if (!authService.validateJwt(request)) {
                 throw new BadRequestException("Invalid JWT token");
@@ -46,7 +46,7 @@ public class DocumentController {
 
             return ResponseEntity.ok(savedDocument);
         } catch (BadRequestException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (NotFoundException e) {
@@ -55,24 +55,52 @@ public class DocumentController {
 
     }
 
-    @GetMapping("/stage")
+    @GetMapping("/documents/stage")
     public List<OffreDeStageDTO> findAllStages(){
         return documentService.findAllOffreDeStage();
     }
 
-    @GetMapping("/stage/{id}")
+    @GetMapping("/documents/stage/{id}")
     public OffreDeStageDTO getOffreDeStageById(@PathVariable Long id){
         return documentService.findOffreDeStageById(id);
     }
 
-    @GetMapping("stage/discipline/{discipline}")
+    @GetMapping("/documents/stage/discipline/{discipline}")
     public List<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable Disciplines discipline){
         return documentService.findOffreDeStageDiscipline(discipline);
     }
 
-    @GetMapping("stage/compagine/{compagnie}")
+    @GetMapping("/documents/stage/compagine/{compagnie}")
     public List<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie){
         return documentService.findOffreDeStageByCompagnieName(compagnie);
+    }
+
+    @GetMapping("/employeur/offres")
+    public ResponseEntity<List<OffreDeStageDTO>> listEmployerOffers(HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(documentService.findOffersForEmployer(request));
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PutMapping(value = "/employeur/offres/{offerId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<OffreDeStageDTO> updateEmployerOffer(
+            @PathVariable Long offerId,
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("formContent") String formContent,
+            HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(documentService.saveEmployerOffer(file, formContent, request, offerId));
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
 }
