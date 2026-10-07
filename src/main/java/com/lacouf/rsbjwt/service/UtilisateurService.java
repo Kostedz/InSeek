@@ -152,6 +152,16 @@ public class UtilisateurService {
                     .build();
         }
 
+        if (registerDTO.role() == Role.GESTIONNAIRE) {   // ← ajouter ici
+            return new Gestionnaire(
+                    null,
+                    registerDTO.nom(),
+                    registerDTO.prenom(),
+                    registerDTO.email(),
+                    passwordEncoder.encode(registerDTO.password())
+            );
+        }
+
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
