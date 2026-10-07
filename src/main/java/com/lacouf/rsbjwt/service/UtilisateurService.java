@@ -152,7 +152,7 @@ public class UtilisateurService {
                     .build();
         }
 
-        if (registerDTO.role() == Role.GESTIONNAIRE) {   // ← ajouter ici
+        if (registerDTO.role() == Role.GESTIONNAIRE) {
             return new Gestionnaire(
                     null,
                     registerDTO.nom(),
