@@ -46,5 +46,4 @@ public class GestionnaireController {
         }
     }
 
-    public record RejectDTO(String comment) {}
 }
