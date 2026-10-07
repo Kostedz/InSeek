@@ -141,6 +141,7 @@ const resources = {
                 maximumSize: "Taille maximale : 5 Mo",
                 submitting: "Téléversement en cours…",
                 submit: "Téléverser le CV",
+                update: "Mettre à jour votre CV",
                 errors: {
                     invalidFormat: "Format invalide. Seuls les fichiers au format PDF (.pdf) sont acceptés.",
                     fileTooLarge: "Le fichier dépasse la taille maximale autorisée de 5 Mo.",
@@ -541,6 +542,7 @@ const resources = {
                 maximumSize: "Maximum size: 5 MB",
                 submitting: "Uploading…",
                 submit: "Upload résumé",
+                update: "Update your résumé",
                 errors: {
                     invalidFormat: "Invalid format. Only PDF files (.pdf) are accepted.",
                     fileTooLarge: "The file exceeds the maximum allowed size of 5 MB.",

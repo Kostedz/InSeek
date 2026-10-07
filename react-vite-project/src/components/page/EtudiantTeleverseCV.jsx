@@ -11,10 +11,27 @@ function normalizeStatus(status) {
     return "NOT_SUBMITTED";
 }
 
+function storageKeyFor(email) {
+    return email ? `inseek.student.cv.${email}` : null;
+}
 
-export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = true, onCvUpdated}) {
+function readStoredCv(storageKey) {
+    if (!storageKey || typeof window === "undefined") return null;
+
+    try {
+        const storedCv = window.localStorage.getItem(storageKey);
+        return storedCv ? JSON.parse(storedCv) : null;
+    } catch (error) {
+        console.error("Unable to read the saved CV request from local storage.", error);
+        return null;
+    }
+}
+
+export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidated = true, onCvUpdated}) {
     const {t} = useTranslation();
     const fileInputRef = useRef(null);
+    const currentUserEmail = user?.email ?? user?.courriel ?? cvData?.email ?? "";
+    const cvStorageKey = storageKeyFor(currentUserEmail);
 
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -22,6 +39,25 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
     const [successMessage, setSuccessMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [currentCv, setCurrentCv] = useState(cvData ?? null);
+
+    React.useEffect(() => {
+        if (cvData !== undefined) {
+            setCurrentCv(cvData);
+            return;
+        }
+
+        setCurrentCv(readStoredCv(cvStorageKey));
+    }, [cvData, cvStorageKey]);
+
+    React.useEffect(() => {
+        if (!cvStorageKey || !currentCv || typeof window === "undefined") return;
+
+        try {
+            window.localStorage.setItem(cvStorageKey, JSON.stringify(currentCv));
+        } catch (error) {
+            console.error("Unable to save the CV request in local storage.", error);
+        }
+    }, [currentCv, cvStorageKey]);
 
     const status = normalizeStatus(currentCv?.statut ?? currentCv?.status);
     const rejectionComment = currentCv?.commentaireRejet ?? currentCv?.rejectionComment ?? "";
@@ -101,7 +137,9 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
             }
 
             if (!res.ok) {
-                throw {key: "studentCv.errors.uploadFailed"};
+                const backendError = (await res.text()).trim();
+                setErrorMessage(backendError || "studentCv.errors.uploadFailed");
+                return;
             }
 
             const responseData = await res.json();
@@ -252,7 +290,9 @@ export default function EtudiantTeleverseCV({cvData, isAccountEmailValidated = t
                         disabled={!selectedFile || !isAccountEmailValidated || isSubmitting}
                         className="w-full rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {isSubmitting ? translateMessage(t, "studentCv.submitting") : translateMessage(t, "studentCv.submit")}
+                        {isSubmitting
+                            ? translateMessage(t, "studentCv.submitting")
+                            : translateMessage(t, currentCv ? "studentCv.update" : "studentCv.submit")}
                     </button>
                 </form>
             </div>

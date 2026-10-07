@@ -85,7 +85,7 @@ function App() {
               <Route path='etudiant' element={
                                           <ProtectedRoute user={user} authChecked={authChecked}
                                                           allowedRoles={["ETUDIANT"]}>
-                                             <EtudiantTeleverseCV/>
+                                              <EtudiantTeleverseCV user={user}/>
                                          </ProtectedRoute>
                                      }/>
               <Route path='employeur' element={

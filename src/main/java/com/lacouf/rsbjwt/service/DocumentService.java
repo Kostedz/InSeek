@@ -47,7 +47,10 @@ public class DocumentService {
         String targetDiscipline;
 
         CV existingCV = documentRepository.findByUtilisateur(uploader);
-        if (existingCV != null && existingCV.getStatut().equals(StatutValidation.VALIDE)) {
+        if (existingCV != null) {
+            if (existingCV.getStatut().equals(StatutValidation.EN_ATTENTE)) {
+                throw new BadRequestException("Votre CV est déjà en attente de validation.");
+            }
             documentRepository.delete(existingCV);
         }
 

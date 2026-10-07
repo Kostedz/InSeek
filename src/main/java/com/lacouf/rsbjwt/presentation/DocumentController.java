@@ -24,7 +24,7 @@ public class DocumentController {
     private final AuthService authService;
 
     @PostMapping("/documents/upload")
-    public ResponseEntity<DocumentDTO> uploadDocument(@RequestPart("file") MultipartFile file, @RequestPart("formContent") String formContent, HttpServletRequest request) {
+    public ResponseEntity<?> uploadDocument(@RequestPart("file") MultipartFile file, @RequestPart("formContent") String formContent, HttpServletRequest request) {
         try {
             if (!authService.validateJwt(request)) {
                 throw new BadRequestException("Invalid JWT token");
@@ -45,7 +45,7 @@ public class DocumentController {
 
             return ResponseEntity.ok(savedDocument);
         } catch (BadRequestException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (NotFoundException e) {

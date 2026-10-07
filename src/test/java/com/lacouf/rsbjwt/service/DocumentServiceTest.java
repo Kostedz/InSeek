@@ -125,6 +125,28 @@ public class DocumentServiceTest {
     }
 
     @Test
+    @DisplayName("saveDocument - should reject a CV update while the existing CV is pending")
+    public void testSaveDocumentPendingCv() throws NotFoundException, IOException {
+        CV existingCV = CV.builder()
+                .fileName("existing-cv.pdf")
+                .targetDiscipline(Disciplines.INFORMATIQUE)
+                .utilisateur(etudiant)
+                .build();
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("test@example.com");
+        when(utilisateurService.findEntityByEmail("test@example.com")).thenReturn(etudiant);
+        when(documentRepository.findByUtilisateur(etudiant)).thenReturn(existingCV);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> documentService.saveDocument(fileCV, formContentCV, request)
+        );
+
+        assertEquals("Votre CV est déjà en attente de validation.", exception.getMessage());
+        verify(documentRepository, never()).delete(any(CV.class));
+        verify(documentRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("saveDocument - should allow the development manager to submit a CV")
     public void testSaveDocumentCvAsDevelopmentManager() throws NotFoundException, BadRequestException, IOException {
         when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("dev@inseek.local");
