@@ -117,7 +117,8 @@ public class DocumentService {
                 map(o -> new OffreDeStageDTO(
                         o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                         o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                 )).toList();
     }
 
@@ -126,7 +127,8 @@ public class DocumentService {
                 map(o -> new OffreDeStageDTO(
                         o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                         o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                 )).
                 orElseThrow(() -> new RuntimeException("Stage n'a pas été trouvé"));
     }
@@ -137,7 +139,8 @@ public class DocumentService {
                     map(o -> new OffreDeStageDTO(
                             o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                             o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                            o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                            o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                            o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                     )).toList();
     }
 
@@ -147,7 +150,8 @@ public class DocumentService {
                 map(o -> new OffreDeStageDTO(
                         o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                         o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                 )).toList();
     }
 
@@ -157,7 +161,8 @@ public class DocumentService {
                 map(o -> new OffreDeStageDTO(
                         o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                         o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                 )).toList();
     }
 
@@ -167,7 +172,8 @@ public class DocumentService {
                 map(o -> new OffreDeStageDTO(
                         o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                         o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                 )).toList();
     }
 
@@ -177,7 +183,8 @@ public class DocumentService {
                 map(o -> new OffreDeStageDTO(
                         o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                         o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                 )).toList();
     }
 
@@ -187,7 +194,8 @@ public class DocumentService {
                 map(o -> new OffreDeStageDTO(
                         o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
                         o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline()
+                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
+                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
                 )).toList();
     }
 }

@@ -65,12 +65,12 @@ public class DocumentController {
         return documentService.findOffreDeStageById(id);
     }
 
-    @GetMapping("stage/{discipline}")
+    @GetMapping("stage/discipline/{discipline}")
     public List<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable Disciplines discipline){
         return documentService.findOffreDeStageDiscipline(discipline);
     }
 
-    @GetMapping("stage/{compagnie}")
+    @GetMapping("stage/compagine/{compagnie}")
     public List<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie){
         return documentService.findOffreDeStageByCompagnieName(compagnie);
     }

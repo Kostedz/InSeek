@@ -5,6 +5,7 @@ import com.lacouf.rsbjwt.model.OffreDeStage;
 import com.lacouf.rsbjwt.model.StatutValidation;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record OffreDeStageDTO(
         Long id,
@@ -19,7 +20,11 @@ public record OffreDeStageDTO(
         StatutValidation statut,
         String commentaireRejet,
         Double salaire,
-        Disciplines targetDiscipline
+        Disciplines targetDiscipline,
+        String contactName,
+        String contactPhone,
+        int version,
+        LocalDateTime updatedAt
 ) implements DocumentDTO {
 
 
@@ -37,7 +42,11 @@ public record OffreDeStageDTO(
                 offre.getStatut(),
                 offre.getCommentaireRejet(),
                 offre.getSalaire(),
-                offre.getTargetDiscipline()
+                offre.getTargetDiscipline(),
+                offre.getContactName(),
+                offre.getContactPhone(),
+                offre.getVersion(),
+                offre.getUpdatedAt()
         );
     }
 
