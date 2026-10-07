@@ -34,6 +34,7 @@ public class DocumentService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
 
+    @Transactional
     public DocumentDTO saveDocument(MultipartFile file, String formContent, HttpServletRequest request) throws BadRequestException, IOException, NotFoundException {
         JsonNode result = objectMapper.readTree(formContent);
         String type = result.get("type").asString();
@@ -44,15 +45,18 @@ public class DocumentService {
         String email = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
         Utilisateur uploader = utilisateurService.findEntityByEmail(email);
         String targetDiscipline;
+
+        CV existingCV = documentRepository.findByUtilisateur(uploader);
+        if (existingCV != null && existingCV.getStatut().equals(StatutValidation.VALIDE)) {
+            documentRepository.delete(existingCV);
+        }
+
         logger.info("Form content: " + formContent);
         logger.info("Type: " + type);
         logger.info("Uploader: " + uploader);
         if (type.equals("CV")) {
             logger.info("Uploader is an instance of Etudiant: " + uploader);
             targetDiscipline = ((Etudiant) uploader).getDiscipline().toString();
-        } else if (type.equals("OffreDeStage")) {
-            logger.info("Uploader is not an instance of EtudiantDTO: " + uploader);
-            targetDiscipline = result.get("targetDiscipline").asString();
         } else {
             throw new BadRequestException("Invalid document type");
         }
