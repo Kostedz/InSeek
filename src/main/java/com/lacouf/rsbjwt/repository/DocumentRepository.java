@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface DocumentRepository extends JpaRepository<Document, Long> {
     boolean existsByFileNameAndTargetDiscipline(String fileName, Disciplines targetDiscipline);
@@ -63,4 +64,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             WHERE  d.dateFinStage = :dateFinStage
                         """)
     List<OffreDeStage> findOffreStageByDateFinStage(LocalDate dateFinStage);
+
+    @Query("""
+            SELECT o FROM OffreDeStage o
+            """)
+    List<OffreDeStage> findAllOffreStage();
+
+    @Query("""
+            SELECT o 
+            FROM OffreDeStage o
+            WHERE o.id = :id
+            """)
+    Optional<OffreDeStage> findOffreStageById(Long id);
 }

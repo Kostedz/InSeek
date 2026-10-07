@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -54,23 +56,23 @@ public class DocumentController {
     }
 
     @GetMapping("/stage")
-    public ResponseEntity<OffreDeStageDTO> findAllStages(){
-        return null;
+    public List<OffreDeStageDTO> findAllStages(){
+        return documentService.findAllOffreDeStage();
     }
 
     @GetMapping("/stage/{id}")
     public OffreDeStageDTO getOffreDeStageById(@PathVariable Long id){
-        return null;
+        return documentService.findOffreDeStageById(id);
     }
 
     @GetMapping("stage/{discipline}")
-    public ResponseEntity<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable String discipline){
-        return null;
+    public List<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable Disciplines discipline){
+        return documentService.findOffreDeStageDiscipline(discipline);
     }
 
     @GetMapping("stage/{compagnie}")
-    public ResponseEntity<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie){
-        return null;
+    public List<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie){
+        return documentService.findOffreDeStageByCompagnieName(compagnie);
     }
 
 }
