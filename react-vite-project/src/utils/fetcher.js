@@ -1,14 +1,15 @@
 import mergeHeaders from "./mergeheader";
 import BASE_URL from "../components/config/Config.jsx";
 async function fetcher(input, options) {
-  const token = localStorage.getItem("token");
+  const {skipAuth = false, ...requestOptions} = options ?? {};
+  const token = skipAuth ? null : localStorage.getItem("token");
   console.log("Token from localStorage:", token ? token.substring(0, 20) + "..." : "NO TOKEN");
   const defaultHeaders = token ? { Authorization: `Bearer ${token}` } : {};
   console.log("Default headers:", defaultHeaders);
 
-  const headers = mergeHeaders(defaultHeaders, options?.headers);
+  const headers = mergeHeaders(defaultHeaders, requestOptions.headers);
   console.log("Merged headers:", headers);
-  const fetchOptions = { ...options, headers };
+  const fetchOptions = {...requestOptions, headers};
   try {
     input = input.replace(/^\//, '');
     const url = BASE_URL + input;

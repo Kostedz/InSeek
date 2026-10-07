@@ -9,49 +9,6 @@ const API = {
     reject: (id) => `/gestionnaire/documents/${id}/reject`,
 };
 
-// Remove the sample when the backend is ready to provide real data. The sample offers are used for demonstration purposes only.
-const SAMPLE_OFFERS = [
-    {
-        id: "sample-1",
-        statut: "EN_ATTENTE",
-        sampleKey: "development",
-        email: "marie.gagnon@novalab.ca",
-        contactName: "Marie Gagnon",
-        contactPhone: "+1 514 555-0182",
-        dateDebutStage: "2026-05-04",
-        dateFinStage: "2026-08-21",
-        size: 2480000,
-    },
-    {
-        id: "sample-2",
-        statut: "EN_ATTENTE",
-        sampleKey: "design",
-        email: "alexandre.roy@ateliernord.com",
-        contactName: "Alexandre Roy",
-        contactPhone: "+1 418 555-0114",
-        dateDebutStage: "2026-01-12",
-        dateFinStage: "2026-04-24",
-        size: 1840000,
-    },
-];
-
-function createSampleOffers(t) {
-    return SAMPLE_OFFERS.map((offer) => {
-        const sample = t(`managerValidation.samples.${offer.sampleKey}`, {returnObjects: true});
-
-        return {
-            ...offer,
-            fileName: sample.fileName,
-            nomEntreprise: sample.companyName,
-            position: sample.position,
-            contactName: sample.contactName,
-            targetDiscipline: sample.discipline,
-            adresseEntreprise: sample.address,
-            descriptionPosition: sample.description,
-        };
-    });
-}
-
 function normalizeOffer(offer, t) {
     return {
         ...offer,
@@ -119,9 +76,8 @@ function InfoItem({label, value}) {
 
 function GestionnaireValidation() {
     const {t, i18n} = useTranslation();
-    const sampleOffers = useMemo(() => createSampleOffers(t), [t]);
-    const [offers, setOffers] = useState(sampleOffers);
-    const [selectedId, setSelectedId] = useState(SAMPLE_OFFERS[0].id);
+    const [offers, setOffers] = useState([]);
+    const [selectedId, setSelectedId] = useState(null);
     const [comment, setComment] = useState("");
     const [showRejectForm, setShowRejectForm] = useState(false);
     const [message, setMessage] = useState(null);
@@ -151,7 +107,7 @@ function GestionnaireValidation() {
             setOffers(normalized);
             setSelectedId(normalized[0]?.id);
         } catch {
-            setError({key: "managerValidation.errors.unavailableWithSamples"});
+            setError({key: "managerValidation.errors.unavailable"});
         } finally {
             setLoading(false);
         }
@@ -160,15 +116,6 @@ function GestionnaireValidation() {
     useEffect(() => {
         loadOffers();
     }, []);
-
-    useEffect(() => {
-        setOffers((currentOffers) => {
-            const isShowingSamples = currentOffers.length === SAMPLE_OFFERS.length
-                && currentOffers.every((offer, index) => offer.id === SAMPLE_OFFERS[index].id);
-
-            return isShowingSamples ? sampleOffers : currentOffers;
-        });
-    }, [sampleOffers]);
 
     const pendingOffers = useMemo(() => offers.filter(isPending), [offers]);
     const selectedOffer = offers.find((offer) => offer.id === selectedId) ?? pendingOffers[0];

@@ -42,9 +42,9 @@ public class SecurityConfiguration {
     private static final String H2_CONSOLE_PATH = "/h2-console/**";
     private static final String USER_LOGIN_PATH = "/user/login";
     private static final String USER_REGISTER_PATH = "/user/register";
+    private static final String DEV_LOGIN_PATH = "/user/dev/login";
     private static final String USER_PATH = "/user/**";
     private static final String ETUDIANT_PATH = "/etudiant/**";
-    private static final String EMPLOYEUR_PATH = "/employeur/**";
     private static final String PROFESSEUR_PATH = "/professeur/**";
     private static final String GESTIONNAIRE_PATH = "/gestionnaire/**";
 
@@ -57,13 +57,16 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(POST, USER_LOGIN_PATH).permitAll()
                         .requestMatchers(POST, USER_REGISTER_PATH).permitAll()
+                        .requestMatchers(POST, DEV_LOGIN_PATH).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Allow CORS preflight requests
                         .requestMatchers(H2_CONSOLE_PATH).permitAll() // Allow H2 console access
 
                         // Use Role enum names for authorities
                         .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name(), Role.ETUDIANT.name(), Role.EMPLOYEUR.name(), Role.PROFESSEUR.name())
                         .requestMatchers(ETUDIANT_PATH).hasAuthority(Role.ETUDIANT.name())
-                        .requestMatchers(EMPLOYEUR_PATH).hasAuthority(Role.EMPLOYEUR.name())
+                        .requestMatchers(POST, "/documents/upload").hasAnyAuthority(Role.ETUDIANT.name(), Role.EMPLOYEUR.name())
+                        .requestMatchers(GET, "/employeur/offres").permitAll()
+                        .requestMatchers(PUT, "/employeur/offres/**").hasAuthority(Role.EMPLOYEUR.name())
                         .requestMatchers(PROFESSEUR_PATH).hasAuthority(Role.PROFESSEUR.name())
                         .requestMatchers(GESTIONNAIRE_PATH).hasAuthority(Role.GESTIONNAIRE.name())
                         .anyRequest().authenticated() // Changed from denyAll() to authenticated() - more common, adjust if denyAll is strictly needed

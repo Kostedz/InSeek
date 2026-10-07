@@ -114,6 +114,7 @@ public class UtilisateurService {
             case Etudiant etudiant -> EtudiantDTO.of(etudiant);
             case Employeur employeur -> EmployeurDTO.of(employeur);
             case Professeur professeur -> ProfesseurDTO.of(professeur);
+            case com.lacouf.rsbjwt.model.Gestionnaire gestionnaire -> GestionnaireDTO.of(gestionnaire);
             default -> throw new BadRequestException(
                     "Type d'entité non pris en charge pour la conversion en DTO."
             );
@@ -159,5 +160,3 @@ public class UtilisateurService {
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
 }
-
-

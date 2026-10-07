@@ -20,6 +20,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -69,10 +70,11 @@ public class DocumentServiceTest {
         formContentOffre = """
                 {
                     "type": "OffreDeStage",
+                    "nomEntreprise": "Example Company",
                     "position": "Développeur Java",
                     "descriptionPosition": "Développement d'une application Spring Boot",
                     "dateDebutStage": "2026-06-01",
-                    "dateFintStage": "2026-08-31",
+                    "dateFinStage": "2026-08-31",
                     "adresseEntreprise": "Montréal",
                     "salaire": 25.0,
                     "targetDiscipline": "INFORMATIQUE"
@@ -142,6 +144,115 @@ public class DocumentServiceTest {
         verify(utilisateurService).findEntityByEmail("employeur@example.com");
         verify(documentRepository).existsByFileNameAndTargetDiscipline("offre.pdf", Disciplines.INFORMATIQUE);
         verify(documentRepository).save(any(OffreDeStage.class));
+    }
+
+    @Test
+    @DisplayName("findOffersForEmployer - should return only the employer's offers")
+    public void testFindOffersForEmployer() throws NotFoundException, BadRequestException {
+        OffreDeStage offer = OffreDeStage.builder()
+                .id(17L)
+                .fileName("offer.pdf")
+                .targetDiscipline(Disciplines.INFORMATIQUE)
+                .employeur(employeur)
+                .position("Développeur Java")
+                .descriptionPosition("Développement Spring Boot")
+                .dateDebutStage(LocalDate.now())
+                .dateFinStage(LocalDate.now().plusDays(30))
+                .adresseEntreprise("Montréal")
+                .build();
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("employeur@example.com");
+        when(utilisateurService.findEntityByEmail("employeur@example.com")).thenReturn(employeur);
+        when(documentRepository.findOffersByEmployer(employeur)).thenReturn(List.of(offer));
+
+        List<OffreDeStageDTO> result = documentService.findOffersForEmployer(request);
+
+        assertEquals(1, result.size());
+        assertEquals(17L, result.getFirst().id());
+        verify(documentRepository).findOffersByEmployer(employeur);
+    }
+
+    @Test
+    @DisplayName("saveEmployerOffer - should create an offer from the employer form")
+    public void testSaveEmployerOffer() throws NotFoundException, BadRequestException, IOException {
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("employeur@example.com");
+        when(utilisateurService.findEntityByEmail("employeur@example.com")).thenReturn(employeur);
+        when(documentRepository.existsByFileNameAndTargetDiscipline("offre.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
+
+        String form = """
+                {
+                    "type": "OffreDeStage",
+                    "nomEntreprise": "Example Company",
+                    "position": "Développeur Java",
+                    "descriptionPosition": "Développement d'une application Spring Boot",
+                    "dateDebutStage": "2026-06-01",
+                    "dateFinStage": "2026-08-31",
+                    "adresseEntreprise": "Montréal",
+                    "salaire": 25.0,
+                    "targetDiscipline": "INFORMATIQUE"
+                }
+                """;
+
+        OffreDeStageDTO result = documentService.saveEmployerOffer(fileOffre, form, request, null);
+
+        assertEquals("Example Company", result.nomEntreprise());
+        assertEquals(StatutValidation.EN_ATTENTE, result.statut());
+        verify(documentRepository).save(any(OffreDeStage.class));
+    }
+
+    @Test
+    @DisplayName("saveEmployerOffer - should accept an authenticated student as offer author")
+    public void testSaveOfferForAuthenticatedStudent() throws NotFoundException, BadRequestException, IOException {
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("test@example.com");
+        when(utilisateurService.findEntityByEmail("test@example.com")).thenReturn(etudiant);
+        when(documentRepository.existsByFileNameAndTargetDiscipline("offre.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
+
+        OffreDeStageDTO result = documentService.saveEmployerOffer(fileOffre, formContentOffre, request, null);
+
+        assertEquals("Example Company", result.nomEntreprise());
+        assertEquals("test@example.com", result.email());
+        verify(documentRepository).save(any(OffreDeStage.class));
+    }
+
+    @Test
+    @DisplayName("saveEmployerOffer - should update only a validated offer owned by the employer")
+    public void testUpdateEmployerOffer() throws NotFoundException, BadRequestException, IOException {
+        employeur.setId(7L);
+        OffreDeStage offer = OffreDeStage.builder()
+                .id(17L)
+                .fileName("old.pdf")
+                .targetDiscipline(Disciplines.INFORMATIQUE)
+                .employeur(employeur)
+                .position("Ancien titre")
+                .descriptionPosition("Ancienne description suffisamment longue")
+                .dateDebutStage(LocalDate.now())
+                .dateFinStage(LocalDate.now().plusDays(30))
+                .adresseEntreprise("Montréal")
+                .build();
+        offer.setStatut(StatutValidation.VALIDE);
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("employeur@example.com");
+        when(utilisateurService.findEntityByEmail("employeur@example.com")).thenReturn(employeur);
+        when(documentRepository.findById(17L)).thenReturn(java.util.Optional.of(offer));
+
+        String form = """
+                {
+                    "type": "OffreDeStage",
+                    "nomEntreprise": "Example Company",
+                    "position": "Nouveau titre",
+                    "descriptionPosition": "Une nouvelle description suffisamment longue",
+                    "dateDebutStage": "2026-06-01",
+                    "dateFinStage": "2026-08-31",
+                    "adresseEntreprise": "Montréal",
+                    "salaire": 25.0,
+                    "targetDiscipline": "INFORMATIQUE"
+                }
+                """;
+
+        OffreDeStageDTO result = documentService.saveEmployerOffer(fileOffre, form, request, 17L);
+
+        assertEquals("Nouveau titre", result.position());
+        assertEquals(StatutValidation.EN_ATTENTE, result.statut());
+        assertEquals(2, result.version());
+        verify(documentRepository).save(offer);
     }
 
     @Test

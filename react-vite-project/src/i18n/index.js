@@ -162,6 +162,7 @@ const resources = {
                 characterCount: "{{count}} caractères",
                 resubmissionMessage: "La soumission déclenche une nouvelle validation par le gestionnaire de stage.",
                 readOnlyMessage: "Cette offre est {{status}} et ne peut plus être modifiée.",
+                viewerReadOnlyMessage: "Les offres sont consultables en lecture seule pour votre rôle.",
                 submitting: "Soumission en cours…",
                 submit: "Soumettre l’offre",
                 submitUpdated: "Soumettre l’offre mise à jour",
@@ -247,6 +248,7 @@ const resources = {
                     accountMustBeValidated: "Accès refusé (403). Votre compte doit être validé par courriel avant de publier une offre.",
                     submissionFailed: "La soumission n’a pas pu être enregistrée.",
                     submissionConnection: "Une erreur est survenue pendant la soumission. Réessayez plus tard.",
+                    loadFailed: "Les offres de stage n’ont pas pu être chargées. Réessayez plus tard.",
                 },
                 success: {
                     created: "Votre offre a été soumise avec succès. Elle est maintenant en attente de validation par le gestionnaire de stage.",
@@ -314,6 +316,11 @@ const resources = {
                 copyright: "Copyright © 2026 InSeek",
                 about: "À propos",
             },
+            devAccess: {
+                button: "Accès développeur",
+                loading: "Connexion…",
+                error: "Le compte développeur est indisponible. Démarrez l’API avec le profil dev.",
+            },
             errors: {
                 forbidden: "Accès interdit",
                 notFound: "Rien ici (404)",
@@ -366,7 +373,7 @@ const resources = {
                     rejected: "Rejetée",
                 },
                 errors: {
-                    unavailableWithSamples: "Le serveur est indisponible. Les données d’exemple sont affichées.",
+                    unavailable: "Le serveur est indisponible. Réessayez plus tard.",
                     offerUnavailable: "Cette offre n’est plus disponible pour révision. La liste a été actualisée.",
                     approve: "Une erreur est survenue pendant l’approbation.",
                     requiredComment: "Le commentaire est obligatoire pour rejeter une offre.",
@@ -375,26 +382,6 @@ const resources = {
                 messages: {
                     approved: "Offre approuvée. Elle est maintenant visible aux étudiants.",
                     rejected: "Offre rejetée. Le commentaire a été enregistré pour l’employeur.",
-                },
-                samples: {
-                    development: {
-                        fileName: "offre-stage-developpement.pdf",
-                        companyName: "NovaLab Solutions",
-                        position: "Stagiaire en développement logiciel",
-                        contactName: "Marie Gagnon",
-                        discipline: "Informatique",
-                        address: "1450, rue Saint-Urbain, Montréal, QC",
-                        description: "Contribuer au développement de fonctionnalités web et aux tests automatisés.",
-                    },
-                    design: {
-                        fileName: "stage-design-ux.pdf",
-                        companyName: "Atelier Nord",
-                        position: "Stagiaire en design UX/UI",
-                        contactName: "Alexandre Roy",
-                        discipline: "Design graphique",
-                        address: "88, boulevard René-Lévesque O., Québec, QC",
-                        description: "Participer à la recherche utilisateur et à la création de prototypes.",
-                    },
                 },
                 fallback: {
                     fileName: "offre-de-stage.pdf",
@@ -563,6 +550,7 @@ const resources = {
                 characterCount: "{{count}} characters",
                 resubmissionMessage: "Submitting triggers a new validation by the internship manager.",
                 readOnlyMessage: "This offer is {{status}} and can no longer be modified.",
+                viewerReadOnlyMessage: "Offers are available for viewing only for your role.",
                 submitting: "Submitting…",
                 submit: "Submit offer",
                 submitUpdated: "Submit updated offer",
@@ -648,6 +636,7 @@ const resources = {
                     accountMustBeValidated: "Access denied (403). Your account must be verified by email before publishing an offer.",
                     submissionFailed: "The submission could not be saved.",
                     submissionConnection: "An error occurred while submitting. Please try again later.",
+                    loadFailed: "The internship offers could not be loaded. Please try again later.",
                 },
                 success: {
                     created: "Your offer was submitted successfully. It is now pending validation by the internship manager.",
@@ -715,6 +704,11 @@ const resources = {
                 copyright: "Copyright © 2026 InSeek",
                 about: "About",
             },
+            devAccess: {
+                button: "Developer access",
+                loading: "Signing in…",
+                error: "The developer account is unavailable. Start the API with the dev profile.",
+            },
             errors: {
                 forbidden: "Access forbidden",
                 notFound: "Nothing here (404)",
@@ -767,7 +761,7 @@ const resources = {
                     rejected: "Rejected",
                 },
                 errors: {
-                    unavailableWithSamples: "The server is unavailable. Sample data is displayed.",
+                    unavailable: "The server is unavailable. Please try again later.",
                     offerUnavailable: "This offer is no longer available for review. The list has been refreshed.",
                     approve: "An error occurred while approving the offer.",
                     requiredComment: "A comment is required to reject an offer.",
@@ -776,26 +770,6 @@ const resources = {
                 messages: {
                     approved: "Offer approved. It is now visible to students.",
                     rejected: "Offer rejected. The comment was saved for the employer.",
-                },
-                samples: {
-                    development: {
-                        fileName: "software-development-internship.pdf",
-                        companyName: "NovaLab Solutions",
-                        position: "Software development intern",
-                        contactName: "Marie Gagnon",
-                        discipline: "Computer Science",
-                        address: "1450 Saint-Urbain Street, Montreal, QC",
-                        description: "Contribute to web feature development and automated testing.",
-                    },
-                    design: {
-                        fileName: "ux-design-internship.pdf",
-                        companyName: "Atelier Nord",
-                        position: "UX/UI design intern",
-                        contactName: "Alexandre Roy",
-                        discipline: "Graphic Design",
-                        address: "88 René-Lévesque Boulevard W., Quebec City, QC",
-                        description: "Contribute to user research and prototype creation.",
-                    },
                 },
                 fallback: {
                     fileName: "internship-offer.pdf",

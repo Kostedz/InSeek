@@ -4,6 +4,7 @@ export const api = {
     auth: {
         register: (payload) =>
             fetcher("/user/register", {
+                skipAuth: true,
                 method: "POST",
                 headers: {
                     Accept: "application/json",
@@ -14,12 +15,20 @@ export const api = {
 
         login: (credentials) =>
             fetcher("/user/login", {
+                skipAuth: true,
                 method: "POST",
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json;charset=UTF-8",
                 },
                 body: JSON.stringify(credentials),
+            }),
+
+        devLogin: () =>
+            fetcher("/user/dev/login", {
+                skipAuth: true,
+                method: "POST",
+                headers: {Accept: "application/json"},
             }),
 
         getMe: () => fetcher("user/me", {}),
@@ -40,6 +49,24 @@ export const api = {
                 method: "POST",
                 body: formData,
             });
+        },
+    },
+
+    employer: {
+        offers: {
+            list: () => fetcher("/employeur/offres", {
+                headers: {Accept: "application/json"},
+            }),
+
+            create: (formData) => fetcher("/documents/upload", {
+                method: "POST",
+                body: formData,
+            }),
+
+            update: (offerId, formData) => fetcher(`/employeur/offres/${offerId}`, {
+                method: "PUT",
+                body: formData,
+            }),
         },
     },
 };

@@ -11,6 +11,7 @@ import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx
 import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
 import EmployeurOffres from "./components/page/EmployeurOffres.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
 import {useTranslation} from "react-i18next";
 
@@ -20,6 +21,7 @@ function App() {
   const [error, setError] = useState(null)
   const navigate = useNavigate();
   const { t } = useTranslation();
+    const userRole = String(user?.role ?? "").replace(/^ROLE_/, "").toUpperCase();
 
   let token = localStorage.getItem('token')
 
@@ -45,7 +47,11 @@ function App() {
                   }
                 }
                 const data = await res.json();
-                let newUser = {...data, isLoggedIn: true}
+                let newUser = {
+                    ...data,
+                    isLoggedIn: true,
+                    isDevAccess: localStorage.getItem("devAccess") === "true",
+                }
                 setUser(newUser)
               }
             ).catch(async (err) => {
@@ -71,15 +77,35 @@ function App() {
   return (
     <div>
       <Routes>
-        <Route path="/" element={<PageLayout user={user}/>}>
+          <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
           <Route index element={<MainContainer setError={setError}/>}/>
           <Route path='about' element={<About/>}/>
-          <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setError={setError}/>}/>
+              <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
           <Route path='logout' element={<Logout setUser={setUser}/>}/>
-          <Route path='etudiant' element={<EtudiantTeleverseCV/>}/>
-          <Route path='employeur' element={<EmployeurOffres/>}/>
-          <Route path='gestionnaire' element={<GestionnaireValidation/>}/>
-          <Route path= 'register' element={<RegisterForm user={user} authChecked={authChecked} setError={setError}/>}/>
+              <Route path='etudiant' element={
+                                          <ProtectedRoute user={user} authChecked={authChecked}
+                                                          allowedRoles={["ETUDIANT"]}>
+                                             <EtudiantTeleverseCV/>
+                                         </ProtectedRoute>
+                                     }/>
+              <Route path='employeur' element={
+                                           <ProtectedRoute user={user} authChecked={authChecked}
+                                                           allowedRoles={["EMPLOYEUR"]}>
+                                              <EmployeurOffres
+                                                  user={user}
+                                                  canManageOffers={Boolean(user?.isLoggedIn)}
+                                                  companyName={user?.nomCompagnie ?? ""}
+                                                  isAccountEmailValidated={user?.emailValidated ?? true}
+                                              />
+                                          </ProtectedRoute>
+                                      }/>
+              <Route path='gestionnaire' element={
+                                              <ProtectedRoute user={user} authChecked={authChecked}
+                                                              allowedRoles={["GESTIONNAIRE"]}>
+                                                 <GestionnaireValidation/>
+                                             </ProtectedRoute>
+                                         }/>
+              <Route path='register' element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
           <Route path='error' element={<ErrorPage error={error}/>}/>
           <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
         </Route>
