@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { translateMessage } from "../../utils/i18nMessage.js";
 import api from "../../utils/api.js";
+import ValidationTabs from "./ValidationTabs.jsx";
 
 const SAMPLE_OFFERS = [
     {
@@ -289,6 +290,8 @@ function GestionnaireValidation() {
                             className="rounded-xl border border-line bg-surface px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/40">{t("managerValidation.refresh")}
                     </button>
                 </div>
+
+                <ValidationTabs activeTab="offers"/>
 
                 {error &&
                     <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"

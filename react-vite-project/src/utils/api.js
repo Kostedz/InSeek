@@ -73,7 +73,7 @@ export const api = {
     gestionnaire: {
         getPendingDocuments: (type) => {
             const query = type ? `?type=${encodeURIComponent(type)}` : "";
-            return fetcher(`/gestionnaire/documents/pending/${query}`, { method: "GET" });
+            return fetcher(`/gestionnaire/documents/pending${query}`, { method: "GET" });
         },
 
         approveDocument: (id) =>
