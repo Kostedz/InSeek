@@ -134,7 +134,7 @@ function GestionnaireValidation() {
         setError(null);
 
         try {
-            const response = await api.gestionnaire.getPendingOffers();
+            const response = await api.gestionnaire.getPendingDocuments("OffreDeStage");
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -195,7 +195,7 @@ function GestionnaireValidation() {
         setError(null);
 
         try {
-            const response = await api.gestionnaire.approveOffer(selectedOffer.id);
+            const response = await api.gestionnaire.approveDocument(selectedOffer.id);
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -236,7 +236,7 @@ function GestionnaireValidation() {
         setError(null);
 
         try {
-            const response = await api.gestionnaire.rejectOffer(selectedOffer.id, comment.trim());
+            const response = await api.gestionnaire.rejectDocument(selectedOffer.id, comment.trim());
 
             if (response.status === 403) {
                 setForbidden(true);
