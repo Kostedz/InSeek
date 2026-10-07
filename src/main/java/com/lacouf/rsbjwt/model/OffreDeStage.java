@@ -29,8 +29,6 @@ public class OffreDeStage extends Document{
     @JoinColumn(name = "employeur_id")
     private Utilisateur employeur;
     //private Etudiant edtudiant // Au cas ou on veut envoyer une offre a un etuuant specifique
-    @Enumerated(EnumType.STRING)
-    private Disciplines discipline;
 
     @Builder
     public OffreDeStage(Long id, String fileName, Disciplines targetDiscipline,
