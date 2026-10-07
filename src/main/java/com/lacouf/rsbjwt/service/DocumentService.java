@@ -189,7 +189,23 @@ public class DocumentService {
 
         OffreDeStage offer;
         if (offerId == null) {
-            offer = (OffreDeStage) createDocument("OffreDeStage", file, objectMapper.readTree(formContent), employer);
+            offer = OffreDeStage.builder()
+                    .fileName(file.getOriginalFilename())
+                    .targetDiscipline(fields.targetDiscipline())
+                    .data(file.getBytes())
+                    .contentType(file.getContentType())
+                    .size(file.getSize())
+                    .employeur(employer)
+                    .nomEntreprise(fields.nomEntreprise())
+                    .position(fields.position())
+                    .descriptionPosition(fields.descriptionPosition())
+                    .dateDebutStage(fields.dateDebutStage())
+                    .dateFinStage(fields.dateFinStage())
+                    .adresseEntreprise(fields.adresseEntreprise())
+                    .salaire(fields.salaire())
+                    .contactName(fields.contactName())
+                    .contactPhone(fields.contactPhone())
+                    .build();
 
             if (documentRepository.existsByFileNameAndTargetDiscipline(
                     offer.getFileName(), offer.getTargetDiscipline())) {
