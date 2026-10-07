@@ -68,7 +68,7 @@ public class DocumentService {
         logger.info(targetDiscipline);
         Document document = createDocument(type, file, result, uploader);
 
-        if (documentRepository.existsByFileNameAndTargetDiscipline(document.getFileName(), document.getTargetDiscipline())) {
+        if (documentRepository.findByUtilisateur(uploader) != null && documentRepository.findByUtilisateur(uploader).getStatut() == StatutValidation.EN_ATTENTE) {
             throw new BadRequestException("Document with the same name and target discipline already exists");
         }
 
@@ -296,8 +296,8 @@ public class DocumentService {
                     .contactPhone(fields.contactPhone())
                     .build();
 
-            if (documentRepository.existsByFileNameAndTargetDiscipline(
-                    offer.getFileName(), offer.getTargetDiscipline())) {
+            logger.info("Employer {} is submitting a new offer: {}", employer.getEmail(), offer);
+            if (documentRepository.findByUtilisateur(employer) != null && documentRepository.findByUtilisateur(employer).getStatut() == StatutValidation.EN_ATTENTE) {
                 throw new BadRequestException("Document with the same name and target discipline already exists");
             }
         } else {
