@@ -57,9 +57,6 @@ public class DocumentService {
         if (type.equals("CV")) {
             logger.info("Uploader is submitting a CV: " + uploader);
             targetDiscipline = targetDisciplineForCv(uploader, result).toString();
-        } else if (type.equals("OffreDeStage")) {
-            logger.info("Uploader is an instance of Etudiant: " + uploader);
-            targetDiscipline = ((Etudiant) uploader).getDiscipline().toString();
         } else {
             throw new BadRequestException("Invalid document type");
         }
