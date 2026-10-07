@@ -18,11 +18,20 @@
         private final DocumentRepository documentRepository;
 
         @Transactional(readOnly = true)
-        public List<DocumentValidationDTO> listPendingDocuments() {
-            return documentRepository.findByStatut(StatutValidation.EN_ATTENTE)
-                    .stream()
-                    .map(DocumentValidationDTO::of)
-                    .toList();
+        public List<DocumentValidationDTO> listPendingDocuments(String type) {
+            return switch (type) {
+                case "CV" -> documentRepository.findCVByStatut(StatutValidation.EN_ATTENTE)
+                        .stream()
+                        .map(DocumentValidationDTO::of)
+                        .toList();
+                case "OffreDeStage" -> documentRepository.findOffreDeStageByStatut(StatutValidation.EN_ATTENTE)
+                        .stream()
+                        .map(DocumentValidationDTO::of)
+                        .toList();
+                default ->
+                        throw new IllegalArgumentException("Type de document invalide. Les types valides sont 'CV' et 'OffreDeStage'.");
+            };
+
         }
 
         @Transactional

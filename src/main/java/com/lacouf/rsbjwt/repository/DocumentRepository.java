@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.repository;
 
 import com.lacouf.rsbjwt.model.*;
+import io.micrometer.common.KeyValues;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +30,18 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<OffreDeStage> findOffersByEmployer(@Param("employeur") com.lacouf.rsbjwt.model.Utilisateur employeur);
 
     CV findByUtilisateur(Utilisateur utilisateur);
+
+    @Query("""
+            SELECT c
+            FROM CV c
+            WHERE c.statut = :statut
+            """)
+    List<Document> findCVByStatut(StatutValidation statut);
+
+    @Query("""
+            SELECT o
+            FROM OffreDeStage o
+            WHERE o.statut = :statut
+            """)
+    List<Document> findOffreDeStageByStatut(StatutValidation statut);
 }
