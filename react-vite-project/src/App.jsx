@@ -79,7 +79,7 @@ function App() {
     <div>
       <Routes>
           <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
-          <Route index element={<MainContainer setError={setError}/>}/>
+              <Route index element={<MainContainer user={user}/>}/>
           <Route path='about' element={<About/>}/>
               <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
           <Route path='logout' element={<Logout setUser={setUser}/>}/>

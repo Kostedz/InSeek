@@ -59,8 +59,6 @@ const resources = {
             },
             auth: {
                 memberArea: "Espace membre",
-                alreadyLoggedIn: "Vous êtes déjà connecté. Veuillez vous déconnecter avant de vous connecter ou de créer un compte.",
-                disconnect: "Se déconnecter",
                 login: {
                     welcomeBack: "Bon retour.",
                     description: "Connectez-vous pour accéder à votre espace InSeek.",
@@ -460,8 +458,6 @@ const resources = {
             },
             auth: {
                 memberArea: "Member area",
-                alreadyLoggedIn: "You are already logged in. Please log out before logging in or creating an account.",
-                disconnect: "Log out",
                 login: {
                     welcomeBack: "Welcome back.",
                     description: "Log in to access your InSeek space.",

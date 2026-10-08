@@ -147,6 +147,17 @@ function Header({user}) {
 
                     {isLoggedIn ? (
                         <>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    switchLanguage();
+                                    setIsMenuOpen(false);
+                                }}
+                                className="inline-flex w-full justify-center rounded-full border border-white/20 px-3 py-2 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-auto"
+                                aria-label={t("language.switchAriaLabel")}
+                            >
+                                {t("language.switch")}
+                            </button>
                             <div ref={userMenuRef} className="relative hidden w-full md:block md:w-auto">
                             <button
                                 type="button"
@@ -165,15 +176,6 @@ function Header({user}) {
 
                             {isUserMenuOpen && (
                                 <div id="user-menu" role="menu" className="absolute right-0 top-full z-50 mt-2 flex w-60 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-[1.5rem] border border-ink-soft bg-ink p-3 text-white shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
-                                    <button
-                                        type="button"
-                                        role="menuitem"
-                                        onClick={switchLanguage}
-                                        className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center text-sm font-bold text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-pink"
-                                        aria-label={t("language.switchAriaLabel")}
-                                    >
-                                        {t("language.switch")}
-                                    </button>
                                     <NavLink
                                         to="/logout"
                                         role="menuitem"
@@ -189,17 +191,6 @@ function Header({user}) {
                             <div className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-center text-sm font-bold text-white">
                                 <span>{displayName || t("navigation.account")}</span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    switchLanguage();
-                                    setIsMenuOpen(false);
-                                }}
-                                className="inline-flex w-full justify-center rounded-full border border-white/20 px-3 py-2 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white"
-                                aria-label={t("language.switchAriaLabel")}
-                            >
-                                {t("language.switch")}
-                            </button>
                             <NavLink
                                 to="/logout"
                                 onClick={closeMenus}

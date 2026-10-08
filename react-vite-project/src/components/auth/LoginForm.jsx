@@ -129,7 +129,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
   }
 
   if (user?.isLoggedIn) {
-    return <Navigate to="/" replace state={{ authNotice: true }} />;
+    return <Navigate to="/" replace/>;
   }
 
   return (
