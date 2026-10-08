@@ -8,12 +8,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 public class Employeur extends Utilisateur {
     private String nomCompagnie;
+
 
     @Builder
     public Employeur(Long id, String nom, String prenom, String nomCompagnie, String email, String password){

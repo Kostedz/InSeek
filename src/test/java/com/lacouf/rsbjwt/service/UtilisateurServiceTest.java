@@ -441,8 +441,8 @@ class UtilisateurServiceTest {
 
     @Test
     @DisplayName("toEntity() avec un RegisterDTO null retourne null")
-    void toEntity_null_retourneNull() throws BadRequestException {
-        assertNull(utilisateurService.toEntity(null));
+    void toEntity_RegisterDTO_null_retourneNull() throws BadRequestException {
+        assertNull(utilisateurService.toEntity((RegisterDTO) null));
     }
 
     @Test
@@ -485,28 +485,5 @@ class UtilisateurServiceTest {
                 utilisateurService.toEntity(validEmployeurDto);
 
         assertInstanceOf(Employeur.class, result);
-    }
-
-    @Test
-    @DisplayName("toEntity() avec un rôle non supporté exemple: GESTIONNAIRE ca lève une BadRequestException")
-    void toEntity_roleNonSupporte_leveBadRequestException() {
-
-        RegisterDTO dto = new RegisterDTO(
-                "Nom",
-                "Prenom",
-                "a@a.com",
-                Role.GESTIONNAIRE,
-                "Abcdef1!",
-                "INFORMATIQUE");
-
-        BadRequestException exception = assertThrows(
-                BadRequestException.class,
-                () -> utilisateurService.toEntity(dto)
-        );
-
-        assertEquals(
-                "Type de DTO non pris en charge pour la conversion en entité.",
-                exception.getMessage()
-        );
     }
 }

@@ -2,11 +2,7 @@ package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Employeur;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Professeur;
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
@@ -67,6 +63,27 @@ public class UtilisateurService {
         return toDTO(user);
     }
 
+    public UtilisateurDTO findByEmail(String email) throws NotFoundException, BadRequestException {
+        if (email == null || email.isBlank()) {
+            throw new BadRequestException("L'email est obligatoire");
+        }
+        Utilisateur user = utilisateurRepository.findByEmail(email);
+        if (user == null) {
+            throw new NotFoundException("L'utilisateur n'existe pas.");
+        }
+        return toDTO(user);
+    }
+
+    public Utilisateur findEntityByEmail(String email) throws NotFoundException {
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email);
+
+        if (utilisateur == null) {
+            throw new NotFoundException("Utilisateur not found");
+        }
+
+        return utilisateur;
+    }
+
     public boolean registrationVerification(RegisterDTO dto ) throws BadRequestException {
 
         if (dto.prenom() == null || dto.prenom().isBlank()) {
@@ -88,25 +105,16 @@ public class UtilisateurService {
     }
 
     public UtilisateurDTO toDTO(Utilisateur utilisateur) throws BadRequestException {
-        if (utilisateur == null) {
-            return null;
-        }
-
-        if (utilisateur instanceof Etudiant etudiant) {
-            return EtudiantDTO.of(etudiant);
-        }
-
-        if(utilisateur instanceof Employeur employeur){
-            return EmployeurDTO.of(employeur);
-        }
-
-        if (utilisateur instanceof Professeur professeur) {
-            return ProfesseurDTO.of(professeur);
-        }
-
-        throw new BadRequestException(
-                "Type d'entité non pris en charge pour la conversion en DTO."
-        );
+        return switch (utilisateur) {
+            case null -> null;
+            case Etudiant etudiant -> EtudiantDTO.of(etudiant);
+            case Employeur employeur -> EmployeurDTO.of(employeur);
+            case Professeur professeur -> ProfesseurDTO.of(professeur);
+            case com.lacouf.rsbjwt.model.Gestionnaire gestionnaire -> GestionnaireDTO.of(gestionnaire);
+            default -> throw new BadRequestException(
+                    "Type d'entité non pris en charge pour la conversion en DTO."
+            );
+        };
     }
 
     public Utilisateur toEntity(RegisterDTO registerDTO) throws BadRequestException {
@@ -142,6 +150,16 @@ public class UtilisateurService {
                     .discipline(Disciplines.valueOf(registerDTO.affiliation()))
                     .password(passwordEncoder.encode(registerDTO.password()))
                     .build();
+        }
+
+        if (registerDTO.role() == Role.GESTIONNAIRE) {
+            return new Gestionnaire(
+                    null,
+                    registerDTO.nom(),
+                    registerDTO.prenom(),
+                    registerDTO.email(),
+                    passwordEncoder.encode(registerDTO.password())
+            );
         }
 
 
