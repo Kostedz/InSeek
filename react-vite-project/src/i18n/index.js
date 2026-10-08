@@ -51,6 +51,9 @@ const resources = {
                 professorsTitle: "Pour les professeurs",
                 professorsDescription: "Suivez les démarches et accompagnez chaque stage.",
             },
+            studentHome: {
+                welcome: "Bienvenue{{name}} !",
+            },
             about: {
                 label: "À propos",
                 description: "InSeek est une plateforme bilingue de gestion des stages qui facilite la collaboration entre les étudiants, les employeurs, les gestionnaires de stages et les professeurs. Elle centralise les CV, les offres, les candidatures et le suivi des stages afin de simplifier chaque étape, de la recherche d’un stage à son évaluation. Grâce à une interface claire et des outils adaptés à chaque rôle, InSeek aide tous les intervenants à rester informés et à avancer efficacement.",
@@ -125,7 +128,15 @@ const resources = {
                 request: "Demande",
                 requestSubmitted: "CV soumis au gestionnaire",
                 fileName: "Nom du fichier",
-                statusLabel: "Statut",
+                fileSize: "Taille du fichier",
+                fileSizeUnit: "Mo",
+                nextStep: "Prochaine étape",
+                nextStepDescription: {
+                    EN_ATTENTE: "Le gestionnaire de stages examinera votre CV. La décision sera affichée ici dès qu’elle sera rendue.",
+                    VALIDE: "Votre CV est approuvé. Vous pouvez maintenant l’utiliser pour vos démarches de stage.",
+                    REJETE: "Consultez le motif du refus ci-dessous, corrigez votre CV, puis téléversez une nouvelle version.",
+                    NOT_SUBMITTED: "Téléversez un CV en format PDF pour commencer.",
+                },
                 rejectionReason: "Motif du refus",
                 noPreviousRequest: "Aucune demande de CV n’a encore été soumise.",
                 status: {
@@ -140,6 +151,7 @@ const resources = {
                 submitting: "Téléversement en cours…",
                 submit: "Téléverser le CV",
                 update: "Mettre à jour votre CV",
+                backHome: "Retour à l’accueil",
                 errors: {
                     invalidFormat: "Format invalide. Seuls les fichiers au format PDF (.pdf) sont acceptés.",
                     fileTooLarge: "Le fichier dépasse la taille maximale autorisée de 5 Mo.",
@@ -461,6 +473,9 @@ const resources = {
                 professorsTitle: "For professors",
                 professorsDescription: "Follow each process and support every internship.",
             },
+            studentHome: {
+                welcome: "Welcome{{name}}!",
+            },
             about: {
                 label: "About",
                 description: "InSeek is a bilingual internship management platform that makes collaboration between students, employers, internship managers, and professors easier. It centralizes résumés, opportunities, applications, and internship follow-up to simplify every step, from searching for an internship to evaluating it. With a clear interface and tools adapted to each role, InSeek helps everyone stay informed and move forward efficiently.",
@@ -535,7 +550,15 @@ const resources = {
                 request: "Request",
                 requestSubmitted: "Résumé submitted to the manager",
                 fileName: "File name",
-                statusLabel: "Status",
+                fileSize: "File size",
+                fileSizeUnit: "MB",
+                nextStep: "Next step",
+                nextStepDescription: {
+                    EN_ATTENTE: "The internship manager will review your résumé. The decision will appear here once it is made.",
+                    VALIDE: "Your résumé is approved. You can now use it for your internship applications.",
+                    REJETE: "Review the reason for rejection below, update your résumé, then upload a new version.",
+                    NOT_SUBMITTED: "Upload a PDF résumé to get started.",
+                },
                 rejectionReason: "Reason for rejection",
                 noPreviousRequest: "No résumé request has been submitted yet.",
                 status: {
@@ -550,6 +573,7 @@ const resources = {
                 submitting: "Uploading…",
                 submit: "Upload résumé",
                 update: "Update your résumé",
+                backHome: "Back to home",
                 errors: {
                     invalidFormat: "Invalid format. Only PDF files (.pdf) are accepted.",
                     fileTooLarge: "The file exceeds the maximum allowed size of 5 MB.",

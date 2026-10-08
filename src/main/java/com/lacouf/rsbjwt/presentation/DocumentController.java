@@ -6,6 +6,7 @@ import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
+import com.lacouf.rsbjwt.service.dto.DocumentValidationDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,18 @@ public class DocumentController {
     @GetMapping("/documents/stage")
     public List<OffreDeStageDTO> findAllStages(){
         return documentService.findAllOffreDeStage();
+    }
+
+    @GetMapping("/documents/student/cv")
+    public ResponseEntity<DocumentValidationDTO> getStudentCv(HttpServletRequest request) {
+        try {
+            DocumentValidationDTO cv = documentService.findStudentCv(request);
+            return cv == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(cv);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/documents/stage/{id}")

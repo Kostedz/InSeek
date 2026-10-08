@@ -2,12 +2,13 @@ import {useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
+import {getRedirectPathByRole} from "../../utils/authRedirect.js";
 
 const demoRoles = [
-    {value: "ETUDIANT", label: "student", path: "/etudiant", color: "bg-lavender/70 hover:bg-lavender"},
-    {value: "PROFESSEUR", label: "professor", path: "/", color: "bg-pink/80 hover:bg-pink"},
-    {value: "EMPLOYEUR", label: "employer", path: "/employeur", color: "bg-peach/80 hover:bg-peach"},
-    {value: "GESTIONNAIRE", label: "manager", path: "/gestionnaire", color: "bg-gold/80 hover:bg-gold"},
+    {value: "ETUDIANT", label: "student", color: "bg-lavender/70 hover:bg-lavender"},
+    {value: "PROFESSEUR", label: "professor", color: "bg-pink/80 hover:bg-pink"},
+    {value: "EMPLOYEUR", label: "employer", color: "bg-peach/80 hover:bg-peach"},
+    {value: "GESTIONNAIRE", label: "manager", color: "bg-gold/80 hover:bg-gold"},
 ];
 
 function DemoButtons({setUser}) {
@@ -46,7 +47,7 @@ function DemoButtons({setUser}) {
 
             const userData = await userResponse.json();
             setUser({...userData, isLoggedIn: true, isDevAccess: false});
-            navigate(demoRole.path, {replace: true});
+            navigate(await getRedirectPathByRole(userData.role ?? demoRole.value), {replace: true});
         } catch {
             localStorage.removeItem("token");
             localStorage.removeItem("devAccess");

@@ -35,6 +35,10 @@ export const api = {
     },
 
     student: {
+        getCv: () => fetcher("/documents/student/cv", {
+            headers: {Accept: "application/json"},
+        }),
+
         uploadCv: (file, documentType = "CV") => {
             const formData = new FormData();
             formData.append("file", file);

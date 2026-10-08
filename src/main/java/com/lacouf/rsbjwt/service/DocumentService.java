@@ -85,6 +85,18 @@ public class DocumentService {
         };
     }
 
+    @Transactional
+    public DocumentValidationDTO findStudentCv(HttpServletRequest request)
+            throws BadRequestException, NotFoundException {
+        Utilisateur student = getAuthenticatedUser(request);
+        if (!(student instanceof Etudiant)) {
+            throw new BadRequestException("Seul un étudiant peut consulter son CV");
+        }
+
+        CV cv = documentRepository.findByUtilisateur(student);
+        return cv == null ? null : DocumentValidationDTO.of(cv);
+    }
+
     private Document createDocument(String type, MultipartFile file, JsonNode result, Utilisateur uploader) throws BadRequestException, IOException {
         String targetDiscipline;
 

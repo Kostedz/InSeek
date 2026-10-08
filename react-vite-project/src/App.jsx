@@ -2,6 +2,7 @@ import PageLayout from "./components/PageLayout.jsx";
 import React, {useEffect, useState} from "react";
 import {Route, Routes, useNavigate} from "react-router-dom";
 import MainContainer from "./components/MainContainer.jsx";
+import EtudiantAccueil from "./components/page/EtudiantAccueil.jsx";
 import About from "./components/About.jsx";
 import LoginForm from "./components/auth/LoginForm.jsx";
 import fetcher from "./utils/fetcher.js";
@@ -26,6 +27,12 @@ function App() {
 
   let token = localStorage.getItem('token')
 
+    useEffect(() => {
+        Object.keys(localStorage)
+            .filter((key) => key.startsWith("inseek.student.cv."))
+            .forEach((key) => localStorage.removeItem(key));
+    }, []);
+
   useEffect(() => {
       if (token) {
         setAuthChecked(false);
@@ -36,7 +43,8 @@ function App() {
                 if (!res.ok) {
                   switch (res.status) {
                     case 401:
-                      localStorage.clear();
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("devAccess");
                       setUser(null);
                       throw {status: 401, ...createTranslationMessage("errors.unauthorized")};
                     case 403:
@@ -79,7 +87,10 @@ function App() {
     <div>
       <Routes>
           <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
-              <Route index element={<MainContainer user={user}/>}/>
+              <Route index element={user?.isLoggedIn && userRole === "ETUDIANT"
+                  ? <EtudiantAccueil user={user}/>
+                  : <MainContainer user={user}/>
+              }/>
           <Route path='about' element={<About/>}/>
               <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
           <Route path='logout' element={<Logout setUser={setUser}/>}/>

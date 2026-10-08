@@ -5,6 +5,7 @@ import { api } from "../../utils/api.js";
 import { FormValidator } from "../../utils/formValidator.js";
 import Loading from "../Loading.jsx";
 import {translateMessage} from "../../utils/i18nMessage.js";
+import {getRedirectPathByRole} from "../../utils/authRedirect.js";
 
 const LoginForm = ({ user, authChecked, setUser }) => {
   const navigate = useNavigate();
@@ -41,21 +42,6 @@ const LoginForm = ({ user, authChecked, setUser }) => {
       }
     } else {
       setWarnings((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const getRedirectPathByRole = (role) => {
-    const normalizedRole = String(role ?? "").replace(/^ROLE_/, "").toUpperCase();
-
-    switch (normalizedRole) {
-      case "GESTIONNAIRE":
-        return "/gestionnaire";
-      case "ETUDIANT":
-        return "/etudiant";
-      case "EMPLOYEUR":
-        return "/employeur";
-      default:
-        return "/";
     }
   };
 
@@ -100,7 +86,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
         setUser({ ...userData, isLoggedIn: true });
       }
 
-      navigate(getRedirectPathByRole(userData.role));
+      navigate(await getRedirectPathByRole(userData.role));
     } catch (error) {
       console.error("Login Error:", error);
       setApiError("errors.serverUnavailable");
