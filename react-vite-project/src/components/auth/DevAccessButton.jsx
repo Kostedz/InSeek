@@ -50,7 +50,7 @@ function DevAccessButton({setUser}) {
     };
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+        <div className="flex flex-col items-end gap-2">
             {error && (
                 <p className="max-w-xs rounded-xl border border-error bg-surface px-3 py-2 text-xs font-semibold text-error shadow-lg"
                    role="alert">
@@ -61,7 +61,7 @@ function DevAccessButton({setUser}) {
                 type="button"
                 onClick={activateDevAccess}
                 disabled={loading}
-                className="rounded-full border border-ink bg-gold px-4 py-2 text-xs font-black text-ink shadow-lg transition-colors hover:bg-lemon focus:outline-none focus:ring-4 focus:ring-pink/60 disabled:cursor-wait disabled:opacity-70"
+                className="whitespace-nowrap rounded-full border border-ink bg-gold px-2.5 py-1.5 text-[11px] font-black text-ink shadow-lg transition-colors hover:bg-lemon focus:outline-none focus:ring-4 focus:ring-pink/60 disabled:cursor-wait disabled:opacity-70"
             >
                 {loading ? t("devAccess.loading") : t("devAccess.button")}
             </button>

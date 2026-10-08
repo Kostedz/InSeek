@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import DevAccessButton from "./auth/DevAccessButton.jsx";
+import DemoButtons from "./auth/DemoButtons.jsx";
 
 function Footer({setUser}) {
   const { t } = useTranslation();
@@ -20,7 +21,12 @@ function Footer({setUser}) {
                   </Link>
               </div>
           </footer>
-          <DevAccessButton setUser={setUser}/>
+          {import.meta.env.DEV && (
+              <div className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-1rem)] items-end gap-2">
+                  <DemoButtons setUser={setUser}/>
+                  <DevAccessButton setUser={setUser}/>
+              </div>
+          )}
       </>
   );
 }

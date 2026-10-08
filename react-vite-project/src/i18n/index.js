@@ -332,6 +332,17 @@ const resources = {
                 loading: "Connexion…",
                 error: "Le compte développeur est indisponible. Démarrez l’API avec le profil dev.",
             },
+            demoButtons: {
+                title: "Buttons demo",
+                loading: "Connexion…",
+                error: "Un compte de démonstration est indisponible.",
+                roles: {
+                    student: "Étudiant",
+                    professor: "Professeur",
+                    employer: "Employeur",
+                    manager: "Gestionnaire de stage",
+                },
+            },
             errors: {
                 forbidden: "Accès interdit",
                 notFound: "Rien ici (404)",
@@ -730,6 +741,17 @@ const resources = {
                 button: "Developer access",
                 loading: "Signing in…",
                 error: "The developer account is unavailable. Start the API with the dev profile.",
+            },
+            demoButtons: {
+                title: "Demo buttons",
+                loading: "Signing in…",
+                error: "A demo account is unavailable.",
+                roles: {
+                    student: "Student",
+                    professor: "Professor",
+                    employer: "Employer",
+                    manager: "Internship manager",
+                },
             },
             errors: {
                 forbidden: "Access forbidden",

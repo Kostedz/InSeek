@@ -24,8 +24,8 @@ export const api = {
                 body: JSON.stringify(credentials),
             }),
 
-        devLogin: () =>
-            fetcher("/user/dev/login", {
+        devLogin: (role) =>
+            fetcher(role ? `/user/dev/login?role=${encodeURIComponent(role)}` : "/user/dev/login", {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
