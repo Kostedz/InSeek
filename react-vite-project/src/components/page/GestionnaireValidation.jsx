@@ -57,7 +57,7 @@ function normalizeOffer(offer, t) {
         dateDebutStage: offer.dateDebutStage ?? offer.startDate,
         dateFinStage: offer.dateFinStage ?? offer.endDate,
         adresseEntreprise: offer.adresseEntreprise ?? offer.companyAddress ?? offer.location ?? "",
-        salaire: offer.salaire ?? offer.salary ?? "",
+        salaire: offer.salaire ?? offer.salary ?? offer.hourlyPay ?? "",
         descriptionPosition: offer.descriptionPosition ?? offer.description ?? "",
     };
 }
@@ -98,6 +98,20 @@ function formatDiscipline(value, t) {
     };
     const disciplineKey = aliases[normalized] ?? normalized;
     return t(`employerOffers.disciplines.${disciplineKey}`, {defaultValue: value});
+}
+
+function formatHourlyPay(value, language, t) {
+    if (value === null || value === undefined || String(value).trim() === "") {
+        return t("managerValidation.unpaid");
+    }
+
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return String(value);
+
+    return `${new Intl.NumberFormat(language === "en" ? "en-CA" : "fr-CA", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    }).format(amount)} $/h`;
 }
 
 function isPending(offer) {
@@ -416,7 +430,7 @@ function GestionnaireValidation() {
                                         <InfoItem label={t("managerValidation.location")}
                                                   value={selectedOffer.adresseEntreprise}/>
                                         <InfoItem label={t("managerValidation.hourlyPay")}
-                                                  value={selectedOffer.salaire ? `${selectedOffer.salaire} $/h` : ""}/>
+                                                  value={formatHourlyPay(selectedOffer.salaire, i18n.resolvedLanguage, t)}/>
                                         {selectedOffer.descriptionPosition && <div className="sm:col-span-2"><InfoItem
                                             label={t("managerValidation.descriptionLabel")}
                                                                                  value={selectedOffer.descriptionPosition}/>

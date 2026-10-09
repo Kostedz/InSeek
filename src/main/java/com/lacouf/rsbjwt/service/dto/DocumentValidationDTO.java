@@ -22,6 +22,7 @@ public record DocumentValidationDTO(
         String contactPhone,
         LocalDate dateDebutStage,
         LocalDate dateFinStage,
+        Double salaire,
         Disciplines targetDiscipline,
         String adresseEntreprise,
         String descriptionPosition
@@ -44,7 +45,7 @@ public record DocumentValidationDTO(
             String descriptionPosition
     ) {
         this(id, fileName, email, null, null, statut, commentaireRejet, size, nomEntreprise, position,
-                contactName, contactPhone, dateDebutStage, dateFinStage, targetDiscipline, adresseEntreprise,
+                contactName, contactPhone, dateDebutStage, dateFinStage, null, targetDiscipline, adresseEntreprise,
                 descriptionPosition);
     }
 
@@ -65,6 +66,7 @@ public record DocumentValidationDTO(
                 offer == null ? null : offer.getContactPhone(),
                 offer == null ? null : offer.getDateDebutStage(),
                 offer == null ? null : offer.getDateFinStage(),
+                offer == null ? null : offer.getSalaire(),
                 offer == null ? document.getTargetDiscipline() : offer.getTargetDiscipline(),
                 offer == null ? null : offer.getAdresseEntreprise(),
                 offer == null ? null : offer.getDescriptionPosition()
