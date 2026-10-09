@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import { Link } from "react-router-dom";
+import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 
 async function countPendingDocuments(type) {
@@ -12,6 +13,7 @@ async function countPendingDocuments(type) {
 }
 
 export default function ValidationTabs({activeTab, offersCount, cvsCount}) {
+    const {t} = useTranslation();
     const [loadedCounts, setLoadedCounts] = useState({offers: null, cvs: null});
 
     useEffect(() => {
@@ -66,7 +68,7 @@ export default function ValidationTabs({activeTab, offersCount, cvsCount}) {
                 }`}
             >
                 <span
-                    className="flex items-center justify-center gap-2">Offres de stage {countBadge(displayedOffersCount)}</span>
+                    className="flex items-center justify-center gap-2">{t("managerValidation.tabs.offers")} {countBadge(displayedOffersCount)}</span>
             </Link>
             <Link
                 to="/gestionnaire/cv"
@@ -77,7 +79,7 @@ export default function ValidationTabs({activeTab, offersCount, cvsCount}) {
                 }`}
             >
                 <span
-                    className="flex items-center justify-center gap-2">CV des étudiants {countBadge(displayedCvsCount)}</span>
+                    className="flex items-center justify-center gap-2">{t("managerValidation.tabs.cvs")} {countBadge(displayedCvsCount)}</span>
             </Link>
         </div>
     );

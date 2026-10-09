@@ -11,6 +11,8 @@ public record DocumentValidationDTO(
         Long id,
         String fileName,
         String email,
+        String prenom,
+        String nom,
         StatutValidation statut,
         String commentaireRejet,
         long size,
@@ -24,12 +26,36 @@ public record DocumentValidationDTO(
         String adresseEntreprise,
         String descriptionPosition
 ) {
+    public DocumentValidationDTO(
+            Long id,
+            String fileName,
+            String email,
+            StatutValidation statut,
+            String commentaireRejet,
+            long size,
+            String nomEntreprise,
+            String position,
+            String contactName,
+            String contactPhone,
+            LocalDate dateDebutStage,
+            LocalDate dateFinStage,
+            Disciplines targetDiscipline,
+            String adresseEntreprise,
+            String descriptionPosition
+    ) {
+        this(id, fileName, email, null, null, statut, commentaireRejet, size, nomEntreprise, position,
+                contactName, contactPhone, dateDebutStage, dateFinStage, targetDiscipline, adresseEntreprise,
+                descriptionPosition);
+    }
+
     public static DocumentValidationDTO of(Document document) {
         OffreDeStage offer = document instanceof OffreDeStage ? (OffreDeStage) document : null;
         return new DocumentValidationDTO(
                 document.getId(),
                 document.getFileName(),
                 document.getUtilisateur().getEmail(),
+                document.getUtilisateur().getPrenom(),
+                document.getUtilisateur().getNom(),
                 document.getStatut(),
                 document.getCommentaireRejet(),
                 document.getSize(),
@@ -39,7 +65,7 @@ public record DocumentValidationDTO(
                 offer == null ? null : offer.getContactPhone(),
                 offer == null ? null : offer.getDateDebutStage(),
                 offer == null ? null : offer.getDateFinStage(),
-                offer == null ? null : offer.getTargetDiscipline(),
+                offer == null ? document.getTargetDiscipline() : offer.getTargetDiscipline(),
                 offer == null ? null : offer.getAdresseEntreprise(),
                 offer == null ? null : offer.getDescriptionPosition()
         );

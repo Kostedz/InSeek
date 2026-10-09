@@ -21,6 +21,7 @@ function App() {
   const [user, setUser] = useState({})
   const [authChecked, setAuthChecked] = useState(() => !localStorage.getItem('token'))
   const [error, setError] = useState(null)
+    const [offerDrafts, setOfferDrafts] = useState({})
   const navigate = useNavigate();
   const { t } = useTranslation();
     const userRole = String(user?.role ?? "").replace(/^ROLE_/, "").toUpperCase();
@@ -108,6 +109,8 @@ function App() {
                                                   canManageOffers={Boolean(user?.isLoggedIn)}
                                                   companyName={user?.nomCompagnie ?? ""}
                                                   isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
+                                                  drafts={offerDrafts}
+                                                  setDrafts={setOfferDrafts}
                                               />
                                           </ProtectedRoute>
                                       }/>

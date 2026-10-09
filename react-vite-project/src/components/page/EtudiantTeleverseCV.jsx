@@ -224,20 +224,20 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
                                     {translateMessage(t, "studentCv.requestSubmitted")}
                                 </p>
                             </div>
-                            <div>
+                            {fileName && <div>
                                 <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
                                     {translateMessage(t, "studentCv.fileName")}
                                 </p>
                                 <p className="mt-1 break-words text-sm font-semibold text-ink">{fileName}</p>
-                            </div>
-                            <div>
+                            </div>}
+                            {formattedFileSize && <div>
                                 <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
                                     {translateMessage(t, "studentCv.fileSize")}
                                 </p>
                                 <p className="mt-1 text-sm font-semibold text-ink">
-                                    {formattedFileSize ? `${formattedFileSize} ${translateMessage(t, "studentCv.fileSizeUnit")}` : "—"}
+                                    {`${formattedFileSize} ${translateMessage(t, "studentCv.fileSizeUnit")}`}
                                 </p>
-                            </div>
+                            </div>}
                             <div className="rounded-xl border border-lavender bg-lavender/25 px-4 py-3 sm:col-span-3">
                                 <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
                                     {translateMessage(t, "studentCv.nextStep")}

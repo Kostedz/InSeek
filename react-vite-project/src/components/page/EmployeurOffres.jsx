@@ -33,6 +33,7 @@ const EMPTY_FORM = {
     descriptionPosition: "",
 };
 const EMPTY_OFFERS = [];
+const NEW_OFFER_DRAFT_KEY = "new";
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
@@ -90,7 +91,7 @@ function formValuesFromOffer(offer, defaultCompanyName = "") {
 }
 
 function formatDate(value, language) {
-    if (!value) return "—";
+    if (!value) return "";
     return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
         day: "numeric",
         month: "short",
@@ -135,6 +136,7 @@ function Icon({name, className = "h-5 w-5"}) {
         arrow: <>
             <path d="M5 12h14M13 6l6 6-6 6"/>
         </>,
+        close: <path d="M6 6l12 12M18 6 6 18"/>,
         shield: <path d="M12 3 4.5 6v5.2c0 4.8 3.2 8.1 7.5 9.8 4.3-1.7 7.5-5 7.5-9.8V6z"/>,
         info: <>
             <circle cx="12" cy="12" r="9"/>
@@ -205,6 +207,8 @@ export default function EmployeurOffres({
                                             onSubmit,
                                             user,
                                             companyName = "",
+                                            drafts: externalDrafts,
+                                            setDrafts: setExternalDrafts,
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
@@ -234,6 +238,10 @@ export default function EmployeurOffres({
     const [successMessage, setSuccessMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isNewOffer, setIsNewOffer] = useState(!initialOffers[0]);
+    const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [localDrafts, setLocalDrafts] = useState({});
+    const drafts = externalDrafts ?? localDrafts;
+    const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
     const selectedOffer = offerList.find((offer) => offer.id === selectedId) ?? null;
     const isOfferReadOnly = !canManageOffers || ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
@@ -248,6 +256,25 @@ export default function EmployeurOffres({
                 : selectedOffer?.statut === "VALIDE"
                     ? "employerOffers.editor.updateTitle"
                     : "employerOffers.editor.editTitle";
+
+    useEffect(() => {
+        if (!isEditorOpen) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const closeOnEscape = (event) => {
+            if (event.key === "Escape" && !isSubmitting) {
+                event.preventDefault();
+                setIsEditorOpen(false);
+            }
+        };
+
+        document.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [isEditorOpen, isSubmitting]);
 
     useEffect(() => {
         if (!usesRemoteOffers) return undefined;
@@ -286,27 +313,38 @@ export default function EmployeurOffres({
 
     useEffect(() => {
         if (!isNewOffer) {
-            setFormValues(formValuesFromOffer(selectedOffer, employerCompanyName));
-            setSelectedFile(null);
+            const draft = drafts[String(selectedId)];
+            setFormValues(draft?.fields ?? formValuesFromOffer(selectedOffer, employerCompanyName));
+            setSelectedFile(draft?.file ?? null);
             setFieldErrors({});
             setFileError("");
             setFormError("");
             setSuccessMessage("");
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
-    }, [selectedId, isNewOffer, employerCompanyName]);
+    }, [selectedId, isNewOffer, employerCompanyName, drafts]);
 
     const selectOffer = (offer) => {
+        const draft = drafts[String(offer.id)];
         setIsNewOffer(false);
         setSelectedId(offer.id);
+        setIsEditorOpen(true);
+        setFormValues(draft?.fields ?? formValuesFromOffer(offer, employerCompanyName));
+        setSelectedFile(draft?.file ?? null);
+        setFieldErrors({});
+        setFileError("");
+        setFormError("");
+        setSuccessMessage("");
         window.requestAnimationFrame(() => formRef.current?.scrollIntoView({behavior: "smooth", block: "start"}));
     };
 
     const startNewOffer = () => {
+        const draft = drafts[NEW_OFFER_DRAFT_KEY];
         setIsNewOffer(true);
         setSelectedId(null);
-        setFormValues({...EMPTY_FORM, nomEntreprise: employerCompanyName});
-        setSelectedFile(null);
+        setIsEditorOpen(true);
+        setFormValues(draft?.fields ?? {...EMPTY_FORM, nomEntreprise: employerCompanyName});
+        setSelectedFile(draft?.file ?? null);
         setFieldErrors({});
         setFileError("");
         setFormError("");
@@ -317,7 +355,13 @@ export default function EmployeurOffres({
 
     const updateField = (event) => {
         const {name, value} = event.target;
-        setFormValues((current) => ({...current, [name]: value}));
+        const nextValues = {...formValues, [name]: value};
+        const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+        setFormValues(nextValues);
+        saveDrafts((current) => ({
+            ...current,
+            [draftKey]: {fields: nextValues, file: selectedFile},
+        }));
         setFieldErrors((current) => ({...current, [name]: ""}));
         setFormError("");
         setSuccessMessage("");
@@ -339,12 +383,24 @@ export default function EmployeurOffres({
             return false;
         }
         setSelectedFile(file);
+        const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+        saveDrafts((current) => ({
+            ...current,
+            [draftKey]: {fields: formValues, file},
+        }));
         return true;
     };
 
     const handleFileChange = (event) => {
         const file = event.target.files?.[0];
-        if (!validateFile(file)) setSelectedFile(null);
+        if (!validateFile(file)) {
+            setSelectedFile(null);
+            const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+            saveDrafts((current) => ({
+                ...current,
+                [draftKey]: {fields: formValues, file: null},
+            }));
+        }
     };
 
     const handleDrop = (event) => {
@@ -352,7 +408,14 @@ export default function EmployeurOffres({
         setIsDragging(false);
         if (!isAccountEmailValidated || isOfferReadOnly) return;
         const file = event.dataTransfer.files?.[0];
-        if (!validateFile(file)) setSelectedFile(null);
+        if (!validateFile(file)) {
+            setSelectedFile(null);
+            const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+            saveDrafts((current) => ({
+                ...current,
+                [draftKey]: {fields: formValues, file: null},
+            }));
+        }
     };
 
     const validateForm = () => {
@@ -449,6 +512,7 @@ export default function EmployeurOffres({
                 throw createTranslationMessage("employerOffers.errors.submissionFailed");
             }
             const submittedOffer = normalizeOffer(result.offer);
+            const submittedDraftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedOffer?.id ?? selectedId);
             setOfferList((current) => {
                 const exists = current.some((offer) => offer.id === submittedOffer.id);
                 return exists
@@ -458,6 +522,11 @@ export default function EmployeurOffres({
             setSelectedId(submittedOffer.id);
             setIsNewOffer(false);
             setSelectedFile(null);
+            saveDrafts((current) => {
+                const nextDrafts = {...current};
+                delete nextDrafts[submittedDraftKey];
+                return nextDrafts;
+            });
             if (fileInputRef.current) fileInputRef.current.value = "";
             setSuccessMessage(isNewOffer
                 ? "employerOffers.success.created"
@@ -467,6 +536,14 @@ export default function EmployeurOffres({
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleEditorBackdropMouseDown = (event) => {
+        if (event.target === event.currentTarget && !isSubmitting) setIsEditorOpen(false);
+    };
+
+    const closeEditor = () => {
+        if (!isSubmitting) setIsEditorOpen(false);
     };
 
     if (isLoadingOffers) return <Loading/>;
@@ -515,7 +592,7 @@ export default function EmployeurOffres({
                     </div>
                 </div>
 
-                <div className="mt-6 grid items-start gap-6 lg:grid-cols-[0.82fr_1.55fr]">
+                <div className="mt-6">
                     <aside
                         className="rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-6">
                         <div className="flex items-center justify-between gap-3">
@@ -562,8 +639,15 @@ export default function EmployeurOffres({
                         </button>}
                     </aside>
 
+                    {isEditorOpen && <div
+                        className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-ink/70 p-3 backdrop-blur-sm sm:p-6 lg:items-center"
+                        onMouseDown={handleEditorBackdropMouseDown}
+                    >
                     <div ref={formRef}
-                         className="rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-7">
+                         className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-y-auto rounded-[2rem] border border-line bg-surface p-5 shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)] sm:p-7"
+                         role="dialog"
+                         aria-modal="true"
+                         aria-labelledby="employer-offer-editor-title">
                         <div
                             className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
                             <div>
@@ -571,13 +655,23 @@ export default function EmployeurOffres({
                                     <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
                                     {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
                                 </div>
-                                <h2 className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
+                                <h2 id="employer-offer-editor-title"
+                                    className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
                                 <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{isOfferReadOnly
                                     ? selectedOffer?.statut === "EN_ATTENTE"
                                         ? t("employerOffers.editor.pendingDescription")
                                         : t("employerOffers.editor.rejectedDescription")
                                     : t("employerOffers.editor.newDescription")}</p>
                             </div>
+                            <button
+                                type="button"
+                                onClick={closeEditor}
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40 disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-label={t("employerOffers.closeModal")}
+                                disabled={isSubmitting}
+                            >
+                                <Icon name="close" className="h-5 w-5"/>
+                            </button>
                         </div>
 
                         {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
@@ -668,7 +762,7 @@ export default function EmployeurOffres({
                                                error={fieldErrors.position}>
                                             <input id="position" name="position" value={formValues.position}
                                                    onChange={updateField} className={inputClass(fieldErrors.position)}
-                                                   placeholder="Ex. Stagiaire en développement web"/>
+                                                   placeholder={t("employerOffers.placeholders.position")}/>
                                         </Field>
                                         <Field id="targetDiscipline" label={t("employerOffers.fields.discipline")}
                                                required
@@ -687,7 +781,7 @@ export default function EmployeurOffres({
                                             <input id="adresseEntreprise" name="adresseEntreprise"
                                                    value={formValues.adresseEntreprise} onChange={updateField}
                                                    className={inputClass(fieldErrors.adresseEntreprise)}
-                                                   placeholder="Ville, province"/>
+                                                   placeholder={t("employerOffers.placeholders.companyAddress")}/>
                                         </Field>
                                         <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
                                                error={fieldErrors.dateDebutStage}>
@@ -708,7 +802,7 @@ export default function EmployeurOffres({
                                                                              value={formValues.salaire}
                                                                              onChange={updateField}
                                                                              className={`${inputClass(fieldErrors.salaire)} pr-12`}
-                                                                             placeholder="Ex. 22,50"/><span
+                                                                             placeholder={t("employerOffers.placeholders.hourlyPay")}/><span
                                                 className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">$/h</span>
                                             </div>
                                         </Field>
@@ -719,7 +813,7 @@ export default function EmployeurOffres({
                                         <textarea id="descriptionPosition" name="descriptionPosition" rows="4"
                                                   value={formValues.descriptionPosition} onChange={updateField}
                                                   className={`${inputClass(fieldErrors.descriptionPosition)} resize-y`}
-                                                  placeholder="Décrivez les responsabilités, les livrables attendus et les compétences recherchées."/>
+                                                  placeholder={t("employerOffers.placeholders.description")}/>
                                         <p className="mt-1.5 text-right text-xs text-ink-soft">{t("employerOffers.characterCount", {count: formValues.descriptionPosition.length})}</p>
                                     </Field>
                                 </div>
@@ -754,6 +848,7 @@ export default function EmployeurOffres({
                             </div>
                         </form>
                     </div>
+                    </div>}
                 </div>
             </div>
         </section>
