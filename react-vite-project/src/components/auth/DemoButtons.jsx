@@ -5,10 +5,10 @@ import api from "../../utils/api.js";
 import {getRedirectPathByRole} from "../../utils/authRedirect.js";
 
 const demoRoles = [
-    {value: "ETUDIANT", label: "student", color: "bg-lavender/70 hover:bg-lavender"},
-    {value: "PROFESSEUR", label: "professor", color: "bg-pink/80 hover:bg-pink"},
-    {value: "EMPLOYEUR", label: "employer", color: "bg-peach/80 hover:bg-peach"},
-    {value: "GESTIONNAIRE", label: "manager", color: "bg-gold/80 hover:bg-gold"},
+    {value: "ETUDIANT", label: "student", color: "bg-lavender hover:bg-lavender"},
+    {value: "PROFESSEUR", label: "professor", color: "bg-pink hover:bg-pink"},
+    {value: "EMPLOYEUR", label: "employer", color: "bg-peach hover:bg-peach"},
+    {value: "GESTIONNAIRE", label: "manager", color: "bg-gold hover:bg-gold"},
 ];
 
 function DemoButtons({setUser}) {
@@ -72,7 +72,7 @@ function DemoButtons({setUser}) {
                         type="button"
                         onClick={() => activateDemoAccess(demoRole)}
                         disabled={loadingRole !== null}
-                        className={`whitespace-nowrap rounded-full border border-ink px-2.5 py-1.5 text-[11px] font-bold text-ink shadow transition-colors ${demoRole.color} disabled:cursor-wait disabled:opacity-70`}
+                        className={`whitespace-nowrap rounded-full border border-ink px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors ${demoRole.color} disabled:cursor-wait disabled:opacity-70`}
                     >
                         {loadingRole === demoRole.value ? t("demoButtons.loading") : t(`demoButtons.roles.${demoRole.label}`)}
                     </button>

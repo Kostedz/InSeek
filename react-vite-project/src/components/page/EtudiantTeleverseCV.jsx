@@ -3,6 +3,7 @@ import {useTranslation} from "react-i18next";
 import {Link} from "react-router-dom";
 import {api} from "../../utils/api.js";
 import {translateMessage} from "../../utils/i18nMessage.js";
+import PdfPreview from "../PdfPreview.jsx";
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
@@ -289,6 +290,12 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
                             <p className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
                                role="status">{selectedFile.name}</p>}
                     </div>
+
+                    <PdfPreview
+                        file={selectedFile}
+                        documentId={!selectedFile ? currentCv?.id : null}
+                        fileName={selectedFile?.name || fileName}
+                    />
 
                     {errorMessage && (
                         <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-medium text-error" role="alert">

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {useTranslation} from "react-i18next";
 import { api } from "../../utils/api.js";
 import ValidationTabs from "./ValidationTabs.jsx";
+import PdfPreview from "../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -365,6 +366,12 @@ function GestionnaireCvValidation() {
                             </div>
 
                             <div className="grid gap-5 p-4 sm:gap-6 sm:p-6 md:grid-cols-2">
+                                <PdfPreview
+                                    documentId={selectedCv.id}
+                                    fileName={selectedCv.fileName}
+                                    className="md:col-span-2"
+                                />
+
                                 <div className="md:col-span-2">
                                     <h3 className="font-black text-ink">{t("studentCv.previousRequest")}</h3>
                                     <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-3">

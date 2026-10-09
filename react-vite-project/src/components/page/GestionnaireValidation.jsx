@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { translateMessage } from "../../utils/i18nMessage.js";
 import api from "../../utils/api.js";
 import ValidationTabs from "./ValidationTabs.jsx";
+import PdfPreview from "../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -47,6 +48,7 @@ function normalizeOffer(offer, t) {
     return {
         ...offer,
         id: offer.id ?? offer.documentId,
+        fileName: offer.fileName ?? offer.filename ?? "",
         statut: String(offer.statut ?? offer.status ?? "EN_ATTENTE").toUpperCase(),
         nomEntreprise: offer.nomEntreprise ?? offer.companyName ?? offer.company ?? "",
         position: offer.position ?? offer.jobTitle ?? offer.title ?? "",
@@ -405,6 +407,12 @@ function GestionnaireValidation() {
                             </div>
 
                             <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-2">
+                                <PdfPreview
+                                    documentId={selectedOffer.id}
+                                    fileName={selectedOffer.fileName}
+                                    className="md:col-span-2"
+                                />
+
                                 {hasSelectedEmployerInformation && <div className="md:col-span-2">
                                     <h3 className="font-black text-ink">{t("managerValidation.employerInformation")}</h3>
                                     <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">

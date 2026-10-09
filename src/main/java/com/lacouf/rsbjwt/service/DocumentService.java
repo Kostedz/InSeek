@@ -97,6 +97,26 @@ public class DocumentService {
         return cv == null ? null : DocumentValidationDTO.of(cv);
     }
 
+    @Transactional
+    public DocumentFile findDocumentFile(Long documentId, HttpServletRequest request)
+            throws BadRequestException, NotFoundException {
+        Utilisateur requester = getAuthenticatedUser(request);
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new NotFoundException("Document non trouvé"));
+
+        boolean isManager = requester instanceof Gestionnaire;
+        boolean isOwner = document.getUtilisateur() != null
+                && document.getUtilisateur().getEmail().equals(requester.getEmail());
+        if (!isManager && !isOwner) {
+            throw new NotFoundException("Document non trouvé");
+        }
+
+        return new DocumentFile(document.getData(), document.getContentType());
+    }
+
+    public record DocumentFile(byte[] data, String contentType) {
+    }
+
     private Document createDocument(String type, MultipartFile file, JsonNode result, Utilisateur uploader) throws BadRequestException, IOException {
         String targetDiscipline;
 

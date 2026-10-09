@@ -56,6 +56,12 @@ export const api = {
         },
     },
 
+    documents: {
+        getFile: (documentId) => fetcher(`/documents/${encodeURIComponent(documentId)}/file`, {
+            headers: {Accept: "application/pdf"},
+        }),
+    },
+
     employer: {
         offers: {
             list: () => fetcher("/employeur/offres", {

@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -22,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 public class DocumentController {
+    private static final Logger logger = LoggerFactory.getLogger(DocumentController.class);
     private final DocumentService documentService;
     private final AuthService authService;
 
@@ -66,6 +69,31 @@ public class DocumentController {
         try {
             DocumentValidationDTO cv = documentService.findStudentCv(request);
             return cv == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(cv);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @GetMapping("/documents/{documentId}/file")
+    public ResponseEntity<byte[]> getDocumentFile(@PathVariable Long documentId, HttpServletRequest request) {
+        try {
+            DocumentService.DocumentFile document = documentService.findDocumentFile(documentId, request);
+            byte[] data = document.data();
+            MediaType contentType = MediaType.APPLICATION_PDF;
+            if (document.contentType() != null) {
+                try {
+                    contentType = MediaType.parseMediaType(document.contentType());
+                } catch (IllegalArgumentException exception) {
+                    logger.warn("Invalid stored content type for document {}: {}. Falling back to application/pdf.",
+                            documentId, document.contentType(), exception);
+                }
+            }
+            return ResponseEntity.ok()
+                    .contentType(contentType)
+                    .contentLength(data == null ? 0 : data.length)
+                    .body(data);
         } catch (BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (NotFoundException e) {

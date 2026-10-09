@@ -4,6 +4,7 @@ import {createTranslationMessage, translateMessage} from "../../utils/i18nMessag
 import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import ErrorPage from "../ErrorPage.jsx";
+import PdfPreview from "../PdfPreview.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -239,6 +240,7 @@ export default function EmployeurOffres({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isNewOffer, setIsNewOffer] = useState(!initialOffers[0]);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [isFileCleared, setIsFileCleared] = useState(false);
     const [localDrafts, setLocalDrafts] = useState({});
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
@@ -308,6 +310,7 @@ export default function EmployeurOffres({
         setOfferList(initialOffers);
         setSelectedId(initialOffers[0]?.id ?? null);
         setIsNewOffer(!initialOffers[0]);
+        setIsFileCleared(false);
         setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
     }, [initialOffers, employerCompanyName]);
 
@@ -316,6 +319,7 @@ export default function EmployeurOffres({
             const draft = drafts[String(selectedId)];
             setFormValues(draft?.fields ?? formValuesFromOffer(selectedOffer, employerCompanyName));
             setSelectedFile(draft?.file ?? null);
+            setIsFileCleared(draft?.fileCleared ?? false);
             setFieldErrors({});
             setFileError("");
             setFormError("");
@@ -329,6 +333,7 @@ export default function EmployeurOffres({
         setIsNewOffer(false);
         setSelectedId(offer.id);
         setIsEditorOpen(true);
+        setIsFileCleared(draft?.fileCleared ?? false);
         setFormValues(draft?.fields ?? formValuesFromOffer(offer, employerCompanyName));
         setSelectedFile(draft?.file ?? null);
         setFieldErrors({});
@@ -343,6 +348,7 @@ export default function EmployeurOffres({
         setIsNewOffer(true);
         setSelectedId(null);
         setIsEditorOpen(true);
+        setIsFileCleared(false);
         setFormValues(draft?.fields ?? {...EMPTY_FORM, nomEntreprise: employerCompanyName});
         setSelectedFile(draft?.file ?? null);
         setFieldErrors({});
@@ -360,7 +366,7 @@ export default function EmployeurOffres({
         setFormValues(nextValues);
         saveDrafts((current) => ({
             ...current,
-            [draftKey]: {fields: nextValues, file: selectedFile},
+            [draftKey]: {fields: nextValues, file: selectedFile, fileCleared: isFileCleared},
         }));
         setFieldErrors((current) => ({...current, [name]: ""}));
         setFormError("");
@@ -383,10 +389,11 @@ export default function EmployeurOffres({
             return false;
         }
         setSelectedFile(file);
+        setIsFileCleared(false);
         const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
         saveDrafts((current) => ({
             ...current,
-            [draftKey]: {fields: formValues, file},
+            [draftKey]: {fields: formValues, file, fileCleared: false},
         }));
         return true;
     };
@@ -395,10 +402,11 @@ export default function EmployeurOffres({
         const file = event.target.files?.[0];
         if (!validateFile(file)) {
             setSelectedFile(null);
+            setIsFileCleared(true);
             const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
             saveDrafts((current) => ({
                 ...current,
-                [draftKey]: {fields: formValues, file: null},
+                [draftKey]: {fields: formValues, file: null, fileCleared: true},
             }));
         }
     };
@@ -410,10 +418,11 @@ export default function EmployeurOffres({
         const file = event.dataTransfer.files?.[0];
         if (!validateFile(file)) {
             setSelectedFile(null);
+            setIsFileCleared(true);
             const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
             saveDrafts((current) => ({
                 ...current,
-                [draftKey]: {fields: formValues, file: null},
+                [draftKey]: {fields: formValues, file: null, fileCleared: true},
             }));
         }
     };
@@ -521,6 +530,7 @@ export default function EmployeurOffres({
             });
             setSelectedId(submittedOffer.id);
             setIsNewOffer(false);
+            setIsFileCleared(false);
             setSelectedFile(null);
             saveDrafts((current) => {
                 const nextDrafts = {...current};
@@ -544,6 +554,25 @@ export default function EmployeurOffres({
 
     const closeEditor = () => {
         if (!isSubmitting) setIsEditorOpen(false);
+    };
+
+    const clearForm = () => {
+        const clearedValues = {...EMPTY_FORM};
+        const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+
+        setFormValues(clearedValues);
+        setSelectedFile(null);
+        setIsFileCleared(true);
+        setFieldErrors({});
+        setFileError("");
+        setFormError("");
+        setSuccessMessage("");
+        setIsDragging(false);
+        saveDrafts((current) => ({
+            ...current,
+            [draftKey]: {fields: clearedValues, file: null, fileCleared: true},
+        }));
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     if (isLoadingOffers) return <Loading/>;
@@ -743,13 +772,19 @@ export default function EmployeurOffres({
                                             {selectedFile && <p
                                                 className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
                                                 role="status">{selectedFile.name}</p>}
-                                            {!selectedFile && selectedOffer?.fileName && <div
+                                            {!selectedFile && !isFileCleared && selectedOffer?.fileName && <div
                                                 className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
                                                 <Icon name="file" className="h-4 w-4 shrink-0"/><span
                                                 className="truncate">{t("employerOffers.currentFile")} <strong
                                                 className="text-ink">{selectedOffer.fileName}</strong></span></div>}
                                         </div>
                                     )}
+                                    {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) && <PdfPreview
+                                        file={selectedFile}
+                                        documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
+                                        fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
+                                        className="mt-5"
+                                    />}
                                     {fileError && <p className="mt-2 text-sm font-semibold text-error"
                                                      role="alert">{translateMessage(t, fileError)}</p>}
                                 </div>
@@ -838,11 +873,18 @@ export default function EmployeurOffres({
                                             name="info"
                                             className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
                                         </p>
-                                        <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
-                                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
-                                            {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
-                                            {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
-                                        </button>
+                                        <div className="flex flex-col gap-3 sm:flex-row">
+                                            <button type="button" onClick={clearForm}
+                                                    disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
+                                                    className="inline-flex items-center justify-center rounded-xl border border-error bg-white px-5 py-3.5 text-sm font-bold text-error transition-colors hover:bg-[#fff0f3] focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
+                                                {t("employerOffers.clear")}
+                                            </button>
+                                            <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
+                                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
+                                                {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
+                                                {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
+                                            </button>
+                                        </div>
                                     </>
                                 )}
                             </div>
