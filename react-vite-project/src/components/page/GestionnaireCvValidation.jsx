@@ -251,7 +251,7 @@ function GestionnaireCvValidation() {
                     </button>
                 </div>
 
-                <ValidationTabs activeTab={"cvs"} />
+                <ValidationTabs activeTab="cvs" cvsCount={pendingCvs.length}/>
 
                 {error && (
                     <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error" role="alert">
@@ -268,9 +268,6 @@ function GestionnaireCvValidation() {
                     <aside className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)] lg:sticky lg:top-24">
                         <div className="flex items-center justify-between">
                             <h2 className="font-black text-ink">CV en attente</h2>
-                            <span className="rounded-full bg-gold px-3 py-1 text-sm font-bold text-ink">
-                                {pendingCvs.length}
-                            </span>
                         </div>
 
                         <div className="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1 overscroll-contain sm:max-h-[36rem]">

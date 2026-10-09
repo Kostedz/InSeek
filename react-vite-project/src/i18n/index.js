@@ -162,7 +162,7 @@ const resources = {
                 success: {
                     updated: "Votre CV mis à jour a été téléversé avec succès et remis en attente de validation.",
                     corrected: "Votre version corrigée a été soumise avec succès au gestionnaire de stage.",
-                    uploaded: "Votre CV a été téléversé avec succès. Il est maintenant en cours d'analyse par le gestionnaire.",
+                    uploaded: "Votre CV a été téléversé avec succès. Il est maintenant en attente de validation.",
                 },
             },
             employerOffers: {
@@ -584,7 +584,7 @@ const resources = {
                 success: {
                     updated: "Your updated résumé was uploaded successfully and returned for validation.",
                     corrected: "Your corrected version was successfully submitted to the internship manager.",
-                    uploaded: "Your résumé was uploaded successfully. It is now being reviewed by the manager.",
+                    uploaded: "Your résumé was uploaded successfully. It is now pending validation.",
                 },
             },
             employerOffers: {

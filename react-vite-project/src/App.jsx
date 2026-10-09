@@ -107,7 +107,7 @@ function App() {
                                                   user={user}
                                                   canManageOffers={Boolean(user?.isLoggedIn)}
                                                   companyName={user?.nomCompagnie ?? ""}
-                                                  isAccountEmailValidated={user?.emailValidated ?? true}
+                                                  isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
                                               />
                                           </ProtectedRoute>
                                       }/>

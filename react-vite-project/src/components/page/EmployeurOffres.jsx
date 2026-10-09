@@ -98,11 +98,6 @@ function formatDate(value, language) {
     }).format(new Date(value));
 }
 
-function formatFileSize(bytes, t) {
-    if (!bytes) return "";
-    return `${(bytes / (1024 * 1024)).toFixed(1)} ${t("employerOffers.units.megabytes")}`;
-}
-
 function StatusBadge({status}) {
     const {t} = useTranslation();
     const styles = {
@@ -134,10 +129,6 @@ function Icon({name, className = "h-5 w-5"}) {
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <path d="M14 2v6h6M8 13h8M8 17h5"/>
         </>,
-        upload: <>
-            <path d="M12 16V4M7 9l5-5 5 5"/>
-            <path d="M5 20h14"/>
-        </>,
         plus: <>
             <path d="M12 5v14M5 12h14"/>
         </>,
@@ -148,10 +139,6 @@ function Icon({name, className = "h-5 w-5"}) {
         info: <>
             <circle cx="12" cy="12" r="9"/>
             <path d="M12 11v5M12 8h.01"/>
-        </>,
-        edit: <>
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/>
         </>,
     };
 
@@ -224,9 +211,9 @@ export default function EmployeurOffres({
     const {t, i18n} = useTranslation();
     const employerCompanyName = String(
         user?.nomCompagnie
-        ?? user?.companyName
-        ?? companyName
-        ?? ""
+        || user?.companyName
+        || companyName
+        || (user?.isDevAccess ? "InSeek" : "")
     ).trim();
     const usesRemoteOffers = offers === undefined;
     const [remoteOffers, setRemoteOffers] = useState(null);
@@ -393,6 +380,9 @@ export default function EmployeurOffres({
             errors.descriptionPosition = "employerOffers.errors.descriptionTooShort";
         }
         setFieldErrors(errors);
+        if (errors.nomEntreprise) {
+            setFormError(errors.nomEntreprise);
+        }
         return Object.keys(errors).length === 0;
     };
 
@@ -533,21 +523,13 @@ export default function EmployeurOffres({
                                 <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
                                 <h2 className="mt-2 text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
                             </div>
-                            {canManageOffers && <button type="button" onClick={startNewOffer}
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
-                                    aria-label={t("employerOffers.newOfferAriaLabel")}>
-                                <Icon name="plus" className="h-5 w-5"/>
-                            </button>}
                         </div>
                         <p className="mt-3 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
 
                         <div className="mt-6 space-y-3">
                             {offerList.length === 0 && (
                                 <div className="rounded-2xl border border-dashed border-line bg-canvas p-5 text-center">
-                                    <span
-                                        className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-lavender/50 text-ink"><Icon
-                                        name="file"/></span>
-                                    <p className="mt-3 text-sm font-bold text-ink">{t("employerOffers.emptyTitle")}</p>
+                                    <p className="mt-0 text-sm font-bold text-ink">{t("employerOffers.emptyTitle")}</p>
                                     <p className="mt-1 text-xs leading-5 text-ink-soft">{t("employerOffers.emptyDescription")}</p>
                                 </div>
                             )}
@@ -596,9 +578,6 @@ export default function EmployeurOffres({
                                         : t("employerOffers.editor.rejectedDescription")
                                     : t("employerOffers.editor.newDescription")}</p>
                             </div>
-                            <span
-                                className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pink/70 text-ink sm:flex"><Icon
-                                name="upload"/></span>
                         </div>
 
                         {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
@@ -646,7 +625,7 @@ export default function EmployeurOffres({
                                         </div>
                                     ) : (
                                         <div
-                                            className={`mt-4 rounded-2xl border-2 border-dashed p-5 transition-colors sm:p-6 ${isDragging ? "border-pink bg-pink/25" : fileError ? "border-error bg-blush/15" : "border-line bg-canvas hover:border-lavender"}`}
+                                            className={`mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${isDragging ? "border-pink bg-pink/25" : fileError ? "border-error bg-blush/15" : "border-line bg-canvas hover:border-lavender"}`}
                                             onDragOver={(event) => {
                                                 event.preventDefault();
                                                 if (!isAccountEmailValidated) return;
@@ -661,24 +640,15 @@ export default function EmployeurOffres({
                                             <input ref={fileInputRef} id="offer-file" type="file"
                                                    accept="application/pdf,.pdf" onChange={handleFileChange}
                                                    className="sr-only"/>
-                                            <div className="flex flex-col items-center justify-center text-center">
-                                                <span
-                                                    className="flex h-12 w-12 items-center justify-center rounded-2xl bg-lavender/60 text-ink"><Icon
-                                                    name="upload"/></span>
-                                                <p className="mt-3 text-sm font-bold text-ink">{selectedFile ? t("employerOffers.fileDrop.selected") : selectedOffer?.fileName ? t("employerOffers.fileDrop.replace") : t("employerOffers.fileDrop.initial")}</p>
-                                                <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileDrop.instruction")}</p>
-                                                <label htmlFor="offer-file"
-                                                       className="mt-2 cursor-pointer text-sm font-black text-ink underline decoration-pink decoration-4 underline-offset-4">{t("employerOffers.fileDrop.browse")}</label>
-                                                <p className="mt-3 text-xs text-ink-soft">{t("employerOffers.maximumSize")}</p>
-                                            </div>
-                                            {selectedFile && <div
-                                                className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-lavender/45 px-3 py-2.5 text-sm"
-                                                role="status"><span
-                                                className="flex min-w-0 items-center gap-2 font-bold text-ink"><Icon
-                                                name="file" className="h-4 w-4 shrink-0"/><span
-                                                className="truncate">{selectedFile.name}</span></span><span
-                                                className="shrink-0 text-xs font-semibold text-ink-soft">{formatFileSize(selectedFile.size, t)}</span>
-                                            </div>}
+                                            <label htmlFor="offer-file"
+                                                   className="cursor-pointer text-sm font-bold text-ink underline decoration-pink decoration-4 underline-offset-4">
+                                                {t("studentCv.chooseFile")}
+                                            </label>
+                                            <p className="mt-2 text-sm text-ink-soft">{t("studentCv.dropFile")}</p>
+                                            <p className="mt-1 text-xs text-ink-soft">{t("studentCv.maximumSize")}</p>
+                                            {selectedFile && <p
+                                                className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
+                                                role="status">{selectedFile.name}</p>}
                                             {!selectedFile && selectedOffer?.fileName && <div
                                                 className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
                                                 <Icon name="file" className="h-4 w-4 shrink-0"/><span

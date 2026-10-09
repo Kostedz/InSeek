@@ -291,7 +291,7 @@ function GestionnaireValidation() {
                     </button>
                 </div>
 
-                <ValidationTabs activeTab="offers"/>
+                <ValidationTabs activeTab="offers" offersCount={pendingOffers.length}/>
 
                 {error &&
                     <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"
@@ -305,8 +305,6 @@ function GestionnaireValidation() {
                         className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                         <div className="flex items-center justify-between">
                             <h2 className="font-black text-ink">{t("managerValidation.pending")}</h2>
-                            <span
-                                className="rounded-full bg-gold px-3 py-1 text-sm font-bold text-ink">{pendingOffers.length}</span>
                         </div>
 
                         <div className="mt-4 space-y-2">
