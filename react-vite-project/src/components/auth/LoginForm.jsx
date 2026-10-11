@@ -114,7 +114,7 @@ const LoginForm = ({ user, authChecked, setUser }) => {
     return <Loading />;
   }
 
-  if (user?.isLoggedIn) {
+  if (user?.isLoggedIn && !loading) {
     return <Navigate to="/" replace/>;
   }
 

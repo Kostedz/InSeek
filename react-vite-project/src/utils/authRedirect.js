@@ -9,7 +9,11 @@ export async function getRedirectPathByRole(role) {
         case "ETUDIANT":
             try {
                 const cvResponse = await api.student.getCv();
-                return cvResponse.ok && cvResponse.status !== 204 ? "/" : "/etudiant";
+                if (!cvResponse.ok || cvResponse.status === 204) return "/etudiant";
+
+                const cv = await cvResponse.json();
+                const status = String(cv?.statut ?? cv?.status ?? "").trim().toUpperCase();
+                return ["VALIDE", "VALIDATED", "APPROVED"].includes(status) ? "/" : "/etudiant";
             } catch {
                 return "/etudiant";
             }

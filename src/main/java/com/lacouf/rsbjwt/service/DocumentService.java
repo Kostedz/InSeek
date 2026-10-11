@@ -107,7 +107,11 @@ public class DocumentService {
         boolean isManager = requester instanceof Gestionnaire;
         boolean isOwner = document.getUtilisateur() != null
                 && document.getUtilisateur().getEmail().equals(requester.getEmail());
-        if (!isManager && !isOwner) {
+        boolean isStudentWithValidatedCv = requester instanceof Etudiant
+                && document instanceof OffreDeStage
+                && document.getStatut() == StatutValidation.VALIDE
+                && documentRepository.existsStudentCvByStatut(requester, StatutValidation.VALIDE);
+        if (!isManager && !isOwner && !isStudentWithValidatedCv) {
             throw new NotFoundException("Document non trouvé");
         }
 
@@ -164,24 +168,11 @@ public class DocumentService {
     }
 
     public List<OffreDeStageDTO> findAllOffreDeStage(){
-        return documentRepository.findAllOffreStage().
-                stream().
-                map(o -> new OffreDeStageDTO(
-                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                )).toList();
+        return documentRepository.findOffreStageSummariesByStatut(StatutValidation.VALIDE);
     }
 
     public OffreDeStageDTO findOffreDeStageById(Long id){
-        return documentRepository.findOffreStageById(id).
-                map(o -> new OffreDeStageDTO(
-                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                )).
+        return documentRepository.findOffreStageSummaryById(id).
                 orElseThrow(() -> new RuntimeException("Stage n'a pas été trouvé"));
     }
 

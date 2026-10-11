@@ -181,7 +181,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
         return <Loading />;
     }
 
-    if (user?.isLoggedIn) {
+    if (user?.isLoggedIn && !loading) {
         return <Navigate to={getRedirectPath(user.role)} replace/>;
     }
 

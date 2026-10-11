@@ -39,6 +39,10 @@ export const api = {
             headers: {Accept: "application/json"},
         }),
 
+        getOffers: () => fetcher("/documents/stage", {
+            headers: {Accept: "application/json"},
+        }),
+
         uploadCv: (file, documentType = "CV") => {
             const formData = new FormData();
             formData.append("file", file);
