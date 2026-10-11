@@ -154,7 +154,7 @@ function Header({user}) {
                                     switchLanguage();
                                     setIsMenuOpen(false);
                                 }}
-                                className="inline-flex w-full justify-center rounded-full border border-white/20 px-3 py-2 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-auto"
+                                className="inline-flex h-10 w-full min-w-0 max-w-none flex-none items-center justify-center rounded-full border border-white/20 px-3 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-[5rem] md:min-w-[5rem] md:max-w-[5rem] md:px-0"
                                 aria-label={t("language.switchAriaLabel")}
                             >
                                 {t("language.switch")}
@@ -209,7 +209,7 @@ function Header({user}) {
                                     switchLanguage();
                                     setIsMenuOpen(false);
                                 }}
-                                className="inline-flex w-full justify-center rounded-full border border-white/20 px-3 py-2 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-auto"
+                                className="inline-flex h-10 w-full min-w-0 max-w-none flex-none items-center justify-center rounded-full border border-white/20 px-3 text-center text-sm font-semibold text-white/85 transition-colors hover:bg-white/10 hover:text-white md:w-[5rem] md:min-w-[5rem] md:max-w-[5rem] md:px-0"
                                 aria-label={t("language.switchAriaLabel")}
                             >
                                 {t("language.switch")}

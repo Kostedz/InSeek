@@ -57,6 +57,42 @@ function DemoButtons({setUser}) {
         }
     };
 
+    const activateStudentScenario = async () => {
+        setLoadingRole("STUDENT_SCENARIO");
+        setError(false);
+
+        try {
+            const loginResponse = await api.auth.prepareStudentDemo();
+            if (!loginResponse.ok) {
+                throw new Error("student_demo_failed");
+            }
+
+            const loginData = await loginResponse.json();
+            const token = loginData.accessToken || loginData.token;
+            if (!token) {
+                throw new Error("student_demo_token_missing");
+            }
+
+            localStorage.setItem("token", token);
+            localStorage.removeItem("devAccess");
+
+            const userResponse = await api.auth.getMe();
+            if (!userResponse.ok) {
+                throw new Error("student_demo_user_missing");
+            }
+
+            const userData = await userResponse.json();
+            setUser({...userData, isLoggedIn: true, isDevAccess: false});
+            navigate("/", {replace: true});
+        } catch {
+            localStorage.removeItem("token");
+            localStorage.removeItem("devAccess");
+            setError(true);
+        } finally {
+            setLoadingRole(null);
+        }
+    };
+
     return (
         <div className="flex max-w-[calc(100vw-9rem)] flex-col items-end gap-1" aria-label={t("demoButtons.title")}>
             {error && (
@@ -77,6 +113,14 @@ function DemoButtons({setUser}) {
                         {loadingRole === demoRole.value ? t("demoButtons.loading") : t(`demoButtons.roles.${demoRole.label}`)}
                     </button>
                 ))}
+                <button
+                    type="button"
+                    onClick={activateStudentScenario}
+                    disabled={loadingRole !== null}
+                    className="whitespace-nowrap rounded-full border border-ink bg-lavender px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-lavender disabled:cursor-wait disabled:opacity-70"
+                >
+                    {loadingRole === "STUDENT_SCENARIO" ? t("demoButtons.loading") : t("demoButtons.studentScenario")}
+                </button>
             </div>
         </div>
     );

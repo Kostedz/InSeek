@@ -33,7 +33,7 @@ import static org.springframework.http.HttpMethod.*;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Enables @PreAuthorize, @PostAuthorize, etc.
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
 
@@ -47,6 +47,7 @@ public class SecurityConfiguration {
     private static final String USER_LOGIN_PATH = "/user/login";
     private static final String USER_REGISTER_PATH = "/user/register";
     private static final String DEV_LOGIN_PATH = "/user/dev/login";
+    private static final String DEV_STUDENT_DEMO_PATH = "/user/dev/student-demo";
     private static final String USER_PATH = "/user/**";
     private static final String ETUDIANT_PATH = "/etudiant/**";
     private static final String PROFESSEUR_PATH = "/professeur/**";
@@ -69,10 +70,11 @@ public class SecurityConfiguration {
                         .requestMatchers(POST, USER_LOGIN_PATH).permitAll()
                         .requestMatchers(POST, USER_REGISTER_PATH).permitAll()
                         .requestMatchers(POST, DEV_LOGIN_PATH).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // Allow CORS preflight requests
-                        .requestMatchers(H2_CONSOLE_PATH).permitAll() // Allow H2 console access
+                        .requestMatchers(POST, DEV_STUDENT_DEMO_PATH).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(H2_CONSOLE_PATH).permitAll()
 
-                        // Use Role enum names for authorities
+
                         .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name(), Role.ETUDIANT.name(), Role.EMPLOYEUR.name(), Role.PROFESSEUR.name())
                         .requestMatchers(ETUDIANT_PATH).hasAuthority(Role.ETUDIANT.name())
                         .requestMatchers(POST, "/documents/upload").hasAnyAuthority(documentUploadRoles)
@@ -80,9 +82,9 @@ public class SecurityConfiguration {
                         .requestMatchers(PUT, "/employeur/offres/**").hasAnyAuthority(employerWriteRoles)
                         .requestMatchers(PROFESSEUR_PATH).hasAuthority(Role.PROFESSEUR.name())
                         .requestMatchers(GESTIONNAIRE_PATH).hasAuthority(Role.GESTIONNAIRE.name())
-                        .anyRequest().authenticated() // Changed from denyAll() to authenticated() - more common, adjust if denyAll is strictly needed
+                        .anyRequest().authenticated()
                 )
-                .headers(headers -> headers.frameOptions(Customizer.withDefaults()).disable()) // for h2-console
+                .headers(headers -> headers.frameOptions(Customizer.withDefaults()).disable())
                 .sessionManagement((secuManagement) -> {
                     secuManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 })
@@ -96,23 +98,16 @@ public class SecurityConfiguration {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 1. Specify allowed origins (VERY IMPORTANT!)
-        //    Must match your React app's URL exactly (e.g., http://localhost:3000)
-        //    Do NOT use "*" if you need credentials (like sending Authorization headers)
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // Adjust if your frontend runs elsewhere
+        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
 
-        // 2. Specify allowed HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
                 HttpMethod.GET.name(),
                 HttpMethod.POST.name(),
                 HttpMethod.PUT.name(),
                 HttpMethod.DELETE.name(),
-                HttpMethod.OPTIONS.name() // Crucial for preflight requests
+                HttpMethod.OPTIONS.name()
         ));
 
-        // 3. Specify allowed headers
-        //    Include standard headers and importantly "Authorization" for JWT,
-        //    and "Content-Type". Add any other custom headers your frontend sends.
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Cache-Control",
@@ -120,16 +115,10 @@ public class SecurityConfiguration {
                 "Accept",
                 "X-Requested-With",
                 "*"
-                // Add any other headers needed by your frontend
+
         ));
 
-        // 4. Allow credentials (cookies, Authorization headers)
-        //    Required if your frontend sends credentials.
         configuration.setAllowCredentials(true);
-
-        // 5. (Optional) Specify exposed headers
-        //    If your frontend needs to read headers from the response (e.g., a custom header)
-        // configuration.setExposedHeaders(List.of("Custom-Header"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         // Apply this configuration to all paths /**

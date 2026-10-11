@@ -196,7 +196,7 @@ function GestionnaireCvValidation() {
     };
 
     const handleApprove = async () => {
-        if (!selectedCv || !isPending(selectedCv) || saving) return;
+        if (!selectedCv || !isPending(selectedCv) || saving || showRejectForm) return;
 
         setSaving(true);
         setMessage("");
@@ -421,8 +421,12 @@ function GestionnaireCvValidation() {
                                             <textarea
                                                 id="cv-rejection-comment"
                                                 value={comment}
-                                                onChange={(event) => setComment(event.target.value)}
+                                                onChange={(event) => {
+                                                    setComment(event.target.value);
+                                                    setError("");
+                                                }}
                                                 rows="4"
+                                                autoFocus
                                                 className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
                                                 placeholder={t("managerCvValidation.rejectionPlaceholder")}
                                             />
@@ -443,20 +447,28 @@ function GestionnaireCvValidation() {
                                         )}
                                         <button
                                             type="button"
-                                            disabled={saving}
-                                            onClick={() => (showRejectForm ? handleReject() : setShowRejectForm(true))}
-                                            className="w-full rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3] sm:w-auto"
+                                            disabled={saving || (showRejectForm && !comment.trim())}
+                                            onClick={() => {
+                                                if (showRejectForm) {
+                                                    handleReject();
+                                                    return;
+                                                }
+                                                setError("");
+                                                setMessage("");
+                                                setShowRejectForm(true);
+                                            }}
+                                            className="w-full rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                                         >
                                             {showRejectForm ? t("managerCvValidation.confirmRejection") : t("managerCvValidation.reject")}
                                         </button>
-                                        <button
+                                        {!showRejectForm && <button
                                             type="button"
                                             disabled={saving}
                                             onClick={handleApprove}
                                             className="w-full rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft sm:w-auto"
                                         >
                                             {saving ? t("managerCvValidation.processing") : t("managerCvValidation.approve")}
-                                        </button>
+                                        </button>}
                                     </div>
                                 </div>
                             ) : (

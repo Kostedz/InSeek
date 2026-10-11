@@ -131,9 +131,9 @@ function truncateDescription(value, length = 155) {
     return `${description.slice(0, length).trimEnd()}…`;
 }
 
-function ArrowIcon() {
+function ArrowIcon({className = "h-5 w-5"}) {
     return (
-        <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor"
              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M13 6l6 6-6 6"/>
         </svg>
@@ -161,9 +161,10 @@ function OfferDetails({offer, language, t, onClose}) {
             <article
                 aria-labelledby="student-offer-details-title"
                 aria-modal="true"
-                className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-[2rem] border border-line bg-surface p-6 shadow-[0_24px_70px_rgba(48,35,55,0.25)] sm:rounded-[2rem] sm:p-9"
+                className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-[2rem] border border-line bg-surface shadow-[0_24px_70px_rgba(48,35,55,0.25)] sm:rounded-[2rem]"
                 role="dialog"
             >
+                <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-9">
                 <div className="flex items-start justify-between gap-5">
                     <div>
                         <span
@@ -226,6 +227,7 @@ function OfferDetails({offer, language, t, onClose}) {
                     {offer.contactPhone && <div><p
                         className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("studentOffers.details.phone")}</p>
                         <p className="mt-1 text-sm text-ink">{offer.contactPhone}</p></div>}
+                </div>
                 </div>
             </article>
         </div>
@@ -352,14 +354,23 @@ export default function EtudiantAccueil({user}) {
                                     <p className="mt-1 text-sm font-bold text-ink-soft">{offer.company}</p>}
                                 <p className="mt-4 flex-1 text-sm leading-6 text-ink-soft">{truncateDescription(offer.description) || t("studentOffers.noDescription")}</p>
                                 <div
-                                    className="mt-6 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t border-line pt-4">
-                                    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-ink-soft">
-                                        <span>{t("studentOffers.publishedOn")}: {formatDate(offer.publicationDate, language) || t("studentOffers.details.notSpecified")}</span>
-                                        {offer.discipline && <span>{offer.discipline}</span>}
-                                        <span>{formatSalary(offer.salary, language, t)}</span>
+                                    className="mt-6 flex flex-nowrap items-center justify-between gap-3 border-t border-line pt-4">
+                                    <div
+                                        className="min-w-0 flex flex-1 flex-nowrap items-center gap-x-2 overflow-hidden text-[11px] font-semibold text-ink-soft sm:text-xs">
+                                        <span
+                                            className="block min-w-0 truncate">{formatDate(offer.publicationDate, language) || t("studentOffers.details.notSpecified")}</span>
+                                        {offer.discipline && <>
+                                            <span className="h-1 w-1 shrink-0 self-center rounded-full bg-line"
+                                                  aria-hidden="true"/>
+                                            <span className="shrink-0">{offer.discipline}</span>
+                                            <span className="h-1 w-1 shrink-0 self-center rounded-full bg-line"
+                                                  aria-hidden="true"/>
+                                        </>}
+                                        <span className="shrink-0">{formatSalary(offer.salary, language, t)}</span>
                                     </div>
                                     <span
-                                        className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-ink-soft transition-colors group-hover:text-ink">{t("studentOffers.viewDetails")}<ArrowIcon/></span>
+                                        className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-bold text-ink-soft transition-colors group-hover:text-ink sm:text-sm"><span
+                                        className="inline md:hidden lg:inline">{t("studentOffers.viewDetails")}</span><ArrowIcon/></span>
                                 </div>
                             </button>
                         ))}

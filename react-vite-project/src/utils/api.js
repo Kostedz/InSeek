@@ -31,6 +31,13 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
+        prepareStudentDemo: () =>
+            fetcher("/user/dev/student-demo", {
+                skipAuth: true,
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
         getMe: () => fetcher("user/me", {}),
     },
 
