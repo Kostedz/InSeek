@@ -24,8 +24,8 @@ export const api = {
                 body: JSON.stringify(credentials),
             }),
 
-        devLogin: () =>
-            fetcher("/user/dev/login", {
+        devLogin: (role) =>
+            fetcher(role ? `/user/dev/login?role=${encodeURIComponent(role)}` : "/user/dev/login", {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
@@ -35,6 +35,10 @@ export const api = {
     },
 
     student: {
+        getCv: () => fetcher("/documents/student/cv", {
+            headers: {Accept: "application/json"},
+        }),
+
         uploadCv: (file, documentType = "CV") => {
             const formData = new FormData();
             formData.append("file", file);
@@ -50,6 +54,12 @@ export const api = {
                 body: formData,
             });
         },
+    },
+
+    documents: {
+        getFile: (documentId) => fetcher(`/documents/${encodeURIComponent(documentId)}/file`, {
+            headers: {Accept: "application/pdf"},
+        }),
     },
 
     employer: {

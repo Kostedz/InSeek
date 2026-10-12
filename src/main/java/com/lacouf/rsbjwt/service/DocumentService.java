@@ -85,6 +85,38 @@ public class DocumentService {
         };
     }
 
+    @Transactional
+    public DocumentValidationDTO findStudentCv(HttpServletRequest request)
+            throws BadRequestException, NotFoundException {
+        Utilisateur student = getAuthenticatedUser(request);
+        if (!(student instanceof Etudiant)) {
+            throw new BadRequestException("Seul un étudiant peut consulter son CV");
+        }
+
+        CV cv = documentRepository.findByUtilisateur(student);
+        return cv == null ? null : DocumentValidationDTO.of(cv);
+    }
+
+    @Transactional
+    public DocumentFile findDocumentFile(Long documentId, HttpServletRequest request)
+            throws BadRequestException, NotFoundException {
+        Utilisateur requester = getAuthenticatedUser(request);
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new NotFoundException("Document non trouvé"));
+
+        boolean isManager = requester instanceof Gestionnaire;
+        boolean isOwner = document.getUtilisateur() != null
+                && document.getUtilisateur().getEmail().equals(requester.getEmail());
+        if (!isManager && !isOwner) {
+            throw new NotFoundException("Document non trouvé");
+        }
+
+        return new DocumentFile(document.getData(), document.getContentType());
+    }
+
+    public record DocumentFile(byte[] data, String contentType) {
+    }
+
     private Document createDocument(String type, MultipartFile file, JsonNode result, Utilisateur uploader) throws BadRequestException, IOException {
         String targetDiscipline;
 

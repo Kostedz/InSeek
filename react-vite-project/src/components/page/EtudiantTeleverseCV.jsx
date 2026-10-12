@@ -1,7 +1,9 @@
 import React, { useState, useRef } from "react";
 import {useTranslation} from "react-i18next";
+import {Link} from "react-router-dom";
 import {api} from "../../utils/api.js";
 import {translateMessage} from "../../utils/i18nMessage.js";
+import PdfPreview from "../PdfPreview.jsx";
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
@@ -11,27 +13,16 @@ function normalizeStatus(status) {
     return "NOT_SUBMITTED";
 }
 
-function storageKeyFor(email) {
-    return email ? `inseek.student.cv.${email}` : null;
-}
+function formatFileSizeInMb(size, locale) {
+    const bytes = Number(size);
+    if (!Number.isFinite(bytes) || bytes < 0) return "";
 
-function readStoredCv(storageKey) {
-    if (!storageKey || typeof window === "undefined") return null;
-
-    try {
-        const storedCv = window.localStorage.getItem(storageKey);
-        return storedCv ? JSON.parse(storedCv) : null;
-    } catch (error) {
-        console.error("Unable to read the saved CV request from local storage.", error);
-        return null;
-    }
+    return new Intl.NumberFormat(locale, {maximumFractionDigits: 2}).format(bytes / (1024 * 1024));
 }
 
 export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidated = true, onCvUpdated}) {
-    const {t} = useTranslation();
+    const {t, i18n} = useTranslation();
     const fileInputRef = useRef(null);
-    const currentUserEmail = user?.email ?? user?.courriel ?? cvData?.email ?? "";
-    const cvStorageKey = storageKeyFor(currentUserEmail);
 
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -46,22 +37,37 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
             return;
         }
 
-        setCurrentCv(readStoredCv(cvStorageKey));
-    }, [cvData, cvStorageKey]);
+        let isMounted = true;
 
-    React.useEffect(() => {
-        if (!cvStorageKey || !currentCv || typeof window === "undefined") return;
+        api.student.getCv()
+            .then(async (response) => {
+                if (!isMounted) return;
 
-        try {
-            window.localStorage.setItem(cvStorageKey, JSON.stringify(currentCv));
-        } catch (error) {
-            console.error("Unable to save the CV request in local storage.", error);
-        }
-    }, [currentCv, cvStorageKey]);
+                if (response.status === 204 || response.status === 404) {
+                    setCurrentCv(null);
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error("student_cv_request_failed");
+                }
+
+                setCurrentCv(await response.json());
+            })
+            .catch(() => {
+                if (isMounted) setErrorMessage("studentCv.errors.connection");
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [cvData]);
 
     const status = normalizeStatus(currentCv?.statut ?? currentCv?.status);
     const rejectionComment = currentCv?.commentaireRejet ?? currentCv?.rejectionComment ?? "";
     const fileName = currentCv?.fileName ?? currentCv?.filename ?? "";
+    const fileSize = currentCv?.size ?? currentCv?.fileSize;
+    const formattedFileSize = formatFileSizeInMb(fileSize, i18n.language === "fr" ? "fr-CA" : "en-CA");
     const statusLabels = {
         EN_ATTENTE: translateMessage(t, "studentCv.status.pending"),
         VALIDE: translateMessage(t, "studentCv.status.approved"),
@@ -147,6 +153,7 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
             const uploadedCv = {
                 ...responseData,
                 fileName: responseData.fileName ?? selectedFile.name,
+                size: responseData.size ?? selectedFile.size,
                 statut: responseData.statut ?? responseData.status ?? "EN_ATTENTE",
             };
 
@@ -218,17 +225,27 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
                                     {translateMessage(t, "studentCv.requestSubmitted")}
                                 </p>
                             </div>
-                            <div>
+                            {fileName && <div>
                                 <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
                                     {translateMessage(t, "studentCv.fileName")}
                                 </p>
                                 <p className="mt-1 break-words text-sm font-semibold text-ink">{fileName}</p>
-                            </div>
-                            <div>
+                            </div>}
+                            {formattedFileSize && <div>
                                 <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
-                                    {translateMessage(t, "studentCv.statusLabel")}
+                                    {translateMessage(t, "studentCv.fileSize")}
                                 </p>
-                                <p className="mt-1 text-sm font-semibold text-ink">{statusLabels[status] ?? status}</p>
+                                <p className="mt-1 text-sm font-semibold text-ink">
+                                    {`${formattedFileSize} ${translateMessage(t, "studentCv.fileSizeUnit")}`}
+                                </p>
+                            </div>}
+                            <div className="rounded-xl border border-lavender bg-lavender/25 px-4 py-3 sm:col-span-3">
+                                <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">
+                                    {translateMessage(t, "studentCv.nextStep")}
+                                </p>
+                                <p className="mt-1 text-sm leading-6 text-ink">
+                                    {translateMessage(t, `studentCv.nextStepDescription.${status}`)}
+                                </p>
                             </div>
                             {status === "REJETE" && rejectionComment && (
                                 <div className="rounded-xl border border-blush bg-blush/40 px-4 py-3 sm:col-span-3"
@@ -274,6 +291,12 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
                                role="status">{selectedFile.name}</p>}
                     </div>
 
+                    <PdfPreview
+                        file={selectedFile}
+                        documentId={!selectedFile ? currentCv?.id : null}
+                        fileName={selectedFile?.name || fileName}
+                    />
+
                     {errorMessage && (
                         <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-medium text-error" role="alert">
                             {translateMessage(t, errorMessage)}
@@ -294,6 +317,15 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
                             ? translateMessage(t, "studentCv.submitting")
                             : translateMessage(t, currentCv ? "studentCv.update" : "studentCv.submit")}
                     </button>
+
+                    {currentCv && (
+                        <Link
+                            to="/"
+                            className="inline-flex w-full items-center justify-center rounded-xl border border-line bg-lavender/45 px-5 py-3 text-sm font-bold text-ink transition-colors hover:bg-lavender focus:outline-none focus:ring-4 focus:ring-lavender/60"
+                        >
+                            {translateMessage(t, "studentCv.backHome")}
+                        </Link>
+                    )}
                 </form>
             </div>
         </section>
