@@ -1,5 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
+import com.lacouf.rsbjwt.exception.BadRequestException;
+import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
@@ -22,7 +24,7 @@ public class EntrevueService {
     private final UtilisateurRepository userRepository;
     private final DocumentRepository documentRepository;
 
-    public EntrevueDTO scheduleInterview(Long employerId, CreateEntrevueDTO interviewDTO){
+    public EntrevueDTO scheduleInterview(Long employerId, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
         validateRequiredFields(interviewDTO);
         validateFutureDate(interviewDTO);
 
