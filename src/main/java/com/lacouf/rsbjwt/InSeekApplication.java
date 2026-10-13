@@ -12,9 +12,11 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.multipart.MultipartFile;
 
 @SpringBootApplication
+@EnableScheduling
 public class InSeekApplication implements CommandLineRunner {
 
     private final UtilisateurService utilisateurService;
