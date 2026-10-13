@@ -6,8 +6,13 @@ import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.CreateEntrevueDTO;
 import com.lacouf.rsbjwt.service.dto.EntrevueDTO;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +39,19 @@ public class EntrevueService {
 
     }
 
+    //est executé toutes les heures pour vérifier les entrevues passées et mettre à jour le statut de l'étudiant si nécessaire
+    @Scheduled(cron = "0 0 * * * *")
+    @Transactional
+    public void checkPastInterviews(){
+        List<Entrevue> pastInterviews = interviewRepository.findByDateInterviewBefore(LocalDateTime.now());
+        for (Entrevue interview : pastInterviews) {
+            Etudiant student = interview.getStudent();
+            if(student.getStatutRecherche() == StatutRechercheEtudiant.INVITED_TO_INTERVIEW){
+                student.setStatutRecherche(StatutRechercheEtudiant.WAITING_FOR_RESPONSE);
+                userRepository.save(student);
+            }
+        }
+    }
 
     private void validateRequiredFields(CreateEntrevueDTO InterviewDTO) {
         if (InterviewDTO.studentId() == null || InterviewDTO.offerId() == null ||
