@@ -30,6 +30,7 @@ const resources = {
                 logout: "Déconnexion",
                 login: "Connexion",
                 register: "Créer un compte",
+                offers: "Offres",
                 roles: {
                     professeur: "Professeur",
                     etudiant: "Étudiant",
@@ -166,9 +167,17 @@ const resources = {
                     uploaded: "Votre CV a été téléversé avec succès. Il est maintenant en attente de validation.",
                 },
             },
+            studentOffers: {
+                title: "Offres de stage",
+                description: "Consultez les offres de stage validées et disponibles pour votre profil.",
+                forbiddenTitle: "Accès restreint",
+                forbiddenDescription: "Votre CV doit être validé avant de consulter les offres.",
+                empty: "Aucune offre disponible pour le moment.",
+                viewDetails: "Voir les détails"
+            },
             pdfPreview: {
                 title: "Aperçu du PDF",
-                loading: "Chargement de l’aperçu…",
+                loading: "Chargement deF l’aperçu…",
                 loadError: "Impossible de charger l’aperçu du PDF.",
                 noDocument: "Aucun document PDF disponible.",
                 pageOf: "Page {{page}} sur {{total}}",
@@ -500,6 +509,7 @@ const resources = {
                 logout: "Log out",
                 login: "Log in",
                 register: "Create account",
+                offers: "Offers",
                 roles: {
                     professeur: "Professor",
                     etudiant: "Student",
@@ -635,6 +645,14 @@ const resources = {
                     corrected: "Your corrected version was successfully submitted to the internship manager.",
                     uploaded: "Your résumé was uploaded successfully. It is now pending validation.",
                 },
+            },
+            studentOffers:{
+                title: "Internship offers",
+                description: "Browse validated internship offers available for your profile.",
+                forbiddenTitle: "Restricted access",
+                forbiddenDescription: "Your résumé must be validated before you can browse offers.",
+                empty: "No offers available at the moment.",
+                viewDetails: "View details"
             },
             pdfPreview: {
                 title: "PDF preview",

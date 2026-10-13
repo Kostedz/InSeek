@@ -54,6 +54,16 @@ export const api = {
                 body: formData,
             });
         },
+        getAvailableOffers: async () => {
+            const token = localStorage.getItem("token");
+            return fetch("${API_BASE_URL}/student/offres", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Accept": "application/json",
+                }
+            })
+        },
     },
 
     documents: {
@@ -99,6 +109,7 @@ export const api = {
                 body: JSON.stringify({ commentaire: comment }),
             }),
     },
+
 };
 
 export default api;
