@@ -6,6 +6,7 @@ import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.*;
+import com.lacouf.rsbjwt.service.util.OfferFields;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +20,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.List;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Locale;
 
@@ -43,8 +41,7 @@ public class DocumentService {
             return saveEmployerOffer(file, formContent, request, null);
         }
 
-        String email = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
-        Utilisateur uploader = utilisateurService.findEntityByEmail(email);
+        Utilisateur uploader = getAuthenticatedUser(request);
         String targetDiscipline;
 
         CV existingCV = documentRepository.findByUtilisateur(uploader);
@@ -75,7 +72,6 @@ public class DocumentService {
         documentRepository.save(document);
         return toDTO(document);
     }
-
 
     public DocumentDTO toDTO(Document document) {
         return switch (document) {
@@ -121,49 +117,16 @@ public class DocumentService {
     public record DocumentFile(byte[] data, String contentType) {
     }
 
-    private Document createDocument(String type, MultipartFile file, JsonNode result, Utilisateur uploader) throws BadRequestException, IOException {
-        String targetDiscipline;
+    private Document createDocument(String type, MultipartFile file, JsonNode result, Utilisateur uploader) throws
+            BadRequestException, IOException {
 
         return switch (type) {
-            case "CV" -> {
-                targetDiscipline = targetDisciplineForCv(uploader, result).toString();
-                yield CV.builder()
-                        .fileName(file.getOriginalFilename())
-                        .targetDiscipline(Disciplines.valueOf(targetDiscipline))
-                        .data(file.getBytes())
-                        .contentType(file.getContentType())
-                        .size(file.getSize())
-                        .utilisateur(uploader)
-                        .build();
-            }
+            case "CV" -> CV.create(file, targetDisciplineForCv(uploader, result), uploader);
 
             case "OffreDeStage" -> {
-                String position = result.get("position").asString();
-                String descriptionPosition = result.get("descriptionPosition").asString();
-                LocalDate dateDebutStage = LocalDate.parse(result.get("dateDebutStage").asString());
-                LocalDate dateFinStage = LocalDate.parse(result.get("dateFinStage").asString());
-                String adresseEntreprise = result.get("adresseEntreprise").asString();
-                Double salaire = result.get("salaire").asDouble();
-                targetDiscipline = result.get("targetDiscipline").asString();
-                yield OffreDeStage.builder()
-                        .fileName(file.getOriginalFilename())
-                        .targetDiscipline(Disciplines.valueOf(targetDiscipline))
-                        .data(file.getBytes())
-                        .contentType(file.getContentType())
-                        .size(file.getSize())
-                        .employeur(uploader)
-                        .nomEntreprise(result.get("nomEntreprise") == null ? null : result.get("nomEntreprise").asString())
-                        .position(position)
-                        .descriptionPosition(descriptionPosition)
-                        .dateDebutStage(dateDebutStage)
-                        .dateFinStage(dateFinStage)
-                        .adresseEntreprise(adresseEntreprise)
-                        .salaire(salaire)
-                        .contactName(result.get("contactName") == null ? null : result.get("contactName").asString())
-                        .contactPhone(result.get("contactPhone") == null ? null : result.get("contactPhone").asString())
-                        .build();
-            }
-            default -> throw new BadRequestException("Invalid document type");
+                    OfferFields fields = OfferFields.from(result);
+                    yield OffreDeStage.create(file, fields, uploader);
+            }       default -> throw new BadRequestException("Invalid document type");
         };
     }
 
@@ -179,67 +142,43 @@ public class DocumentService {
     public List<OffreDeStageDTO> findOffreDeStageByCompagnieName(String nomCompagnie){
             return documentRepository.findOffreStagedByNomCompagnie(nomCompagnie).
                     stream().
-                    map(o -> new OffreDeStageDTO(
-                            o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                            o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                            o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                            o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                    )).toList();
+                    map(OffreDeStageDTO::of)
+                    .toList();
     }
 
     public List<OffreDeStageDTO> findOffreDeStageDiscipline(Disciplines discipline){
         return documentRepository.findOffreStageByTargetDiscipline(discipline).
                 stream().
-                map(o -> new OffreDeStageDTO(
-                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                )).toList();
+                map(OffreDeStageDTO::of)
+                .toList();
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByPosition(String position){
         return documentRepository.findOffreStageByPosition(position).
                 stream().
-                map(o -> new OffreDeStageDTO(
-                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                )).toList();
+                map(OffreDeStageDTO::of)
+                .toList();
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByMinimumSalaire(Double salaire){
         return documentRepository.findOffreStageByMinimumSalaire(salaire).
                 stream().
-                map(o -> new OffreDeStageDTO(
-                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                )).toList();
+                map(OffreDeStageDTO::of)
+                .toList();
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByDateDebutStage(LocalDate dateDebut){
         return documentRepository.findOffreStageByDateDebutStage(dateDebut).
                 stream().
-                map(o -> new OffreDeStageDTO(
-                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                )).toList();
+                map(OffreDeStageDTO::of)
+                .toList();
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByDateFinStage(LocalDate dateFin){
         return documentRepository.findOffreStageByDateFinStage(dateFin).
                 stream().
-                map(o -> new OffreDeStageDTO(
-                        o.getId(),o.getFileName(),o.getUtilisateur().getEmail(),o.getNomEntreprise(),
-                        o.getPosition(),o.getDescriptionPosition(), o.getDateDebutStage(), o.getDateFinStage(),
-                        o.getAdresseEntreprise(), o.getStatut(), o.getCommentaireRejet(), o.getSalaire(), o.getTargetDiscipline(),
-                        o.getContactName(),o.getContactPhone(),o.getVersion(),o.getUpdatedAt()
-                )).toList();
+                map(OffreDeStageDTO::of)
+                .toList();
     }
 
     private Disciplines targetDisciplineForCv(Utilisateur uploader, JsonNode result) throws BadRequestException {
@@ -265,6 +204,7 @@ public class DocumentService {
         throw new BadRequestException("Seul un étudiant ou le compte développeur peut téléverser un CV");
     }
 
+    // TODO: to be refactored/completed. wtf, empty catch clause?? oïc, you need to answer for these crimes
     @Transactional
     public List<OffreDeStageDTO> findOffersForEmployer(HttpServletRequest request)
             throws BadRequestException, NotFoundException {
@@ -291,33 +231,18 @@ public class DocumentService {
                 .toList();
     }
 
+    // holy shit. this sucked ASS to refactor. fuck you oïc.
     @Transactional
-    public OffreDeStageDTO saveEmployerOffer(MultipartFile file, String formContent,
+    public OffreDeStageDTO saveEmployerOffer(MultipartFile file, String result,
                                              HttpServletRequest request, Long offerId)
             throws BadRequestException, IOException, NotFoundException {
-        validateOfferFile(file);
+        validateFile(file);
         Utilisateur employer = getAuthenticatedUser(request);
-        OfferFields fields = parseOfferFields(formContent);
+        OfferFields fields = OfferFields.from(objectMapper.readTree(result));
 
         OffreDeStage offer;
         if (offerId == null) {
-            offer = OffreDeStage.builder()
-                    .fileName(file.getOriginalFilename())
-                    .targetDiscipline(fields.targetDiscipline())
-                    .data(file.getBytes())
-                    .contentType(file.getContentType())
-                    .size(file.getSize())
-                    .employeur(employer)
-                    .nomEntreprise(fields.nomEntreprise())
-                    .position(fields.position())
-                    .descriptionPosition(fields.descriptionPosition())
-                    .dateDebutStage(fields.dateDebutStage())
-                    .dateFinStage(fields.dateFinStage())
-                    .adresseEntreprise(fields.adresseEntreprise())
-                    .salaire(fields.salaire())
-                    .contactName(fields.contactName())
-                    .contactPhone(fields.contactPhone())
-                    .build();
+            offer = OffreDeStage.create(file, fields, employer);
 
             logger.info("Employer {} is submitting a new offer: {}", employer.getEmail(), offer);
             if (documentRepository.findByUtilisateur(employer) != null && documentRepository.findByUtilisateur(employer).getStatut() == StatutValidation.EN_ATTENTE) {
@@ -337,24 +262,7 @@ public class DocumentService {
                 throw new BadRequestException("Cette offre ne peut pas être modifiée dans son état actuel");
             }
 
-            existingOffer.setFileName(file.getOriginalFilename());
-            existingOffer.setTargetDiscipline(fields.targetDiscipline());
-            existingOffer.setData(file.getBytes());
-            existingOffer.setContentType(file.getContentType());
-            existingOffer.setSize(file.getSize());
-            existingOffer.setNomEntreprise(fields.nomEntreprise());
-            existingOffer.setPosition(fields.position());
-            existingOffer.setDescriptionPosition(fields.descriptionPosition());
-            existingOffer.setDateDebutStage(fields.dateDebutStage());
-            existingOffer.setDateFinStage(fields.dateFinStage());
-            existingOffer.setAdresseEntreprise(fields.adresseEntreprise());
-            existingOffer.setSalaire(fields.salaire());
-            existingOffer.setContactName(fields.contactName());
-            existingOffer.setContactPhone(fields.contactPhone());
-            existingOffer.setStatut(StatutValidation.EN_ATTENTE);
-            existingOffer.setCommentaireRejet(null);
-            existingOffer.setVersion(existingOffer.getVersion() + 1);
-            existingOffer.setUpdatedAt(LocalDateTime.now());
+            existingOffer.updateFields(fields);
             offer = existingOffer;
         }
 
@@ -373,7 +281,7 @@ public class DocumentService {
         return utilisateurService.findEntityByEmail(email);
     }
 
-    private void validateOfferFile(MultipartFile file) throws BadRequestException {
+    public void validateFile(MultipartFile file) throws BadRequestException {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("File is empty");
         }
@@ -384,90 +292,5 @@ public class DocumentService {
         if (!"application/pdf".equalsIgnoreCase(file.getContentType()) && !filename.endsWith(".pdf")) {
             throw new BadRequestException("Only PDF files are allowed");
         }
-    }
-
-    private OfferFields parseOfferFields(String formContent) throws BadRequestException {
-        try {
-            JsonNode result = objectMapper.readTree(formContent);
-            if (result == null || !"OffreDeStage".equals(requiredString(result, "type"))) {
-                throw new BadRequestException("Invalid document type");
-            }
-
-            LocalDate startDate = parseDate(result, "dateDebutStage");
-            LocalDate endDate = parseDate(result, "dateFinStage");
-            if (endDate.isBefore(startDate)) {
-                throw new BadRequestException("La date de fin doit suivre la date de début");
-            }
-
-            Disciplines discipline;
-            try {
-                discipline = Disciplines.valueOf(requiredString(result, "targetDiscipline").toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException exception) {
-                throw new BadRequestException("Invalid target discipline");
-            }
-
-            Double salary = optionalDouble(result, "salaire");
-            if (salary != null && salary < 0) {
-                throw new BadRequestException("Salary cannot be negative");
-            }
-
-            return new OfferFields(
-                    requiredString(result, "nomEntreprise"),
-                    requiredString(result, "position"),
-                    requiredString(result, "descriptionPosition"),
-                    startDate,
-                    endDate,
-                    requiredString(result, "adresseEntreprise"),
-                    salary,
-                    optionalString(result, "contactName"),
-                    optionalString(result, "contactPhone"),
-                    discipline
-            );
-        } catch (BadRequestException exception) {
-            throw exception;
-        } catch (DateTimeParseException | NullPointerException | IllegalStateException exception) {
-            throw new BadRequestException("Invalid internship offer data");
-        }
-    }
-
-    private String requiredString(JsonNode result, String field) throws BadRequestException {
-        String value = optionalString(result, field);
-        if (value == null || value.isBlank()) {
-            throw new BadRequestException("Field '" + field + "' is required");
-        }
-        return value.trim();
-    }
-
-    private String optionalString(JsonNode result, String field) {
-        JsonNode node = result.get(field);
-        return node == null || node.isNull() ? null : node.asString();
-    }
-
-    private Double optionalDouble(JsonNode result, String field) {
-        JsonNode node = result.get(field);
-        return node == null || node.isNull() || node.asString().isBlank() ? null : node.asDouble();
-    }
-
-    private LocalDate parseDate(JsonNode result, String field) throws BadRequestException {
-        String value = requiredString(result, field);
-        try {
-            return LocalDate.parse(value);
-        } catch (DateTimeParseException exception) {
-            throw new BadRequestException("Invalid date for field '" + field + "'");
-        }
-    }
-
-    private record OfferFields(
-            String nomEntreprise,
-            String position,
-            String descriptionPosition,
-            LocalDate dateDebutStage,
-            LocalDate dateFinStage,
-            String adresseEntreprise,
-            Double salaire,
-            String contactName,
-            String contactPhone,
-            Disciplines targetDiscipline
-    ) {
     }
 }
