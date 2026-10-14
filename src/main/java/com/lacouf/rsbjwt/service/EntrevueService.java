@@ -80,7 +80,7 @@ public class EntrevueService {
     }
 
     private OffreDeStage findInternshipOffer(Long offerId) {
-        return documentRepository.findOffreStageById(offerId)
+        return documentRepository.findInternshipOfferById(offerId)
                 .orElseThrow(() -> new IllegalArgumentException("Offre de stage non trouvée."));
     }
 
