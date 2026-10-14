@@ -31,20 +31,12 @@ public class DocumentController {
     @PostMapping("/documents/upload")
     public ResponseEntity<?> uploadDocument(@RequestPart("file") MultipartFile file, @RequestPart("formContent") String formContent, HttpServletRequest request) {
         try {
+
             if (!authService.validateJwt(request)) {
                 throw new BadRequestException("Invalid JWT token");
             }
-            if (file.isEmpty()) {
-                throw new BadRequestException("File is empty");
-            }
 
-            if (file.getSize() > 5 * 1024 * 1024) {
-                throw new BadRequestException("File size exceeds the maximum limit of 5 MB");
-            }
-
-            if (!file.getContentType().equals("application/pdf")) {
-                throw new BadRequestException("Only PDF files are allowed");
-            }
+            documentService.validateFile(file);
 
             DocumentDTO savedDocument = documentService.saveDocument(file, formContent, request);
 
@@ -60,7 +52,7 @@ public class DocumentController {
     }
 
     @GetMapping("/documents/stage")
-    public List<OffreDeStageDTO> findAllStages(){
+    public List<OffreDeStageDTO> findAllStages() {
         return documentService.findAllOffreDeStage();
     }
 
@@ -102,17 +94,17 @@ public class DocumentController {
     }
 
     @GetMapping("/documents/stage/{id}")
-    public OffreDeStageDTO getOffreDeStageById(@PathVariable Long id){
+    public OffreDeStageDTO getOffreDeStageById(@PathVariable Long id) {
         return documentService.findOffreDeStageById(id);
     }
 
     @GetMapping("/documents/stage/discipline/{discipline}")
-    public List<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable Disciplines discipline){
+    public List<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable Disciplines discipline) {
         return documentService.findOffreDeStageDiscipline(discipline);
     }
 
     @GetMapping("/documents/stage/compagine/{compagnie}")
-    public List<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie){
+    public List<OffreDeStageDTO> getOffreDeStageByCompagnie(@PathVariable String compagnie) {
         return documentService.findOffreDeStageByCompagnieName(compagnie);
     }
 
@@ -134,6 +126,12 @@ public class DocumentController {
             @RequestPart("formContent") String formContent,
             HttpServletRequest request) {
         try {
+            if (!authService.validateJwt(request)) {
+                throw new BadRequestException("Invalid JWT token");
+            }
+
+            documentService.validateFile(file);
+
             return ResponseEntity.ok(documentService.saveEmployerOffer(file, formContent, request, offerId));
         } catch (BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -144,4 +142,14 @@ public class DocumentController {
         }
     }
 
+//    @GetMapping("/etudiant/offres")
+//    public ResponseEntity<List<OffreDeStageDTO>> listStudentOffers(HttpServletRequest request) {
+//        try {
+//            return ResponseEntity.ok(documentService.findOffersForStudent(request));
+//        } catch (BadRequestException e) {
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+//        } catch (NotFoundException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+//        }
+//    }
 }

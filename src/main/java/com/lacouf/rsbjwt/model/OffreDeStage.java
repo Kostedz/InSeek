@@ -1,11 +1,15 @@
 package com.lacouf.rsbjwt.model;
 
+import com.lacouf.rsbjwt.service.util.OfferFields;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.coyote.BadRequestException;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -13,7 +17,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class OffreDeStage extends Document{
+public class OffreDeStage extends Document {
     private String nomEntreprise;
     private String position;
     private String descriptionPosition;
@@ -55,4 +59,57 @@ public class OffreDeStage extends Document{
         this.updatedAt = LocalDateTime.now();
     }
 
+    public static OffreDeStage create(MultipartFile file, OfferFields fields, Utilisateur uploader) throws IOException {
+        return OffreDeStage.builder()
+                .fileName(file.getOriginalFilename())
+                .targetDiscipline(fields.getTargetDiscipline())
+                .data(file.getBytes())
+                .contentType(file.getContentType())
+                .size(file.getSize())
+                .employeur(uploader)
+                .nomEntreprise(fields.getNomEntreprise())
+                .position(fields.getPosition())
+                .descriptionPosition(fields.getDescriptionPosition())
+                .dateDebutStage(fields.getDateDebutStage())
+                .dateFinStage(fields.getDateFinStage())
+                .adresseEntreprise(fields.getAdresseEntreprise())
+                .salaire(fields.getSalaire())
+                .contactName(fields.getContactName())
+                .contactPhone(fields.getContactPhone())
+                .build();
+    }
+
+    public void updateFields(OfferFields fields) throws IOException {
+        if (fields.getNomEntreprise() != null && !fields.getNomEntreprise().isBlank()) {
+            this.nomEntreprise = fields.getNomEntreprise();
+        }
+        if (fields.getPosition() != null && !fields.getPosition().isBlank()) {
+            this.position = fields.getPosition();
+        }
+        if (fields.getDescriptionPosition() != null && !fields.getDescriptionPosition().isBlank()) {
+            this.descriptionPosition = fields.getDescriptionPosition();
+        }
+        if (fields.getDateDebutStage() != null) {
+            this.dateDebutStage = fields.getDateDebutStage();
+        }
+        if (fields.getDateFinStage() != null) {
+            this.dateFinStage = fields.getDateFinStage();
+        }
+        if (fields.getAdresseEntreprise() != null && !fields.getAdresseEntreprise().isBlank()) {
+            this.adresseEntreprise = fields.getAdresseEntreprise();
+        }
+        if (fields.getSalaire() != null) {
+            this.salaire = fields.getSalaire();
+        }
+        if (fields.getContactName() != null && !fields.getContactName().isBlank()) {
+            this.contactName = fields.getContactName();
+        }
+        if (fields.getContactPhone() != null && !fields.getContactPhone().isBlank()) {
+            this.contactPhone = fields.getContactPhone();
+        }
+
+        this.setStatut(StatutValidation.EN_ATTENTE);
+        this.version++;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
