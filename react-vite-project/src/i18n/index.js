@@ -173,7 +173,17 @@ const resources = {
                 forbiddenTitle: "Accès restreint",
                 forbiddenDescription: "Votre CV doit être validé avant de consulter les offres.",
                 empty: "Aucune offre disponible pour le moment.",
-                viewDetails: "Voir les détails"
+                viewDetails: "Voir les détails",
+                apply: "Postuler",
+                applying: "Envoi…",
+                applied: "Candidature transmise",
+                errors: {
+                    alreadyApplied: "Vous avez déjà postulé à cette offre.",
+                    loadFailed: "Les offres de stage n’ont pas pu être chargées. Réessayez plus tard.",
+                },
+                success: {
+                    applied: "Candidature transmise avec succès !",
+                },
             },
             pdfPreview: {
                 title: "Aperçu du PDF",
@@ -646,13 +656,23 @@ const resources = {
                     uploaded: "Your résumé was uploaded successfully. It is now pending validation.",
                 },
             },
-            studentOffers:{
+            studentOffers: {
                 title: "Internship offers",
                 description: "Browse validated internship offers available for your profile.",
                 forbiddenTitle: "Restricted access",
                 forbiddenDescription: "Your résumé must be validated before you can browse offers.",
                 empty: "No offers available at the moment.",
-                viewDetails: "View details"
+                viewDetails: "View details",
+                apply: "Apply",
+                applying: "Submitting…",
+                applied: "Application submitted",
+                errors: {
+                    alreadyApplied: "You have already applied for this offer.",
+                    loadFailed: "Failed to load internship offers. Please try again later.",
+                },
+                success: {
+                    applied: "Application submitted successfully!",
+                },
             },
             pdfPreview: {
                 title: "PDF preview",

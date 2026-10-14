@@ -40,7 +40,7 @@ export const api = {
         }),
 
         uploadCv: (file, documentType = "CV") => {
-            const formData = new FormData();
+        const formData = new FormData();
             formData.append("file", file);
 
             const formContentBlob = new Blob(
@@ -54,16 +54,15 @@ export const api = {
                 body: formData,
             });
         },
-        getAvailableOffers: async () => {
-            const token = localStorage.getItem("token");
-            return fetch("${API_BASE_URL}/student/offres", {
-                method: "GET",
+
+        applyToOffer: (offerId) =>
+            fetcher(`/etudiant/offres/${encodeURIComponent(offerId)}/postuler`, {
+                method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Accept": "application/json",
-                }
-            })
-        },
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+            }),
     },
 
     documents: {
