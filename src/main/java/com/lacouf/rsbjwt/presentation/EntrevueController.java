@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,14 +24,11 @@ public class EntrevueController {
 
 
     // P: Pourquoi préciser le employerId dans l'URI? On peux fetch les infos du employer à partir du token JWT.
-    @PostMapping("/schedule/{employerId}")
-    public ResponseEntity<?> scheduleInterview(@PathVariable Long employerId, @RequestBody CreateEntrevueDTO InterviewDTO, HttpServletRequest request) {
+    @PostMapping("/schedule")
+    public ResponseEntity<?> scheduleInterview(@RequestBody CreateEntrevueDTO InterviewDTO, Authentication authentication) {
         try{
-            if (!authService.validateJwt(request)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("token invalide");
-            }
-            EntrevueDTO savedInterview = interviewService.scheduleInterview(employerId, InterviewDTO);
-            return ResponseEntity.ok(savedInterview);
+            String employeurEmail = authentication.getName();
+            EntrevueDTO savedInterview = interviewService.scheduleInterview(employeurEmail, InterviewDTO);            return ResponseEntity.ok(savedInterview);
         } catch(BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (NotFoundException e) {

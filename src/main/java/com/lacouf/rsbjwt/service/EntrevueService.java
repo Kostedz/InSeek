@@ -24,11 +24,11 @@ public class EntrevueService {
     private final UtilisateurRepository userRepository;
     private final DocumentRepository documentRepository;
 
-    public EntrevueDTO scheduleInterview(Long employerId, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
+    public EntrevueDTO scheduleInterview(String employerEmail, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
         validateRequiredFields(interviewDTO);
         validateFutureDate(interviewDTO);
 
-        Employeur employer = findEmployer(employerId);
+        Employeur employer = findEmployerByEmail(employerEmail);
         Etudiant student = findStudent(interviewDTO.studentId());
         OffreDeStage internshipOffer = findInternshipOffer(interviewDTO.offerId());
 
@@ -36,7 +36,7 @@ public class EntrevueService {
 
         updateStudent(student, interviewDTO);
 
-        return mapToDTO(interview);
+        return EntrevueDTO.of(interview);
 
 
     }
@@ -55,34 +55,36 @@ public class EntrevueService {
         }
     }
 
-    // P: Utilise les bonnes exceptions pour les erreurs. Voir BadRequestException et NotFoundException (les nôtres).
-    private void validateRequiredFields(CreateEntrevueDTO InterviewDTO) {
+    private void validateRequiredFields(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
         if (InterviewDTO.studentId() == null || InterviewDTO.offerId() == null ||
                 InterviewDTO.DateAndTime() == null || InterviewDTO.mode() == null ||
                 InterviewDTO.locationOrLink() == null || InterviewDTO.message() == null) {
-            throw new IllegalArgumentException("tous les champs sont obligatoires.");
+            throw new BadRequestException("tous les champs sont obligatoires.");
         }
     }
 
-    private void validateFutureDate(CreateEntrevueDTO InterviewDTO) {
+    private void validateFutureDate(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
         if (InterviewDTO.DateAndTime().isBefore(java.time.LocalDateTime.now())) {
-            throw new IllegalArgumentException("La date et l'heure de l'entrevue doivent être dans le futur.");
+            throw new BadRequestException("La date et l'heure de l'entrevue doivent être dans le futur.");
         }
     }
 
-    private Employeur findEmployer(Long employerId) {
-        return (Employeur) userRepository.findById(employerId)
-                .orElseThrow(() -> new IllegalArgumentException("Employeur non trouvé."));
+    private Employeur findEmployerByEmail(String email) throws NotFoundException {
+        Utilisateur user = userRepository.findByEmail(email);
+        if (user == null || !(user instanceof Employeur)) {
+            throw new NotFoundException("Employeur non trouvé.");
+        }
+        return  (Employeur) user;
     }
 
-    private Etudiant findStudent(Long studentId) {
+    private Etudiant findStudent(Long studentId) throws NotFoundException {
         return (Etudiant) userRepository.findById(studentId)
-                .orElseThrow(() -> new IllegalArgumentException("Étudiant non trouvé"));
+                .orElseThrow(() -> new NotFoundException("Étudiant non trouvé"));
     }
 
-    private OffreDeStage findInternshipOffer(Long offerId) {
+    private OffreDeStage findInternshipOffer(Long offerId) throws NotFoundException {
         return documentRepository.findInternshipOfferById(offerId)
-                .orElseThrow(() -> new IllegalArgumentException("Offre de stage non trouvée."));
+                .orElseThrow(() -> new NotFoundException("Offre de stage non trouvée."));
     }
 
     private Entrevue createInterview(
@@ -107,19 +109,5 @@ public class EntrevueService {
     private void updateStudent(Etudiant student, CreateEntrevueDTO InterviewDTO) {
         student.setDateEnterview(InterviewDTO.DateAndTime());
         student.setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
-    }
-
-    // P: Cette fonction pourrait être complètement enlevée et déplacée dans EntrevueDTO comme méthode statique "of" (voir les autres DTO)
-    private EntrevueDTO mapToDTO(Entrevue interview) {
-        return EntrevueDTO.builder()
-                .id(interview.getId())
-                .employerId(interview.getEmployer().getId())
-                .studentId(interview.getStudent().getId())
-                .offerId(interview.getInternshipOffer().getId())
-                .DateAndTime(interview.getDateInterview())
-                .mode(interview.getModeInterview())
-                .locationOrLink(interview.getLocationOrLink())
-                .message(interview.getMessage())
-                .build();
     }
 }
