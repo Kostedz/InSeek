@@ -102,6 +102,13 @@ function App() {
                                          </ProtectedRoute>
               }/>
 
+              <Route path='etudiant/offres' element={
+                                                 <ProtectedRoute user={user} authChecked={authChecked}
+                                                                 allowedRoles={["ETUDIANT"]}>
+                                                    <EtudiantAccueil user={user}/>
+                                                </ProtectedRoute>
+                                            }/>
+
               <Route path='employeur' element={
                                            <ProtectedRoute user={user} authChecked={authChecked}
                                                            allowedRoles={["EMPLOYEUR"]}>
