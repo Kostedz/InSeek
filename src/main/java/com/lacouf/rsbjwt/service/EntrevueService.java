@@ -55,6 +55,7 @@ public class EntrevueService {
         }
     }
 
+    // P: Utilise les bonnes exceptions pour les erreurs. Voir BadRequestException et NotFoundException (les nôtres).
     private void validateRequiredFields(CreateEntrevueDTO InterviewDTO) {
         if (InterviewDTO.studentId() == null || InterviewDTO.offerId() == null ||
                 InterviewDTO.DateAndTime() == null || InterviewDTO.mode() == null ||
@@ -108,6 +109,7 @@ public class EntrevueService {
         student.setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
     }
 
+    // P: Cette fonction pourrait être complètement enlevée et déplacée dans EntrevueDTO comme méthode statique "of" (voir les autres DTO)
     private EntrevueDTO mapToDTO(Entrevue interview) {
         return EntrevueDTO.builder()
                 .id(interview.getId())

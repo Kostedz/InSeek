@@ -40,6 +40,7 @@ public class EntrevueServiceTest {
     private static final Long STUDENT_ID = 2L;
     private static final Long OFFER_ID = 3L;
 
+    // P: wtf, utilise @BeforeEach pour ça
     private static CreateEntrevueDTO dto(Long studentId, Long offerId, LocalDateTime date,
                                          ModeEntrevue mode, String place, String message) {
         return new CreateEntrevueDTO(studentId, offerId, date, mode, place, message);

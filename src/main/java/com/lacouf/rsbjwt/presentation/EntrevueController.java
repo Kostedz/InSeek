@@ -21,6 +21,8 @@ public class EntrevueController {
     private final EntrevueService interviewService;
     private final AuthService authService;
 
+
+    // P: Pourquoi préciser le employerId dans l'URI? On peux fetch les infos du employer à partir du token JWT.
     @PostMapping("/schedule/{employerId}")
     public ResponseEntity<?> scheduleInterview(@PathVariable Long employerId, @RequestBody CreateEntrevueDTO InterviewDTO, HttpServletRequest request) {
         try{
