@@ -31,11 +31,22 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
+        prepareStudentDemo: () =>
+            fetcher("/user/dev/student-demo", {
+                skipAuth: true,
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
         getMe: () => fetcher("user/me", {}),
     },
 
     student: {
         getCv: () => fetcher("/documents/student/cv", {
+            headers: {Accept: "application/json"},
+        }),
+
+        getOffers: () => fetcher("/documents/stage", {
             headers: {Accept: "application/json"},
         }),
 

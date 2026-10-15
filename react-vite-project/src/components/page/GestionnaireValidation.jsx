@@ -250,7 +250,7 @@ function GestionnaireValidation() {
     };
 
     const handleApprove = async () => {
-        if (!selectedOffer || !isPending(selectedOffer) || saving) return;
+        if (!selectedOffer || !isPending(selectedOffer) || saving || showRejectForm) return;
 
         setSaving(true);
         setMessage(null);
@@ -454,7 +454,10 @@ function GestionnaireValidation() {
                                             <label htmlFor="rejection-comment"
                                                    className="text-sm font-bold text-ink">{t("managerValidation.rejectionComment")}</label>
                                             <textarea id="rejection-comment" value={comment}
-                                                      onChange={(event) => setComment(event.target.value)} rows="4"
+                                                      onChange={(event) => {
+                                                          setComment(event.target.value);
+                                                          setError(null);
+                                                      }} rows="4" autoFocus
                                                       className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
                                                       placeholder={t("managerValidation.rejectionPlaceholder")}/>
                                         </div>
@@ -465,11 +468,20 @@ function GestionnaireValidation() {
                                             setComment("");
                                         }}
                                                                    className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/30">{t("managerValidation.cancel")}</button>}
-                                        <button type="button" disabled={saving}
-                                                onClick={() => showRejectForm ? handleReject() : setShowRejectForm(true)}
-                                                className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3]">{showRejectForm ? t("managerValidation.confirmRejection") : t("managerValidation.reject")}</button>
-                                        <button type="button" disabled={saving} onClick={handleApprove}
-                                                className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft">{saving ? t("managerValidation.processing") : t("managerValidation.approve")}</button>
+                                        <button type="button" disabled={saving || (showRejectForm && !comment.trim())}
+                                                onClick={() => {
+                                                    if (showRejectForm) {
+                                                        handleReject();
+                                                        return;
+                                                    }
+                                                    setError(null);
+                                                    setMessage(null);
+                                                    setShowRejectForm(true);
+                                                }}
+                                                className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3] disabled:cursor-not-allowed disabled:opacity-50">{showRejectForm ? t("managerValidation.confirmRejection") : t("managerValidation.reject")}</button>
+                                        {!showRejectForm &&
+                                            <button type="button" disabled={saving} onClick={handleApprove}
+                                                    className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft">{saving ? t("managerValidation.processing") : t("managerValidation.approve")}</button>}
                                     </div>
                                 </div>
                             ) : (

@@ -36,6 +36,21 @@ const EMPTY_FORM = {
 const EMPTY_OFFERS = [];
 const NEW_OFFER_DRAFT_KEY = "new";
 
+function getTodayIso() {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${today.getFullYear()}-${month}-${day}`;
+}
+
+function sanitizeSalary(value) {
+    const sanitized = String(value ?? "")
+        .replace(",", ".")
+        .replace(/[^\d.]/g, "");
+    const [whole, ...decimalParts] = sanitized.split(".");
+    return decimalParts.length > 0 ? `${whole}.${decimalParts.join("")}` : whole;
+}
+
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
     if (["VALIDATED", "VALIDÉ", "VALIDE", "APPROVED", "APPROUVE"].includes(normalized)) return "VALIDE";
@@ -216,7 +231,9 @@ export default function EmployeurOffres({
     const {t, i18n} = useTranslation();
     const employerCompanyName = String(
         user?.nomCompagnie
+        || user?.nomEntreprise
         || user?.companyName
+        || user?.entreprise
         || companyName
         || (user?.isDevAccess ? "InSeek" : "")
     ).trim();
@@ -249,6 +266,7 @@ export default function EmployeurOffres({
     const isOfferReadOnly = !canManageOffers || ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
     const pendingCount = offerList.filter((offer) => offer.statut === "EN_ATTENTE").length;
     const publishedCount = offerList.filter((offer) => offer.statut === "VALIDE").length;
+    const minimumStageDate = getTodayIso();
     const editorTitleKey = isNewOffer
         ? "employerOffers.editor.newTitle"
         : selectedOffer?.statut === "REJETE"
@@ -345,11 +363,15 @@ export default function EmployeurOffres({
 
     const startNewOffer = () => {
         const draft = drafts[NEW_OFFER_DRAFT_KEY];
+        const draftFields = draft?.fields ?? EMPTY_FORM;
         setIsNewOffer(true);
         setSelectedId(null);
         setIsEditorOpen(true);
         setIsFileCleared(false);
-        setFormValues(draft?.fields ?? {...EMPTY_FORM, nomEntreprise: employerCompanyName});
+        setFormValues({
+            ...draftFields,
+            nomEntreprise: employerCompanyName || draftFields.nomEntreprise || "",
+        });
         setSelectedFile(draft?.file ?? null);
         setFieldErrors({});
         setFileError("");
@@ -361,7 +383,8 @@ export default function EmployeurOffres({
 
     const updateField = (event) => {
         const {name, value} = event.target;
-        const nextValues = {...formValues, [name]: value};
+        const nextValue = name === "salaire" ? sanitizeSalary(value) : value;
+        const nextValues = {...formValues, [name]: nextValue};
         const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
         setFormValues(nextValues);
         saveDrafts((current) => ({
@@ -429,6 +452,7 @@ export default function EmployeurOffres({
 
     const validateForm = () => {
         const errors = {};
+        const companyNameForOffer = employerCompanyName || String(formValues.nomEntreprise ?? "").trim();
         const requiredFields = {
             nomEntreprise: "employerOffers.errors.companyRequired",
             position: "employerOffers.errors.positionRequired",
@@ -440,10 +464,20 @@ export default function EmployeurOffres({
         };
 
         Object.entries(requiredFields).forEach(([field, message]) => {
-            if (!String(formValues[field] ?? "").trim()) errors[field] = message;
+            const value = field === "nomEntreprise" ? companyNameForOffer : formValues[field];
+            if (!String(value ?? "").trim()) errors[field] = message;
         });
         if (formValues.email && !/^\S+@\S+\.\S+$/.test(formValues.email)) {
             errors.email = "employerOffers.errors.invalidEmail";
+        }
+        if (formValues.salaire && !/^\d+(\.\d+)?$/.test(formValues.salaire)) {
+            errors.salaire = "employerOffers.errors.invalidSalary";
+        }
+        if (formValues.dateDebutStage && formValues.dateDebutStage < minimumStageDate) {
+            errors.dateDebutStage = "employerOffers.errors.startDateInPast";
+        }
+        if (formValues.dateFinStage && formValues.dateFinStage < minimumStageDate) {
+            errors.dateFinStage = "employerOffers.errors.endDateInPast";
         }
         if (formValues.dateDebutStage && formValues.dateFinStage && formValues.dateFinStage < formValues.dateDebutStage) {
             errors.dateFinStage = "employerOffers.errors.endDateAfterStart";
@@ -504,7 +538,7 @@ export default function EmployeurOffres({
             const result = await submitOffer({
                     offerId: selectedOffer?.id ?? null,
                     mode: isNewOffer ? "create" : "update",
-                    fields: formValues,
+                fields: {...formValues, nomEntreprise: employerCompanyName || formValues.nomEntreprise},
                     file: selectedFile,
                     formData,
                 });
@@ -557,7 +591,7 @@ export default function EmployeurOffres({
     };
 
     const clearForm = () => {
-        const clearedValues = {...EMPTY_FORM};
+        const clearedValues = {...EMPTY_FORM, nomEntreprise: employerCompanyName};
         const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
 
         setFormValues(clearedValues);
@@ -632,6 +666,11 @@ export default function EmployeurOffres({
                         </div>
                         <p className="mt-3 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
 
+                        {canManageOffers && <button type="button" onClick={startNewOffer}
+                                                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40">
+                            <Icon name="plus" className="h-4 w-4"/> {t("employerOffers.newOffer")}
+                        </button>}
+
                         <div className="mt-6 space-y-3">
                             {offerList.length === 0 && (
                                 <div className="rounded-2xl border border-dashed border-line bg-canvas p-5 text-center">
@@ -661,11 +700,6 @@ export default function EmployeurOffres({
                                 </button>
                             ))}
                         </div>
-
-                        {canManageOffers && <button type="button" onClick={startNewOffer}
-                                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40">
-                            <Icon name="plus" className="h-4 w-4"/> {t("employerOffers.newOffer")}
-                        </button>}
                     </aside>
 
                     {isEditorOpen && <div
@@ -673,10 +707,11 @@ export default function EmployeurOffres({
                         onMouseDown={handleEditorBackdropMouseDown}
                     >
                     <div ref={formRef}
-                         className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-y-auto rounded-[2rem] border border-line bg-surface p-5 shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)] sm:p-7"
+                         className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)]"
                          role="dialog"
                          aria-modal="true"
                          aria-labelledby="employer-offer-editor-title">
+                        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
                         <div
                             className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
                             <div>
@@ -821,19 +856,23 @@ export default function EmployeurOffres({
                                         <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
                                                error={fieldErrors.dateDebutStage}>
                                             <input id="dateDebutStage" type="date" name="dateDebutStage"
+                                                   min={minimumStageDate}
                                                    value={formValues.dateDebutStage} onChange={updateField}
                                                    className={inputClass(fieldErrors.dateDebutStage)}/>
                                         </Field>
                                         <Field id="dateFinStage" label={t("employerOffers.fields.endDate")} required
                                                error={fieldErrors.dateFinStage}>
                                             <input id="dateFinStage" type="date" name="dateFinStage"
+                                                   min={formValues.dateDebutStage || minimumStageDate}
                                                    value={formValues.dateFinStage} onChange={updateField}
                                                    className={inputClass(fieldErrors.dateFinStage)}/>
                                         </Field>
                                         <Field id="salaire" label={t("employerOffers.fields.hourlyPay")}
                                                error={fieldErrors.salaire}>
-                                            <div className="relative"><input id="salaire" type="number" min="0"
-                                                                             step="0.01" name="salaire"
+                                            <div className="relative"><input id="salaire" type="text"
+                                                                             inputMode="decimal"
+                                                                             pattern="[0-9]*([.,][0-9]+)?"
+                                                                             name="salaire"
                                                                              value={formValues.salaire}
                                                                              onChange={updateField}
                                                                              className={`${inputClass(fieldErrors.salaire)} pr-12`}
@@ -889,6 +928,7 @@ export default function EmployeurOffres({
                                 )}
                             </div>
                         </form>
+                        </div>
                     </div>
                     </div>}
                 </div>

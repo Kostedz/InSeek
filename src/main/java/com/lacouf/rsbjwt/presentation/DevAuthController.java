@@ -3,6 +3,7 @@ package com.lacouf.rsbjwt.presentation;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.config.DevDemoAccounts;
+import com.lacouf.rsbjwt.config.DevDemoScenarioService;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.JWTAuthResponse;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class DevAuthController {
     private final UtilisateurService utilisateurService;
+    private final DevDemoScenarioService demoScenarioService;
 
     @Value("${app.dev.email:dev@inseek.local}")
     private String email;
@@ -51,6 +53,21 @@ public class DevAuthController {
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (BadRequestException | NotFoundException | IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @PostMapping("/student-demo")
+    public ResponseEntity<JWTAuthResponse> prepareStudentDemo() {
+        try {
+            demoScenarioService.prepareStudentScenario();
+            DevDemoAccounts.Account student = DevDemoAccounts.forRole(Role.ETUDIANT);
+            return ResponseEntity.ok(new JWTAuthResponse(
+                    utilisateurService.login(new LoginDTO(student.email(), student.password()))
+            ));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (BadRequestException | NotFoundException | IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }

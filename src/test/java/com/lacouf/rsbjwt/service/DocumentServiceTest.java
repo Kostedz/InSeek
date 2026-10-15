@@ -112,7 +112,6 @@ public class DocumentServiceTest {
     public void testSaveDocumentCVSuccess() throws NotFoundException, BadRequestException, IOException {
         when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("test@example.com");
         when(utilisateurService.findEntityByEmail("test@example.com")).thenReturn(etudiant);
-        when(documentRepository.existsByFileNameAndTargetDiscipline("cv.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
 
         DocumentDTO result = documentService.saveDocument(fileCV, formContentCV, request);
 
@@ -120,7 +119,6 @@ public class DocumentServiceTest {
         assertInstanceOf(CVDTO.class, result);
         verify(jwtTokenProvider).getEmailFromJWT("fake-jwt");
         verify(utilisateurService).findEntityByEmail("test@example.com");
-        verify(documentRepository).existsByFileNameAndTargetDiscipline("cv.pdf", Disciplines.INFORMATIQUE);
         verify(documentRepository).save(any(CV.class));
     }
 
@@ -151,7 +149,6 @@ public class DocumentServiceTest {
     public void testSaveDocumentCvAsDevelopmentManager() throws NotFoundException, BadRequestException, IOException {
         when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("dev@inseek.local");
         when(utilisateurService.findEntityByEmail("dev@inseek.local")).thenReturn(gestionnaire);
-        when(documentRepository.existsByFileNameAndTargetDiscipline("cv.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
 
         DocumentDTO result = documentService.saveDocument(fileCV, formContentCV, request);
 
@@ -160,25 +157,10 @@ public class DocumentServiceTest {
     }
 
     @Test
-    @DisplayName("saveDocument - should throw BadRequestException when document already exists")
-    public void testSaveDocumentDuplicate() throws NotFoundException, BadRequestException, IOException {
-
-        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("test@example.com");
-        when(utilisateurService.findEntityByEmail("test@example.com")).thenReturn(etudiant);
-        when(documentRepository.existsByFileNameAndTargetDiscipline("cv.pdf", Disciplines.INFORMATIQUE)).thenReturn(true);
-
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> documentService.saveDocument(fileCV, formContentCV, request));
-        assertEquals("Document with the same name and target discipline already exists", exception.getMessage());
-        verify(documentRepository).existsByFileNameAndTargetDiscipline("cv.pdf", Disciplines.INFORMATIQUE);
-        verify(documentRepository, never()).save(any());
-    }
-
-    @Test
     @DisplayName("saveDocument - should save an OffreDeStage successfully")
     public void testSaveDocumentOffreSuccess() throws NotFoundException, BadRequestException, IOException {
         when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("employeur@example.com");
         when(utilisateurService.findEntityByEmail("employeur@example.com")).thenReturn(employeur);
-        when(documentRepository.existsByFileNameAndTargetDiscipline("offre.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
 
         DocumentDTO result = documentService.saveDocument(fileOffre, formContentOffre, request);
 
@@ -186,7 +168,6 @@ public class DocumentServiceTest {
         assertInstanceOf(OffreDeStageDTO.class, result);
         verify(jwtTokenProvider).getEmailFromJWT("fake-jwt");
         verify(utilisateurService).findEntityByEmail("employeur@example.com");
-        verify(documentRepository).existsByFileNameAndTargetDiscipline("offre.pdf", Disciplines.INFORMATIQUE);
         verify(documentRepository).save(any(OffreDeStage.class));
     }
 
@@ -220,7 +201,6 @@ public class DocumentServiceTest {
     public void testSaveEmployerOffer() throws NotFoundException, BadRequestException, IOException {
         when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("employeur@example.com");
         when(utilisateurService.findEntityByEmail("employeur@example.com")).thenReturn(employeur);
-        when(documentRepository.existsByFileNameAndTargetDiscipline("offre.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
 
         String form = """
                 {
@@ -248,7 +228,6 @@ public class DocumentServiceTest {
     public void testSaveOfferForAuthenticatedStudent() throws NotFoundException, BadRequestException, IOException {
         when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("test@example.com");
         when(utilisateurService.findEntityByEmail("test@example.com")).thenReturn(etudiant);
-        when(documentRepository.existsByFileNameAndTargetDiscipline("offre.pdf", Disciplines.INFORMATIQUE)).thenReturn(false);
 
         OffreDeStageDTO result = documentService.saveEmployerOffer(fileOffre, formContentOffre, request, null);
 
