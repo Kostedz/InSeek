@@ -41,7 +41,6 @@ public class EntrevueService {
 
     }
 
-    //est executé toutes les heures pour vérifier les entrevues passées et mettre à jour le statut de l'étudiant si nécessaire
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void checkPastInterviews(){

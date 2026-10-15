@@ -69,7 +69,6 @@ public class EntrevueServiceTest {
 
         EntrevueDTO result = entrevueService.scheduleInterview(EMPLOYER_EMAIL, validDto);
 
-        // Entite sauvegardee
         ArgumentCaptor<Entrevue> captor = ArgumentCaptor.forClass(Entrevue.class);
         verify(interviewRepository).save(captor.capture());
         Entrevue saved = captor.getValue();
@@ -81,11 +80,9 @@ public class EntrevueServiceTest {
         assertEquals(validDto.locationOrLink(), saved.getLocationOrLink());
         assertEquals(validDto.message(), saved.getMessage());
 
-        // Profil de l'etudiant mis a jour
         verify(student).setDateEnterview(validDto.DateAndTime());
         verify(student).setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
 
-        // DTO retourne
         assertEquals(EMPLOYER_ID, result.employerId());
         assertEquals(STUDENT_ID, result.studentId());
         assertEquals(OFFER_ID, result.offerId());
