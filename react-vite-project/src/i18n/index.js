@@ -327,6 +327,30 @@ const resources = {
                 units: {
                     megabytes: "Mo",
                 },
+                interviews: {
+                    title: "Planifier une entrevue",
+                    subtitle: "Candidat :",
+                    date: "Date",
+                    time: "Heure",
+                    duration: "Durée",
+                    mode: "Mode d'entrevue",
+                    locationOrLink: "Lieu ou lien de la rencontre",
+                    message: "Message optionnel",
+                    cancel: "Annuler",
+                    submit: "Confirmer l'entrevue",
+                    submitting: "Planification en cours...",
+                    errors: {
+                        dateRequired: "La date est requise.",
+                        timeRequired: "L'heure est requise.",
+                        modeRequired: "Le mode est requis.",
+                        locationOrLinkRequired: "Le lieu ou le lien est requis.",
+                        dateInPast: "La date et l'heure de l'entrevue doivent être situées dans le futur.",
+                        submitFailed: "Échec de la planification de l'entrevue.",
+                    },
+                    success: {
+                        planned: "Entrevue planifiée avec succès. L'étudiant a été notifié.",
+                    },
+                }
             },
             roles: {
                 borrower: {
@@ -827,6 +851,30 @@ const resources = {
                 units: {
                     megabytes: "MB",
                 },
+                interviews: {
+                    title: "Schedule an interview",
+                    subtitle: "Candidate:",
+                    date: "Date",
+                    time: "Time",
+                    duration: "Duration",
+                    mode: "Interview mode",
+                    locationOrLink: "Location or meeting link",
+                    message: "Optional message",
+                    cancel: "Cancel",
+                    submit: "Confirm interview",
+                    submitting: "Scheduling...",
+                    errors: {
+                        dateRequired: "Date is required.",
+                        timeRequired: "Time is required.",
+                        modeRequired: "Mode is required.",
+                        locationOrLinkRequired: "Location or link is required.",
+                        dateInPast: "The interview date and time must be in the future.",
+                        submitFailed: "Failed to schedule the interview.",
+                    },
+                    success: {
+                        planned: "Interview successfully scheduled. The student has been notified.",
+                    },
+                }
             },
             roles: {
                 borrower: {

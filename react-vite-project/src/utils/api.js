@@ -88,6 +88,17 @@ export const api = {
                 method: "PUT",
                 body: formData,
             }),
+            getCandidats: (offerId) => fetcher(`/employeur/offres/${offerId}/candidats`, {
+                headers: { Accept: "application/json" },
+            }),
+            planifierEntrevue: (offerId, candidatId, payload) => fetcher(`/employeur/offres/${offerId}/candidats/${candidatId}/entrevue`, {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify(payload),
+            }),
         },
     },
 
