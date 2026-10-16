@@ -12,8 +12,9 @@ public interface ApplicationStageRepository extends JpaRepository<ApplicationSta
 
     List<ApplicationStage> findByOffreDeStageId(Long offreDeStageId);
 
-    @Override
-    Optional<ApplicationStage> findById(Long applicationStageId);
+        Optional<ApplicationStage> findById(Long applicationStageId);
 
-    Optional<ApplicationStage> findByEtudiantIdAndByOffreDeStageId(Long etudiantId, Long offreDeStageId);
+    Optional<ApplicationStage> findByEtudiantIdAndOffreDeStageId(Long etudiantId, Long offreDeStageId);
+
+    Optional<ApplicationStage> existByEtudiantIdAndOffreDeStageId(Long etudiantId, Long offreDeStageId);
 }
