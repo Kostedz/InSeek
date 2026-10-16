@@ -274,12 +274,12 @@ function GestionnaireValidation() {
 
             const responseData = await response.json().catch(() => null);
             updateOffer(selectedOffer.id, responseData, "VALIDE");
-            setMessage({ key: "managerValidation.messages.approved" });
             resetFormState();
+            setMessage({key: "managerValidation.messages.approved"});
         } catch {
             updateOffer(selectedOffer.id, null, "VALIDE");
-            setMessage({ key: "managerValidation.messages.approved" });
             resetFormState();
+            setMessage({key: "managerValidation.messages.approved"});
         } finally {
             setSaving(false);
         }
@@ -315,12 +315,12 @@ function GestionnaireValidation() {
 
             const responseData = await response.json().catch(() => null);
             updateOffer(selectedOffer.id, responseData, "REJETE");
-            setMessage({ key: "managerValidation.messages.rejected" });
             resetFormState();
+            setMessage({key: "managerValidation.messages.rejected"});
         } catch {
             updateOffer(selectedOffer.id, null, "REJETE");
-            setMessage({ key: "managerValidation.messages.rejected" });
             resetFormState();
+            setMessage({key: "managerValidation.messages.rejected"});
         } finally {
             setSaving(false);
         }

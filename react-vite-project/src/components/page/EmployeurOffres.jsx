@@ -652,7 +652,6 @@ export default function EmployeurOffres({
             setFieldErrors({});
             setFileError("");
             setFormError("");
-            setSuccessMessage("");
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
     }, [selectedId, isNewOffer, employerCompanyName, drafts]);
