@@ -12,9 +12,11 @@ public interface ApplicationStageRepository extends JpaRepository<ApplicationSta
 
     List<ApplicationStage> findByOffreDeStageId(Long offreDeStageId);
 
-        Optional<ApplicationStage> findById(Long applicationStageId);
+    Optional<ApplicationStage> findById(Long applicationStageId);
+
+
 
     Optional<ApplicationStage> findByEtudiantIdAndOffreDeStageId(Long etudiantId, Long offreDeStageId);
 
-    Optional<ApplicationStage> existByEtudiantIdAndOffreDeStageId(Long etudiantId, Long offreDeStageId);
+    boolean existsByEtudiantIdAndOffreDeStageId(Long etudiantId, Long offreDeStageId);
 }
