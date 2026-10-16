@@ -22,7 +22,6 @@ import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
 
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
