@@ -7,16 +7,20 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
-
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@Table(
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"etudiant_id", "offre_de_stage_id"}
+        )
+)
 public class ApplicationStage {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private LocalDate dateApplique;
+    private LocalDate dateApplique = LocalDate.now();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "etudiant_id")
@@ -25,4 +29,7 @@ public class ApplicationStage {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "offre_de_stage_id")
     private OffreDeStage offreDeStage;
+
+    @Enumerated(EnumType.STRING)
+    private StatutValidation statutValidation = StatutValidation.EN_ATTENTE;
 }
