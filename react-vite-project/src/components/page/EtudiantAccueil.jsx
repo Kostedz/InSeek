@@ -113,6 +113,23 @@ function formatDateRange(startDate, endDate, language, t) {
     return t("studentOffers.details.dateRange", {start, end});
 }
 
+function formatDiscipline(value, t) {
+    if (!hasValue(value)) return "";
+
+    const normalized = String(value).trim().toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[.\s-]+/g, "_");
+    const aliases = {
+        TECH_INFIRMIERE: "INFIRMIERE",
+        GENIE_CIVIL: "GENIE_CIVIL",
+        DESIGN_GRAPHIQUE: "DESIGN_GRAPHIQUE",
+    };
+    const disciplineKey = aliases[normalized] ?? normalized;
+
+    return t(`employerOffers.disciplines.${disciplineKey}`, {defaultValue: value});
+}
+
 function formatSalary(value, language, t) {
     if (!hasValue(value)) return t("studentOffers.details.unpaid");
 
@@ -122,7 +139,7 @@ function formatSalary(value, language, t) {
     return `${new Intl.NumberFormat(language === "en" ? "en-CA" : "fr-CA", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
-    }).format(amount)} $/h`;
+    }).format(amount)} ${t("employerOffers.units.hourlyRate")}`;
 }
 
 function truncateDescription(value, length = 155) {
@@ -233,7 +250,7 @@ function ApplicationModal({offer, cv, t, onClose, onSubmitted}) {
                                     <p className="mt-1 text-sm text-ink-soft">{t("studentOffers.application.cvStatus")}</p>
                                 </div>
                                 <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800">
-                                    {cv?.statut ?? "VALIDE"}
+                                    {t("studentCv.status.approved")}
                                 </span>
                             </div>
                         </div>
@@ -553,7 +570,7 @@ export default function EtudiantAccueil({user}) {
                         >
                             <option value="">{t("studentOffers.filters.allDisciplines")}</option>
                             {disciplines.map((discipline) => <option key={discipline}
-                                                                     value={discipline}>{discipline}</option>)}
+                                                                     value={discipline}>{formatDiscipline(discipline, t)}</option>)}
                         </select>
                         <label className="sr-only"
                                htmlFor="student-offer-salary">{t("studentOffers.filters.salaryLabel")}</label>
@@ -605,7 +622,7 @@ export default function EtudiantAccueil({user}) {
                                         {offer.discipline && <>
                                             <span className="h-1 w-1 shrink-0 self-center rounded-full bg-line"
                                                   aria-hidden="true"/>
-                                            <span className="shrink-0">{offer.discipline}</span>
+                                            <span className="shrink-0">{formatDiscipline(offer.discipline, t)}</span>
                                             <span className="h-1 w-1 shrink-0 self-center rounded-full bg-line"
                                                   aria-hidden="true"/>
                                         </>}

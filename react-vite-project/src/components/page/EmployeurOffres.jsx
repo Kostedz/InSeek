@@ -82,13 +82,13 @@ function normalizeApplication(application, index = 0) {
         id: application?.id ?? application?.applicationId ?? `application-${index}`,
         firstName,
         lastName,
-        name: String(fullName || "Étudiant").trim(),
+        name: String(fullName || "").trim(),
         email: application?.email ?? application?.studentEmail ?? application?.courriel ?? student.email ?? "",
         submittedAt: application?.submittedAt ?? application?.dateSoumission ?? application?.createdAt ?? application?.submissionDate,
         phone: application?.phone ?? application?.telephone ?? student.phone ?? student.telephone ?? "",
         address: application?.address ?? application?.adresse ?? student.address ?? student.adresse ?? "",
         cvDocumentId: application?.cvDocumentId ?? application?.cvId ?? cvDocument?.id ?? null,
-        cvFileName: application?.cvFileName ?? application?.cvFilename ?? cvDocument?.fileName ?? cvDocument?.name ?? "CV.pdf",
+        cvFileName: application?.cvFileName ?? application?.cvFilename ?? cvDocument?.fileName ?? cvDocument?.name ?? "",
         coverLetterDocumentId: application?.coverLetterDocumentId
             ?? application?.lettrePresentationId
             ?? coverLetterDocument?.id
@@ -97,7 +97,7 @@ function normalizeApplication(application, index = 0) {
             ?? application?.lettrePresentationFileName
             ?? coverLetterDocument?.fileName
             ?? coverLetterDocument?.name
-            ?? "Lettre de présentation.pdf",
+            ?? "",
         coverLetter: application?.coverLetter ?? application?.lettrePresentation ?? application?.motivation ?? "",
     };
 }
@@ -281,7 +281,7 @@ function inputClass(error, disabled = false) {
 }
 
 function initials(name) {
-    return String(name ?? "Étudiant")
+    return String(name ?? "")
         .split(/\s+/)
         .filter(Boolean)
         .slice(0, 2)
@@ -348,9 +348,9 @@ function ApplicationDetails({application, language, onBack, onClose}) {
                     <div
                         className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-canvas p-4">
                         <span
-                            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink/55 text-lg font-black text-ink">{initials(application.name)}</span>
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink/55 text-lg font-black text-ink">{initials(application.name || t("employerOffers.applications.unknownStudent"))}</span>
                         <div className="min-w-0">
-                            <p className="font-black text-ink">{application.name}</p>
+                            <p className="font-black text-ink">{application.name || t("employerOffers.applications.unknownStudent")}</p>
                             <p className="mt-1 break-all text-sm text-ink-soft">{application.email || t("employerOffers.applications.notSpecified")}</p>
                         </div>
                         <p className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink-soft">
@@ -471,10 +471,10 @@ function ApplicationsModal({offer, applications, language, onClose}) {
                                         onClick={() => setSelectedApplication(application)}
                                         className="group flex w-full items-center gap-3 rounded-2xl border border-line bg-canvas p-4 text-left transition-colors hover:border-lavender hover:bg-lavender/15 focus:outline-none focus:ring-4 focus:ring-pink/40">
                                     <span
-                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink/55 text-sm font-black text-ink">{initials(application.name)}</span>
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink/55 text-sm font-black text-ink">{initials(application.name || t("employerOffers.applications.unknownStudent"))}</span>
                                     <span className="min-w-0 flex-1">
                                         <span
-                                            className="block truncate text-sm font-black text-ink">{application.name}</span>
+                                            className="block truncate text-sm font-black text-ink">{application.name || t("employerOffers.applications.unknownStudent")}</span>
                                         <span className="mt-1 flex items-center gap-1.5 truncate text-xs text-ink-soft"><Icon
                                             name="mail"
                                             className="h-3.5 w-3.5 shrink-0"/>{application.email || t("employerOffers.applications.notSpecified")}</span>
@@ -1206,7 +1206,7 @@ export default function EmployeurOffres({
                                                                              onChange={updateField}
                                                                              className={`${inputClass(fieldErrors.salaire)} pr-12`}
                                                                              placeholder={t("employerOffers.placeholders.hourlyPay")}/><span
-                                                className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">$/h</span>
+                                                className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">{t("employerOffers.units.hourlyRate")}</span>
                                             </div>
                                         </Field>
                                     </div>
