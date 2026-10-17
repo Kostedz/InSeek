@@ -546,6 +546,7 @@ export default function EmployeurOffres({
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
+    const editorScrollRef = useRef(null);
     const {t, i18n} = useTranslation();
     const employerCompanyName = String(
         user?.nomCompagnie
@@ -960,6 +961,7 @@ export default function EmployeurOffres({
         } catch (error) {
             setFormError(error?.key || "employerOffers.errors.submissionConnection");
         } finally {
+            window.requestAnimationFrame(() => editorScrollRef.current?.scrollTo({top: 0, behavior: "smooth"}));
             setIsSubmitting(false);
         }
     };
@@ -1111,7 +1113,7 @@ export default function EmployeurOffres({
                          role="dialog"
                          aria-modal="true"
                          aria-labelledby="employer-offer-editor-title">
-                        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                        <div ref={editorScrollRef} className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
                         <div
                             className="flex flex-row items-start justify-between gap-3 border-b border-line pb-6">
                             <div className="min-w-0 flex-1">

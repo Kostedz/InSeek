@@ -432,6 +432,7 @@ const resources = {
                 },
                 units: {
                     megabytes: "Mo",
+                    hourlyRate: "$/h",
                 },
             },
             roles: {
@@ -1038,6 +1039,7 @@ const resources = {
                 },
                 units: {
                     megabytes: "MB",
+                    hourlyRate: "$/h",
                 },
             },
             roles: {
