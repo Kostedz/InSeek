@@ -1,10 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
-import com.lacouf.rsbjwt.model.ApplicationStage;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.OffreDeStage;
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
@@ -28,6 +25,9 @@ public class ApplicationStageService {
 
         if(applicationStageRepository.existsByEtudiantIdAndOffreDeStageId(etudiant.getId(), offreDeStage.getId()))
             throw  new BadRequestException("Vous ne puvez pas appliquer à la même offre de stage plus qu'une fois.");
+
+        if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(offreDeStage.getId(), StatutValidation.ACCEPTE))
+            throw new BadRequestException("Cette offre de stage a déjà été attribuée à un autre étudiant.");
 
         ApplicationStage applicationStage = new ApplicationStage();
         applicationStage.setEtudiant(etudiant);
