@@ -87,7 +87,7 @@ public class EntrevueService {
     }
 
     private OffreDeStage findInternshipOffer(Long offerId) throws NotFoundException {
-        return documentRepository.findInternshipOfferById(offerId)
+        return documentRepository.findOffreStageById(offerId)
                 .orElseThrow(() -> new NotFoundException("Offre de stage non trouvée."));
     }
 
