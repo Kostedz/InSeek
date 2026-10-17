@@ -95,6 +95,7 @@ export const api = {
     employer: {
         offers: {
             list: () => fetcher("/employeur/offres", {
+                cache: "no-store",
                 headers: {Accept: "application/json"},
             }),
 
@@ -106,6 +107,12 @@ export const api = {
             update: (offerId, formData) => fetcher(`/employeur/offres/${offerId}`, {
                 method: "PUT",
                 body: formData,
+            }),
+        },
+        applications: {
+            list: (offerId) => fetcher(`/api/applications/offer/${encodeURIComponent(offerId)}`, {
+                cache: "no-store",
+                headers: {Accept: "application/json"},
             }),
         },
     },

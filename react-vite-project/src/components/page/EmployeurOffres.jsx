@@ -5,6 +5,7 @@ import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import ErrorPage from "../ErrorPage.jsx";
 import PdfPreview from "../PdfPreview.jsx";
+import {formatOfferTitle} from "./studentOfferUtils.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -64,7 +65,11 @@ function hasValue(value) {
 }
 
 function normalizeApplication(application, index = 0) {
-    const student = application?.student ?? application?.etudiant ?? application?.applicant ?? {};
+    const student = application?.student
+        ?? application?.etudiant
+        ?? application?.applicant
+        ?? application?.etudiantDTO
+        ?? {};
     const firstName = application?.firstName ?? application?.prenom ?? student.firstName ?? student.prenom ?? "";
     const lastName = application?.lastName ?? application?.nom ?? student.lastName ?? student.nom ?? "";
     const fullName = application?.name
@@ -73,9 +78,6 @@ function normalizeApplication(application, index = 0) {
         ?? [firstName, lastName].filter(Boolean).join(" ");
     const documents = Array.isArray(application?.documents) ? application.documents : [];
     const cvDocument = application?.cv ?? application?.resume ?? documents.find((document) => /cv|resume|ré?sumé/i.test(String(document?.type ?? document?.name ?? "")));
-    const coverLetterDocument = application?.coverLetterDocument
-        ?? application?.lettrePresentationDocument
-        ?? documents.find((document) => /lettre|cover/i.test(String(document?.type ?? document?.name ?? "")));
 
     return {
         ...application,
@@ -84,21 +86,26 @@ function normalizeApplication(application, index = 0) {
         lastName,
         name: String(fullName || "").trim(),
         email: application?.email ?? application?.studentEmail ?? application?.courriel ?? student.email ?? "",
-        submittedAt: application?.submittedAt ?? application?.dateSoumission ?? application?.createdAt ?? application?.submissionDate,
+        submittedAt: application?.submittedAt
+            ?? application?.dateSoumission
+            ?? application?.dateApplique
+            ?? application?.createdAt
+            ?? application?.submissionDate,
         phone: application?.phone ?? application?.telephone ?? student.phone ?? student.telephone ?? "",
         address: application?.address ?? application?.adresse ?? student.address ?? student.adresse ?? "",
-        cvDocumentId: application?.cvDocumentId ?? application?.cvId ?? cvDocument?.id ?? null,
-        cvFileName: application?.cvFileName ?? application?.cvFilename ?? cvDocument?.fileName ?? cvDocument?.name ?? "",
-        coverLetterDocumentId: application?.coverLetterDocumentId
-            ?? application?.lettrePresentationId
-            ?? coverLetterDocument?.id
+        cvDocumentId: application?.cvDocumentId
+            ?? application?.cvId
+            ?? student.cvDocumentId
+            ?? student.cvId
+            ?? cvDocument?.id
             ?? null,
-        coverLetterFileName: application?.coverLetterFileName
-            ?? application?.lettrePresentationFileName
-            ?? coverLetterDocument?.fileName
-            ?? coverLetterDocument?.name
+        cvFileName: application?.cvFileName
+            ?? application?.cvFilename
+            ?? student.cvFileName
+            ?? student.cvFilename
+            ?? cvDocument?.fileName
+            ?? cvDocument?.name
             ?? "",
-        coverLetter: application?.coverLetter ?? application?.lettrePresentation ?? application?.motivation ?? "",
     };
 }
 
@@ -359,7 +366,7 @@ function ApplicationDetails({application, language, onBack, onClose}) {
                         </p>
                     </div>
 
-                    <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                    <div className="mt-6">
                         <section className="rounded-2xl border border-line bg-surface p-4">
                             <h3 className="text-sm font-black text-ink">{t("employerOffers.applications.contactDetails")}</h3>
                             {hasContactDetails ? <div className="mt-4 space-y-3">
@@ -379,21 +386,14 @@ function ApplicationDetails({application, language, onBack, onClose}) {
                                 <p className="mt-3 text-sm text-ink-soft">{t("employerOffers.applications.notSpecified")}</p>}
                         </section>
 
-                        <section className="rounded-2xl border border-line bg-surface p-4">
-                            <h3 className="text-sm font-black text-ink">{t("employerOffers.applications.coverLetterTitle")}</h3>
-                            <p className="mt-3 text-sm leading-6 text-ink-soft">{application.coverLetter || t("employerOffers.applications.coverLetterUnavailable")}</p>
-                        </section>
                     </div>
 
                     <section className="mt-5">
                         <h3 className="text-sm font-black text-ink">{t("employerOffers.applications.documentsTitle")}</h3>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div className="mt-3">
                             <ApplicationDocument icon="file" label={t("employerOffers.applications.cv")}
                                                  fileName={application.cvFileName} documentId={application.cvDocumentId}
                                                  t={t}/>
-                            <ApplicationDocument icon="file" label={t("employerOffers.applications.coverLetter")}
-                                                 fileName={application.coverLetterFileName}
-                                                 documentId={application.coverLetterDocumentId} t={t}/>
                         </div>
                     </section>
                 </div>
@@ -402,7 +402,7 @@ function ApplicationDetails({application, language, onBack, onClose}) {
     );
 }
 
-function ApplicationsModal({offer, applications, language, onClose}) {
+function ApplicationsModal({offer, applications, language, onClose, isLoading, error}) {
     const {t} = useTranslation();
     const [selectedApplication, setSelectedApplication] = useState(null);
 
@@ -449,7 +449,7 @@ function ApplicationsModal({offer, applications, language, onClose}) {
                             </div>
                             <h2 id="applications-title"
                                 className="mt-2 text-2xl font-black tracking-tight text-ink">{t("employerOffers.applications.title")}</h2>
-                            <p className="mt-2 max-w-xl text-sm leading-6 text-ink-soft">{offer.position || t("employerOffers.untitledOffer")}</p>
+                            <p className="mt-2 max-w-xl text-sm leading-6 text-ink-soft">{formatOfferTitle(offer.position) || t("employerOffers.untitledOffer")}</p>
                         </div>
                         <button type="button" onClick={onClose}
                                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
@@ -458,7 +458,15 @@ function ApplicationsModal({offer, applications, language, onClose}) {
                         </button>
                     </div>
 
-                    {applications.length === 0 ? (
+                    {isLoading ? (
+                        <div className="mt-6 rounded-2xl border border-line bg-canvas px-5 py-12 text-center">
+                            <Loading/>
+                        </div>
+                    ) : error ? (
+                        <div className="mt-6 rounded-2xl border border-error bg-blush/30 px-5 py-12 text-center">
+                            <p className="text-base font-black text-error">{t("employerOffers.errors.loadFailed")}</p>
+                        </div>
+                    ) : applications.length === 0 ? (
                         <div
                             className="mt-6 rounded-2xl border border-dashed border-line bg-canvas px-5 py-12 text-center">
                             <p className="text-base font-black text-ink">{t("employerOffers.applications.emptyTitle")}</p>
@@ -555,7 +563,7 @@ export default function EmployeurOffres({
         (displayedOffers ?? []).map(normalizeOffer)
     ), [displayedOffers]);
     const [offerList, setOfferList] = useState(initialOffers);
-    const [selectedId, setSelectedId] = useState(initialOffers[0]?.id ?? null);
+    const [selectedId, setSelectedId] = useState(null);
     const [formValues, setFormValues] = useState(() => formValuesFromOffer(initialOffers[0], employerCompanyName));
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -564,16 +572,22 @@ export default function EmployeurOffres({
     const [formError, setFormError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isNewOffer, setIsNewOffer] = useState(!initialOffers[0]);
+    const [isNewOffer, setIsNewOffer] = useState(false);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [isApplicationsOpen, setIsApplicationsOpen] = useState(false);
+    const [applicationsOffer, setApplicationsOffer] = useState(null);
+    const [applicationsByOffer, setApplicationsByOffer] = useState({});
+    const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+    const [applicationsError, setApplicationsError] = useState("");
     const [isFileCleared, setIsFileCleared] = useState(false);
     const [localDrafts, setLocalDrafts] = useState({});
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
     const selectedOffer = offerList.find((offer) => offer.id === selectedId) ?? null;
-    const selectedApplications = selectedOffer ? getApplicationsForOffer(selectedOffer) : [];
+    const selectedApplications = selectedOffer
+        ? applicationsByOffer[String(selectedOffer.id)] ?? getApplicationsForOffer(selectedOffer)
+        : [];
     const isOfferReadOnly = !canManageOffers || ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
     const pendingCount = offerList.filter((offer) => offer.statut === "EN_ATTENTE").length;
     const publishedCount = offerList.filter((offer) => offer.statut === "VALIDE").length;
@@ -637,8 +651,8 @@ export default function EmployeurOffres({
 
     useEffect(() => {
         setOfferList(initialOffers);
-        setSelectedId(initialOffers[0]?.id ?? null);
-        setIsNewOffer(!initialOffers[0]);
+        setSelectedId(null);
+        setIsNewOffer(false);
         setIsFileCleared(false);
         setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
     }, [initialOffers, employerCompanyName]);
@@ -656,11 +670,67 @@ export default function EmployeurOffres({
         }
     }, [selectedId, isNewOffer, employerCompanyName, drafts]);
 
+    const loadApplications = async (offer) => {
+        if (!offer?.id) return;
+
+        const offerKey = String(offer.id);
+        setApplicationsOffer(offer);
+        setIsApplicationsOpen(true);
+        setIsLoadingApplications(true);
+        setApplicationsError("");
+
+        try {
+            const response = await api.employer.applications.list(offer.id);
+            if (!response.ok) throw new Error("applications_request_failed");
+
+            const data = await response.json();
+            setApplicationsByOffer((current) => ({
+                ...current,
+                [offerKey]: Array.isArray(data) ? data.map(normalizeApplication) : [],
+            }));
+        } catch {
+            setApplicationsError("applications_request_failed");
+        } finally {
+            setIsLoadingApplications(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!usesRemoteOffers) return undefined;
+
+        const validatedOffers = offerList.filter((offer) => offer.statut === "VALIDE");
+        if (validatedOffers.length === 0) return undefined;
+
+        let isMounted = true;
+
+        Promise.all(validatedOffers.map(async (offer) => {
+            try {
+                const response = await api.employer.applications.list(offer.id);
+                if (!response.ok) return null;
+
+                const data = await response.json();
+                return [String(offer.id), Array.isArray(data) ? data.map(normalizeApplication) : []];
+            } catch {
+                return null;
+            }
+        })).then((entries) => {
+            if (!isMounted) return;
+
+            const loadedApplications = Object.fromEntries(entries.filter(Boolean));
+            setApplicationsByOffer((current) => ({...current, ...loadedApplications}));
+        });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [offerList, usesRemoteOffers]);
+
     const selectOffer = (offer) => {
         const draft = drafts[String(offer.id)];
         setIsNewOffer(false);
         setSelectedId(offer.id);
         setIsApplicationsOpen(false);
+        setApplicationsOffer(null);
         setIsEditorOpen(true);
         setIsFileCleared(draft?.fileCleared ?? false);
         setFormValues(draft?.fields ?? formValuesFromOffer(offer, employerCompanyName));
@@ -946,44 +1016,44 @@ export default function EmployeurOffres({
                     </div>
                 )}
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{offerList.length}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{offerList.length === 1 ? t("employerOffers.stats.savedSingular") : t("employerOffers.stats.savedPlural")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
+                        <p className="text-xl font-black text-ink">{offerList.length}</p>
                     </div>
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{pendingCount}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.stats.pendingDescription")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
+                        <p className="text-xl font-black text-ink">{pendingCount}</p>
                     </div>
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.published")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{publishedCount}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.stats.publishedDescription")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.published")}</p>
+                        <p className="text-xl font-black text-ink">{publishedCount}</p>
                     </div>
                 </div>
 
                 <div className="mt-6">
                     <aside
                         className="rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-6">
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="rounded-2xl border border-line bg-canvas p-3 sm:p-4">
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
-                                <h2 className="mt-2 text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
+                                    <h2 className="text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="min-w-0 flex-1 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
+                                {canManageOffers && <button type="button" onClick={startNewOffer}
+                                                            className="inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold whitespace-nowrap text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                    <Icon name="plus" className="h-3.5 w-3.5"/> {t("employerOffers.newOffer")}
+                                </button>}
                             </div>
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
 
-                        {canManageOffers && <button type="button" onClick={startNewOffer}
-                                                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40">
-                            <Icon name="plus" className="h-4 w-4"/> {t("employerOffers.newOffer")}
-                        </button>}
-
-                        <div className="mt-6 space-y-3">
+                        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {offerList.length === 0 && (
                                 <div className="rounded-2xl border border-dashed border-line bg-canvas p-5 text-center">
                                     <p className="mt-0 text-sm font-bold text-ink">{t("employerOffers.emptyTitle")}</p>
@@ -991,32 +1061,43 @@ export default function EmployeurOffres({
                                 </div>
                             )}
                             {offerList.map((offer) => (
-                                <button
+                                <div
                                     key={offer.id}
-                                    type="button"
-                                    onClick={() => selectOffer(offer)}
                                     className={`w-full rounded-2xl border p-4 text-left transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${selectedId === offer.id && !isNewOffer ? "border-ink bg-lavender/30" : "border-line bg-canvas hover:border-lavender hover:bg-lavender/15"}`}
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <span
-                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-ink"><Icon
-                                            name="file" className="h-4 w-4"/></span>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="line-clamp-2 text-sm font-black leading-5 text-ink">{formatOfferTitle(offer.position) || t("employerOffers.untitledOffer")}</p>
+                                            <p className="mt-1 truncate text-xs text-ink-soft">{offer.fileName || t("employerOffers.noFile")}</p>
+                                        </div>
                                         <div className="flex flex-wrap justify-end gap-2">
                                             <span
                                                 className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-bold text-ink-soft">
                                                 <Icon name="users" className="h-3.5 w-3.5"/>
-                                                {getApplicationCount(offer)}
+                                                {applicationsByOffer[String(offer.id)]?.length ?? getApplicationCount(offer)}
                                             </span>
                                             <StatusBadge status={offer.statut}/>
                                         </div>
                                     </div>
-                                    <p className="mt-4 line-clamp-2 text-sm font-black leading-5 text-ink">{offer.position || t("employerOffers.untitledOffer")}</p>
-                                    <p className="mt-1 truncate text-xs text-ink-soft">{offer.fileName || t("employerOffers.noFile")}</p>
-                                    <div className="mt-4 flex items-center justify-between gap-2 text-xs text-ink-soft">
-                                        <span>{t("employerOffers.version", {version: offer.version ?? 1})}</span>
+                                    <div className="mt-4 flex items-center gap-2 text-xs text-ink-soft">
+                                        <Icon name="calendar" className="h-3.5 w-3.5"/>
                                         <span>{formatDate(offer.updatedAt, i18n.resolvedLanguage)}</span>
                                     </div>
-                                </button>
+                                    <div
+                                        className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
+                                        {canManageOffers && <button type="button" onClick={() => selectOffer(offer)}
+                                                                    className="inline-flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-2 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                            <Icon name="file" className="h-3.5 w-3.5 shrink-0"/>
+                                            {t("employerOffers.actions.update")}
+                                        </button>}
+                                        {offer.statut === "VALIDE" && <button type="button"
+                                                                              onClick={() => loadApplications(offer)}
+                                                                              className="ml-auto inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                            <Icon name="users" className="h-3.5 w-3.5 shrink-0"/>
+                                            {t("employerOffers.actions.applications")}
+                                        </button>}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </aside>
@@ -1045,15 +1126,6 @@ export default function EmployeurOffres({
                                         ? t("employerOffers.editor.pendingDescription")
                                         : t("employerOffers.editor.rejectedDescription")
                                     : t("employerOffers.editor.newDescription")}</p>
-                                {selectedOffer?.statut === "VALIDE" && (
-                                    <button type="button" onClick={() => setIsApplicationsOpen(true)}
-                                            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50">
-                                        <Icon name="users" className="h-4 w-4"/>
-                                        {t("employerOffers.applications.viewButton")}
-                                        <span
-                                            className="rounded-full bg-white/15 px-2 py-0.5 text-xs">{selectedApplications.length}</span>
-                                    </button>
-                                )}
                             </div>
                             <button
                                 type="button"
@@ -1259,12 +1331,17 @@ export default function EmployeurOffres({
                         </div>
                     </div>
                     </div>}
-                    {isApplicationsOpen && selectedOffer?.statut === "VALIDE" && (
+                    {isApplicationsOpen && applicationsOffer?.statut === "VALIDE" && (
                         <ApplicationsModal
-                            offer={selectedOffer}
-                            applications={selectedApplications}
+                            offer={applicationsOffer}
+                            applications={applicationsByOffer[String(applicationsOffer.id)] ?? getApplicationsForOffer(applicationsOffer)}
                             language={i18n.resolvedLanguage}
-                            onClose={() => setIsApplicationsOpen(false)}
+                            isLoading={isLoadingApplications}
+                            error={applicationsError}
+                            onClose={() => {
+                                setIsApplicationsOpen(false);
+                                setApplicationsOffer(null);
+                            }}
                         />
                     )}
                 </div>

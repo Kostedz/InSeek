@@ -69,65 +69,6 @@ function isVisibleToStudent(offer, user) {
     return restrictionIdentifiers.some((identifier) => studentIdentifiers.includes(identifier));
 }
 
-function formatDate(value, language) {
-    if (!value) return "";
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-
-    return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-    }).format(date);
-}
-
-function formatDateRange(startDate, endDate, language, t) {
-    const start = formatDate(startDate, language);
-    const end = formatDate(endDate, language);
-
-    if (!start && !end) return "";
-    if (!start) return end;
-    if (!end) return start;
-
-    return t("studentOffers.details.dateRange", {start, end});
-}
-
-function formatDiscipline(value, t) {
-    if (!hasValue(value)) return "";
-
-    const normalized = String(value).trim().toUpperCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[.\s-]+/g, "_");
-    const aliases = {
-        TECH_INFIRMIERE: "INFIRMIERE",
-        GENIE_CIVIL: "GENIE_CIVIL",
-        DESIGN_GRAPHIQUE: "DESIGN_GRAPHIQUE",
-    };
-    const disciplineKey = aliases[normalized] ?? normalized;
-
-    return t(`employerOffers.disciplines.${disciplineKey}`, {defaultValue: value});
-}
-
-function formatSalary(value, language, t) {
-    if (!hasValue(value)) return t("studentOffers.details.unpaid");
-
-    const amount = Number(value);
-    if (!Number.isFinite(amount)) return String(value);
-
-    return `${new Intl.NumberFormat(language === "en" ? "en-CA" : "fr-CA", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(amount)} ${t("employerOffers.units.hourlyRate")}`;
-}
-
-function truncateDescription(value, length = 155) {
-    const description = String(value ?? "").trim();
-    if (description.length <= length) return description;
-    return `${description.slice(0, length).trimEnd()}…`;
-}
-
 function ApplicationModal({offer, cv, t, onClose, onSubmitted}) {
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
@@ -315,7 +256,7 @@ function OfferDetails({offer, language, t, onClose, studentCv, alreadyApplied, o
                         </span>
                         <h2 id="student-offer-details-title"
                             className="mt-4 text-2xl font-black tracking-tight text-ink sm:text-3xl">
-                            {offer.title || t("studentOffers.untitled")}
+                            {formatOfferTitle(offer.title) || t("studentOffers.untitled")}
                         </h2>
                         {offer.company && <p className="mt-2 text-base font-bold text-ink-soft">{offer.company}</p>}
                     </div>
@@ -619,7 +560,8 @@ export default function EtudiantAccueil({user}) {
                                             <span className="h-1 w-1 shrink-0 self-center rounded-full bg-line"
                                                   aria-hidden="true"/>
                                         </>}
-                                        <span className="shrink-0">{formatSalary(offer.salary, language, t)}</span>
+                                        <span
+                                            className="shrink-0">{formatSalary(offer.salary, language, t, "studentOffers.details.unpaid")}</span>
                                     </div>
                                     <span
                                         className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-bold text-ink-soft transition-colors group-hover:text-ink sm:text-sm"><span

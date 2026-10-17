@@ -66,4 +66,15 @@ public class ApplicationStageController {
 
         return applicationStageService.findApplicationsForStudent(utilisateur);
     }
+
+    @GetMapping("/offer/{offreId}")
+    public List<ApplicationStageDTO> getApplicationsForOffer(
+            @PathVariable Long offreId,
+            Authentication authentication
+    ) throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.findApplicationsForEmployer(utilisateur, offreId);
+    }
 }
