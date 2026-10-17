@@ -6,8 +6,10 @@ import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.CreateEntrevueDTO;
 import com.lacouf.rsbjwt.service.dto.EntrevueDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,10 +25,13 @@ public class EntrevueService {
     private final EntrevueRepository interviewRepository;
     private final UtilisateurRepository userRepository;
     private final DocumentRepository documentRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public EntrevueDTO scheduleInterview(String employerEmail, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
+    public EntrevueDTO scheduleInterview(HttpServletRequest request, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
         validateRequiredFields(interviewDTO);
         validateFutureDate(interviewDTO);
+
+        String employerEmail = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
 
         Employeur employer = findEmployerByEmail(employerEmail);
         Etudiant student = findStudent(interviewDTO.studentId());

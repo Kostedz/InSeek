@@ -5,6 +5,7 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.service.EntrevueService;
 import com.lacouf.rsbjwt.service.dto.CreateEntrevueDTO;
 import com.lacouf.rsbjwt.service.dto.EntrevueDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +21,9 @@ public class EntrevueController {
 
 
     @PostMapping("/schedule")
-    public ResponseEntity<?> scheduleInterview(@RequestBody CreateEntrevueDTO InterviewDTO, Authentication authentication) {
+    public ResponseEntity<?> scheduleInterview(@RequestBody CreateEntrevueDTO InterviewDTO, HttpServletRequest request) {
         try{
-            String employeurEmail = authentication.getName();
-            EntrevueDTO savedInterview = interviewService.scheduleInterview(employeurEmail, InterviewDTO);
+            EntrevueDTO savedInterview = interviewService.scheduleInterview(request, InterviewDTO);
             return ResponseEntity.ok(savedInterview);
         } catch(BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

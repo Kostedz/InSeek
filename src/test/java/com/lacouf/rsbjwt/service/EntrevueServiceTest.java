@@ -6,8 +6,10 @@ import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.CreateEntrevueDTO;
 import com.lacouf.rsbjwt.service.dto.EntrevueDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,11 +37,18 @@ public class EntrevueServiceTest {
     private UtilisateurRepository userRepository;
     @Mock
     private DocumentRepository documentRepository;
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+    @Mock
+    private HttpServletRequest request;
 
     @InjectMocks
     private EntrevueService entrevueService;
 
     private static final String EMPLOYER_EMAIL = "employer@example.com";
+    private static final String TOKEN = "test-token";
+    private static final String AUTHORIZATION_HEADER = "Bearer " + TOKEN;
+
     private static final Long EMPLOYER_ID = 1L;
     private static final Long STUDENT_ID = 2L;
     private static final Long OFFER_ID = 3L;
@@ -50,6 +59,11 @@ public class EntrevueServiceTest {
     void setUp() {
         validDto = new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, LocalDateTime.now().plusDays(1),
                 ModeEntrevue.VIDEO_CALL, "https://meet.example.com/abc", "Bienvenue");
+        lenient().when(request.getHeader("Authorization"))
+                .thenReturn(AUTHORIZATION_HEADER);
+
+        lenient().when(jwtTokenProvider.getEmailFromJWT(TOKEN))
+                .thenReturn(EMPLOYER_EMAIL);
     }
 
 
@@ -67,7 +81,7 @@ public class EntrevueServiceTest {
         when(documentRepository.findInternshipOfferById(OFFER_ID)).thenReturn(Optional.of(offer));
         when(interviewRepository.save(any(Entrevue.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        EntrevueDTO result = entrevueService.scheduleInterview(EMPLOYER_EMAIL, validDto);
+        EntrevueDTO result = entrevueService.scheduleInterview(request, validDto);
 
         ArgumentCaptor<Entrevue> captor = ArgumentCaptor.forClass(Entrevue.class);
         verify(interviewRepository).save(captor.capture());
@@ -109,9 +123,9 @@ public class EntrevueServiceTest {
     @MethodSource("invalidDtos")
     void scheduleInterview_missingField_throwsBadRequest(CreateEntrevueDTO invalid) {
         assertThrows(BadRequestException.class,
-                () -> entrevueService.scheduleInterview(EMPLOYER_EMAIL, invalid));
+                () -> entrevueService.scheduleInterview(request, invalid));
 
-        verifyNoInteractions(interviewRepository, userRepository, documentRepository);
+        verifyNoInteractions(interviewRepository, userRepository, documentRepository, jwtTokenProvider);
     }
 
     @Test
@@ -120,7 +134,7 @@ public class EntrevueServiceTest {
                 ModeEntrevue.VIDEO_CALL, "https://meet.example.com/abc", "cliquez ici pour rejoindre");
 
         assertThrows(BadRequestException.class,
-                () -> entrevueService.scheduleInterview(EMPLOYER_EMAIL, past));
+                () -> entrevueService.scheduleInterview(request, past));
 
         verifyNoInteractions(interviewRepository, userRepository, documentRepository);
     }
@@ -130,7 +144,7 @@ public class EntrevueServiceTest {
         when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(null);
 
         assertThrows(NotFoundException.class,
-                () -> entrevueService.scheduleInterview(EMPLOYER_EMAIL, validDto));
+                () -> entrevueService.scheduleInterview(request, validDto));
 
         verify(interviewRepository, never()).save(any());
     }
@@ -140,7 +154,7 @@ public class EntrevueServiceTest {
         when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(mock(Etudiant.class));
 
         assertThrows(NotFoundException.class,
-                () -> entrevueService.scheduleInterview(EMPLOYER_EMAIL, validDto));
+                () -> entrevueService.scheduleInterview(request, validDto));
 
         verify(interviewRepository, never()).save(any());
     }
@@ -152,7 +166,7 @@ public class EntrevueServiceTest {
         when(userRepository.findById(STUDENT_ID)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> entrevueService.scheduleInterview(EMPLOYER_EMAIL, validDto));
+                () -> entrevueService.scheduleInterview(request, validDto));
 
         verify(interviewRepository, never()).save(any());
     }
@@ -164,7 +178,7 @@ public class EntrevueServiceTest {
         when(documentRepository.findInternshipOfferById(OFFER_ID)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> entrevueService.scheduleInterview(EMPLOYER_EMAIL, validDto));
+                () -> entrevueService.scheduleInterview(request, validDto));
 
         verify(interviewRepository, never()).save(any());
     }

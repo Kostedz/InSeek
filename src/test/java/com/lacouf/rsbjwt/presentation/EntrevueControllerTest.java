@@ -3,7 +3,6 @@ package com.lacouf.rsbjwt.presentation;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.ModeEntrevue;
-import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.EntrevueService;
 import com.lacouf.rsbjwt.service.dto.CreateEntrevueDTO;
 import com.lacouf.rsbjwt.service.dto.EntrevueDTO;
@@ -18,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
 
@@ -31,10 +29,6 @@ public class EntrevueControllerTest {
 
     @Mock
     private EntrevueService interviewService;
-    @Mock
-    private Authentication authentication;
-    @Mock
-    private AuthService authService;
     @Mock
     private HttpServletRequest request;
 
@@ -49,7 +43,6 @@ public class EntrevueControllerTest {
     void setUp() {
         createEntrevueDTO = new CreateEntrevueDTO(2L, 3L, LocalDateTime.now().plusDays(1),
                 ModeEntrevue.IN_PERSON, "Salle 101", "Bienvenue");
-        when(authentication.getName()).thenReturn(EMPLOYER_EMAIL);
     }
 
 
@@ -60,9 +53,9 @@ public class EntrevueControllerTest {
                 .DateAndTime(createEntrevueDTO.DateAndTime()).mode(createEntrevueDTO.mode())
                 .locationOrLink(createEntrevueDTO.locationOrLink()).message(createEntrevueDTO.message())
                 .build();
-        when(interviewService.scheduleInterview(EMPLOYER_EMAIL, createEntrevueDTO)).thenReturn(saved);
+        when(interviewService.scheduleInterview(request, createEntrevueDTO)).thenReturn(saved);
 
-        ResponseEntity<?> response = controller.scheduleInterview(createEntrevueDTO, authentication);
+        ResponseEntity<?> response = controller.scheduleInterview(createEntrevueDTO, request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(saved, response.getBody());
@@ -70,10 +63,10 @@ public class EntrevueControllerTest {
 
     @Test
     void scheduleInterview_badRequest_returns400WithMessage() throws Exception {
-        when(interviewService.scheduleInterview(EMPLOYER_EMAIL, createEntrevueDTO))
+        when(interviewService.scheduleInterview(request, createEntrevueDTO))
                 .thenThrow(new BadRequestException("champs invalides"));
 
-        ResponseEntity<?> response = controller.scheduleInterview(createEntrevueDTO, authentication);
+        ResponseEntity<?> response = controller.scheduleInterview(createEntrevueDTO, request);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("champs invalides", response.getBody());
@@ -81,10 +74,10 @@ public class EntrevueControllerTest {
 
     @Test
     void scheduleInterview_notFound_returns404WithMessage() throws Exception {
-        when(interviewService.scheduleInterview(EMPLOYER_EMAIL, createEntrevueDTO))
+        when(interviewService.scheduleInterview(request, createEntrevueDTO))
                 .thenThrow(new NotFoundException("Étudiant non trouvé"));
 
-        ResponseEntity<?> response = controller.scheduleInterview(createEntrevueDTO, authentication);
+        ResponseEntity<?> response = controller.scheduleInterview(createEntrevueDTO, request);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals("Étudiant non trouvé", response.getBody());
