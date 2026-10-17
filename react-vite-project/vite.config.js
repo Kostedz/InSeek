@@ -10,5 +10,9 @@ export default defineConfig({
     ],
     server: {
         port: 3000, // Specify the development server port
+        fs: {
+            // Allow serving files from node_modules or specific packages
+            allow: ['..', 'node_modules/pdfjs-dist']
+        }
     },
 });

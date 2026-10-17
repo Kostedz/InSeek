@@ -51,7 +51,7 @@ export const api = {
         }),
 
         uploadCv: (file, documentType = "CV") => {
-            const formData = new FormData();
+        const formData = new FormData();
             formData.append("file", file);
 
             const formContentBlob = new Blob(
@@ -65,6 +65,15 @@ export const api = {
                 body: formData,
             });
         },
+
+        applyToOffer: (offerId) =>
+            fetcher(`/etudiant/offres/${encodeURIComponent(offerId)}/postuler`, {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+            }),
     },
 
     documents: {
@@ -121,6 +130,7 @@ export const api = {
                 body: JSON.stringify({ commentaire: comment }),
             }),
     },
+
 };
 
 export default api;
