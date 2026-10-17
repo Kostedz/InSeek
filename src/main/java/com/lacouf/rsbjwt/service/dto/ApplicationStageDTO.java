@@ -9,5 +9,7 @@ public record ApplicationStageDTO(
         LocalDate dateApplique,
         EtudiantDTO etudiantDTO,
         OffreDeStageDTO offreDeStageDTO,
-        StatutValidation statutValidation) {
+        StatutValidation statutValidation,
+        Long cvDocumentId,
+        String cvFileName) {
 }

@@ -168,7 +168,7 @@ function ApplicationModal({offer, cv, t, onClose, onSubmitted}) {
                                     <p className="mt-1 text-sm text-ink-soft">{t("studentOffers.application.cvStatus")}</p>
                                 </div>
                                 <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800">
-                                    {cv?.statut ?? "VALIDE"}
+                                    {t("studentCv.status.approved")}
                                 </span>
                             </div>
                         </div>

@@ -24,6 +24,15 @@ public interface ApplicationStageRepository extends JpaRepository<ApplicationSta
     boolean existsByOffreDeStageIdAndStatutValidation(Long offreDeStageId, StatutValidation statutValidation);
 
     @Query("""
+            SELECT CASE WHEN COUNT(application) > 0 THEN true ELSE false END
+            FROM ApplicationStage application
+            WHERE application.etudiant.id = :etudiantId
+              AND application.offreDeStage.utilisateur.id = :employeurId
+            """)
+    boolean existsByEtudiantIdAndEmployerId(@Param("etudiantId") Long etudiantId,
+                                            @Param("employeurId") Long employeurId);
+
+    @Query("""
             SELECT application.offreDeStage.id
             FROM ApplicationStage application
             WHERE application.etudiant.id = :etudiantId
