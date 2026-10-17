@@ -12,7 +12,10 @@ import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -25,6 +28,7 @@ public class ApplicationStageController {
 
     @PostMapping("/{offreId}")
     @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
     public ApplicationStageDTO addApplicationStage(
             @PathVariable Long offreId,
             Authentication authentication
@@ -43,5 +47,23 @@ public class ApplicationStageController {
                 utilisateur,
                 offreDeStage
         );
+    }
+
+    @GetMapping("/my-applications")
+    public List<Long> getMyApplications(Authentication authentication)
+            throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.findAppliedOfferIds(utilisateur);
+    }
+
+    @GetMapping("/my-applications/details")
+    public List<ApplicationStageDTO> getMyApplicationDetails(Authentication authentication)
+            throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.findApplicationsForStudent(utilisateur);
     }
 }
