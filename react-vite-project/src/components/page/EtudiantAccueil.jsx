@@ -4,38 +4,18 @@ import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import PdfPreview from "../PdfPreview.jsx";
-
-function normalizeStatus(value) {
-    const status = String(value ?? "").trim().toUpperCase();
-
-    if (["VALIDE", "VALIDATED", "APPROVED"].includes(status)) return "VALIDE";
-    if (["REJETE", "REJECTED", "REJECT"].includes(status)) return "REJETE";
-    return "EN_ATTENTE";
-}
-
-function hasValue(value) {
-    return value !== null && value !== undefined && String(value).trim() !== "";
-}
-
-function normalizeOffer(offer) {
-    return {
-        ...offer,
-        id: offer.id ?? offer.documentId,
-        fileName: offer.fileName ?? offer.filename ?? "",
-        statut: normalizeStatus(offer.statut ?? offer.status),
-        title: offer.position ?? offer.jobTitle ?? offer.title ?? "",
-        company: offer.nomEntreprise ?? offer.companyName ?? offer.company ?? "",
-        description: offer.descriptionPosition ?? offer.description ?? "",
-        publicationDate: offer.publishedAt ?? offer.datePublication ?? offer.createdAt ?? offer.updatedAt,
-        startDate: offer.dateDebutStage ?? offer.startDate,
-        endDate: offer.dateFinStage ?? offer.endDate,
-        address: offer.adresseEntreprise ?? offer.companyAddress ?? offer.location ?? "",
-        salary: offer.salaire ?? offer.salary ?? offer.hourlyPay,
-        contactName: offer.contactName ?? offer.contactPerson ?? "",
-        contactPhone: offer.contactPhone ?? offer.phone ?? "",
-        discipline: offer.targetDiscipline ?? offer.discipline ?? "",
-    };
-}
+import StudentMenu from "./StudentMenu.jsx";
+import {
+    formatDate,
+    formatDateRange,
+    formatDiscipline,
+    formatOfferTitle,
+    formatSalary,
+    hasValue,
+    normalizeOffer,
+    normalizeOfferStatus,
+    truncateDescription,
+} from "./studentOfferUtils.js";
 
 function normalizeStudentValue(value) {
     if (value && typeof value === "object") {
@@ -204,9 +184,6 @@ function ApplicationModal({offer, cv, t, onClose, onSubmitted}) {
                         <p className="mt-3 text-sm leading-7 text-ink-soft">
                             {t("studentOffers.application.successDescription")}
                         </p>
-                        <p className="mt-4 rounded-xl bg-lavender/30 px-4 py-3 text-sm font-bold text-ink">
-                            {t("studentOffers.application.status")}
-                        </p>
                         <button
                             type="button"
                             onClick={onClose}
@@ -227,7 +204,7 @@ function ApplicationModal({offer, cv, t, onClose, onSubmitted}) {
                                     className="mt-4 text-2xl font-black tracking-tight text-ink">
                                     {t("studentOffers.application.title")}
                                 </h2>
-                                <p className="mt-2 text-sm font-semibold text-ink-soft">{offer.title}</p>
+                                <p className="mt-2 text-sm font-semibold text-ink-soft">{formatOfferTitle(offer.title)}</p>
                             </div>
                             <button
                                 type="button"
@@ -362,7 +339,7 @@ function OfferDetails({offer, language, t, onClose, studentCv, alreadyApplied, o
                     </div>
                     <div className="rounded-2xl border border-line bg-canvas p-4">
                         <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("studentOffers.details.internshipPeriod")}</p>
-                        <p className="mt-1 text-sm font-semibold text-ink">{formatDateRange(offer.startDate, offer.endDate, language, t) || t("studentOffers.details.notSpecified")}</p>
+                        <p className="mt-1 text-sm font-semibold text-ink">{formatDateRange(offer.startDate, offer.endDate, language, t, "studentOffers.details")}</p>
                     </div>
                 </div>
 
@@ -385,7 +362,8 @@ function OfferDetails({offer, language, t, onClose, studentCv, alreadyApplied, o
                         <p className="mt-1 text-sm text-ink">{offer.address}</p></div>}
                     <div><p
                         className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("studentOffers.details.salary")}</p>
-                        <p className="mt-1 text-sm text-ink">{formatSalary(offer.salary, language, t)}</p></div>
+                        <p className="mt-1 text-sm text-ink">{formatSalary(offer.salary, language, t, "studentOffers.details.unpaid")}</p>
+                    </div>
                     {offer.contactName && <div><p
                         className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("studentOffers.details.contact")}</p>
                         <p className="mt-1 text-sm text-ink">{offer.contactName}</p></div>}
@@ -462,19 +440,32 @@ export default function EtudiantAccueil({user}) {
 
                 const cv = await cvResponse.json();
                 setStudentCv(cv);
-                const cvStatus = normalizeStatus(cv?.statut ?? cv?.status);
+                const cvStatus = normalizeOfferStatus(cv?.statut ?? cv?.status);
                 if (cvStatus !== "VALIDE") {
                     setCvState("blocked");
                     return;
                 }
 
-                const offersResponse = await api.student.getOffers();
-                if (!offersResponse.ok) throw new Error("student_offers_request_failed");
+                const [offersResponse, appliedOffersResponse] = await Promise.all([
+                    api.student.getOffers(),
+                    api.student.getAppliedOfferIds(),
+                ]);
+                if (!offersResponse.ok || !appliedOffersResponse.ok) {
+                    throw new Error("student_offers_request_failed");
+                }
 
-                const offersData = await offersResponse.json();
+                const [offersData, appliedOffersData] = await Promise.all([
+                    offersResponse.json(),
+                    appliedOffersResponse.json(),
+                ]);
+                const appliedIds = (Array.isArray(appliedOffersData) ? appliedOffersData : [])
+                    .filter((offerId) => offerId !== null && offerId !== undefined)
+                    .map((offerId) => String(offerId));
                 const visibleOffers = (Array.isArray(offersData) ? offersData : [])
                     .map(normalizeOffer)
-                    .filter((offer) => offer.statut === "VALIDE" && isVisibleToStudent(offer, user))
+                    .filter((offer) => offer.statut === "VALIDE"
+                        && isVisibleToStudent(offer, user)
+                        && !appliedIds.includes(String(offer.id)))
                     .sort((first, second) => {
                         const firstDate = new Date(first.publicationDate ?? 0).getTime();
                         const secondDate = new Date(second.publicationDate ?? 0).getTime();
@@ -482,6 +473,7 @@ export default function EtudiantAccueil({user}) {
                     });
 
                 if (isMounted) {
+                    setAppliedOfferIds(appliedIds);
                     setOffers(visibleOffers);
                     setCvState("ready");
                 }
@@ -525,6 +517,7 @@ export default function EtudiantAccueil({user}) {
                         <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("studentOffers.description")}</p>
                     </div>
                 </div>
+                <StudentMenu/>
 
                 {(cvState === "blocked" || cvState === "no-cv") && (
                     <div className="mt-8 rounded-2xl border border-lavender bg-lavender/35 p-6" role="alert">
@@ -609,7 +602,7 @@ export default function EtudiantAccueil({user}) {
                                 onClick={() => setSelectedOffer(offer)}
                                 className="group flex h-full flex-col rounded-[1.5rem] border border-line bg-surface p-6 text-left shadow-[0_12px_35px_rgba(48,35,55,0.05)] transition-all hover:-translate-y-0.5 hover:border-lavender hover:shadow-[0_18px_45px_rgba(48,35,55,0.1)] focus:outline-none focus:ring-4 focus:ring-pink/50"
                             >
-                                <h2 className="text-xl font-black tracking-tight text-ink">{offer.title || t("studentOffers.untitled")}</h2>
+                                <h2 className="text-xl font-black tracking-tight text-ink">{formatOfferTitle(offer.title) || t("studentOffers.untitled")}</h2>
                                 {offer.company &&
                                     <p className="mt-1 text-sm font-bold text-ink-soft">{offer.company}</p>}
                                 <p className="mt-4 flex-1 text-sm leading-6 text-ink-soft">{truncateDescription(offer.description) || t("studentOffers.noDescription")}</p>
@@ -644,9 +637,15 @@ export default function EtudiantAccueil({user}) {
                     language={language}
                     t={t}
                     studentCv={studentCv}
-                    alreadyApplied={appliedOfferIds.includes(selectedOffer.id)}
-                    onApplicationSubmitted={(offerId) => setAppliedOfferIds((current) =>
-                        current.includes(offerId) ? current : [...current, offerId])}
+                    alreadyApplied={appliedOfferIds.some((appliedId) =>
+                        String(appliedId) === String(selectedOffer.id))}
+                    onApplicationSubmitted={(offerId) => {
+                        setAppliedOfferIds((current) =>
+                            current.some((appliedId) => String(appliedId) === String(offerId))
+                                ? current
+                                : [...current, offerId]);
+                        setOffers((current) => current.filter((offer) => String(offer.id) !== String(offerId)));
+                    }}
                     onClose={() => setSelectedOffer(null)}
                 />
             )}

@@ -67,12 +67,22 @@ export const api = {
         },
 
         applyToOffer: (offerId) =>
-            fetcher(`/etudiant/offres/${encodeURIComponent(offerId)}/postuler`, {
+            fetcher(`/api/applications/${encodeURIComponent(offerId)}`, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json;charset=UTF-8",
                 },
+            }),
+
+        getAppliedOfferIds: () =>
+            fetcher("/api/applications/my-applications", {
+                headers: {Accept: "application/json"},
+            }),
+
+        getApplications: () =>
+            fetcher("/api/applications/my-applications/details", {
+                headers: {Accept: "application/json"},
             }),
     },
 
