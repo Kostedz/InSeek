@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt.service.dto;
 
 import com.lacouf.rsbjwt.model.Entrevue;
 import com.lacouf.rsbjwt.model.ModeEntrevue;
+import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -15,7 +16,10 @@ public record EntrevueDTO(
         LocalDateTime DateAndTime,
         ModeEntrevue mode,
         String locationOrLink,
-        String message
+        String message,
+        StatutConvocationEntrevue interviewInvitationStatus,
+        LocalDateTime invitationResponseDate,
+        String messageWhenRejected
 ) {
     public static EntrevueDTO of(Entrevue interview) {
         return new EntrevueDTO(
@@ -26,7 +30,10 @@ public record EntrevueDTO(
                 interview.getDateInterview(),
                 interview.getModeInterview(),
                 interview.getLocationOrLink(),
-                interview.getMessage()
+                interview.getMessage(),
+                interview.getInterviewInvitationStatus(),
+                interview.getInvitationResponseDate(),
+                interview.getMessageWhenRejected()
         );
     }
 }
