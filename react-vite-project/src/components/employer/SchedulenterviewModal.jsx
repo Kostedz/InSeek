@@ -1,21 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../utils/api.js";
 import { translateMessage } from "../../utils/i18nMessage.js";
 
 export default function ScheduleInterviewModal({ offerId, candidat, onClose, onSuccess }) {
     const { t } = useTranslation();
-    const [formData, setFormData] = useState({
-        date: "",
-        heure: "",
-        duree: "30",
-        mode: "VISIOCONFERENCE",
-        lieuOuLien: "",
-        message: "",
+
+    const storageKey = `interview_draft_${offerId}_${candidat?.id}`;
+
+    const [formData, setFormData] = useState(() => {
+        const savedDraft = sessionStorage.getItem(storageKey);
+        if (savedDraft) {
+            try {
+                return JSON.parse(savedDraft);
+            } catch (e) {
+           }
+        }
+        return {
+            date: "",
+            heure: "",
+            duree: "30",
+            mode: "VISIOCONFERENCE",
+            lieuOuLien: "",
+            message: "",
+        };
     });
+
     const [errors, setErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
     const [serverError, setServerError] = useState(null);
+
+    useEffect(() => {
+        sessionStorage.setItem(storageKey, JSON.stringify(formData));
+    }, [formData, storageKey]);
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -62,6 +87,8 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
             const response = await api.employer.offers.planifierEntrevue(offerId, candidat.id, payload);
             if (!response.ok) throw new Error("employerOffers.interviews.errors.submitFailed");
 
+            sessionStorage.removeItem(storageKey);
+
             onSuccess();
             onClose();
         } catch (err) {
@@ -72,8 +99,14 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-            <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-xl sm:p-8">
+        <div
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 p-4 overflow-y-auto backdrop-blur-sm"
+            role="presentation"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}
+        >
+            <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:p-8">
                 <div className="flex items-center justify-between border-b border-line pb-4">
                     <h2 className="text-xl font-black text-ink">
                         {t("employerOffers.interviews.title", "Planifier une entrevue")}
