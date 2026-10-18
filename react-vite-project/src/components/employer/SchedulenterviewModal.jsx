@@ -52,15 +52,17 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
 
     const validate = () => {
         const newErrors = {};
-        if (!formData.date) newErrors.date = "employerOffers.interviews.errors.dateRequired";
-        if (!formData.heure) newErrors.heure = "employerOffers.interviews.errors.timeRequired";
-        if (!formData.mode) newErrors.mode = "employerOffers.interviews.errors.modeRequired";
-        if (!formData.lieuOuLien) newErrors.lieuOuLien = "employerOffers.interviews.errors.locationRequired";
+        if (!formData.date) newErrors.date = t("employerOffers.interviews.errors.dateRequired");
+        if (!formData.heure) newErrors.heure = t("employerOffers.interviews.errors.timeRequired");
+        if (!formData.mode) newErrors.mode = t("employerOffers.interviews.errors.modeRequired");
+        if (!formData.lieuOuLien || !formData.lieuOuLien.trim()) {
+            newErrors.lieuOuLien = t("employerOffers.interviews.errors.locationOrLinkRequired", "Le lieu ou le lien est requis.");
+        }
 
         if (formData.date && formData.heure) {
             const selectedDateTime = new Date(`${formData.date}T${formData.heure}`);
             if (selectedDateTime <= new Date()) {
-                newErrors.date = "employerOffers.interviews.errors.dateInPast";
+                newErrors.date = t("employerOffers.interviews.errors.dateInPast");
             }
         }
 
