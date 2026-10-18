@@ -6,6 +6,7 @@ import Loading from "../Loading.jsx";
 import ErrorPage from "../ErrorPage.jsx";
 import PdfPreview from "../PdfPreview.jsx";
 import {formatOfferTitle} from "./studentOfferUtils.js";
+import ScheduleInterviewModal from "../employer/SchedulenterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -315,7 +316,7 @@ function ApplicationDocument({icon, label, fileName, documentId, t}) {
     );
 }
 
-function ApplicationDetails({application, language, onBack, onClose}) {
+function ApplicationDetails({application, language, onBack, onClose, onScheduleInterview}) {
     const {t} = useTranslation();
     const hasContactDetails = application.email || application.phone || application.address;
 
@@ -396,13 +397,23 @@ function ApplicationDetails({application, language, onBack, onClose}) {
                                                  t={t}/>
                         </div>
                     </section>
+
+                    <div className="mt-6 pt-5 border-t border-line flex justify-end">
+                        <button
+                            type="button"
+                            onClick={() => onScheduleInterview(application)}
+                            className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink-soft transition-colors"
+                        >
+                            {t("employerOffers.interviews.title", "Planifier une entrevue")}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-function ApplicationsModal({offer, applications, language, onClose, isLoading, error}) {
+function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview}) {
     const {t} = useTranslation();
     const [selectedApplication, setSelectedApplication] = useState(null);
 
@@ -423,9 +434,21 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
     }, [onClose, selectedApplication]);
 
     if (selectedApplication) {
+        return (
+            <ApplicationDetails
+                application={selectedApplication}
+                language={language}
+                onBack={() => setSelectedApplication(null)}
+                onClose={onClose}
+                onScheduleInterview={onScheduleInterview}
+            />
+        );
+    }
+
+   /** if (selectedApplication) {
         return <ApplicationDetails application={selectedApplication} language={language}
                                    onBack={() => setSelectedApplication(null)} onClose={onClose}/>;
-    }
+    }**/
 
     return (
         <div
@@ -582,6 +605,7 @@ export default function EmployeurOffres({
     const [applicationsError, setApplicationsError] = useState("");
     const [isFileCleared, setIsFileCleared] = useState(false);
     const [localDrafts, setLocalDrafts] = useState({});
+    const [interviewCandidate, setInterviewCandidate] = useState(null);
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
@@ -1343,6 +1367,23 @@ export default function EmployeurOffres({
                             onClose={() => {
                                 setIsApplicationsOpen(false);
                                 setApplicationsOffer(null);
+                            }}
+                            onScheduleInterview={(candidate) => {
+                                setIsApplicationsOpen(false);
+                                setApplicationsOffer(null);
+                                setInterviewCandidate(candidate);
+                            }}
+                        />
+                    )}
+
+                    {interviewCandidate && (
+                        <ScheduleInterviewModal
+                            offerId={selectedOffer?.id ?? applicationsOffer?.id}
+                            candidat={interviewCandidate}
+                            onClose={() => setInterviewCandidate(null)}
+                            onSuccess={() => {
+                                setInterviewCandidate(null);
+                                setSuccessMessage(t("employerOffers.interviews.success.planned", "Entrevue planifiée avec succès."));
                             }}
                         />
                     )}
