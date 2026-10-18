@@ -94,7 +94,7 @@ public class EntrevueServiceTest {
         assertEquals(validDto.locationOrLink(), saved.getLocationOrLink());
         assertEquals(validDto.message(), saved.getMessage());
 
-        verify(student).setDateEnterview(validDto.DateAndTime());
+        verify(student).setDateInterview(validDto.DateAndTime());
         verify(student).setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
 
         assertEquals(EMPLOYER_ID, result.employerId());
