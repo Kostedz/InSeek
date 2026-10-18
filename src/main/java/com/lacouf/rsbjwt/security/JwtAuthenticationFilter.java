@@ -48,12 +48,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 tokenProvider.validateToken(token);
                 String email = tokenProvider.getEmailFromJWT(token);
                 Utilisateur user = utilisateurRepository.findByEmail(email);
-                Collection<? extends GrantedAuthority> authorities = authoritiesFor(email, user);
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        user.getEmail(), null, authorities
-                );
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                if (user != null) {
+                    Collection<? extends GrantedAuthority> authorities = authoritiesFor(email, user);
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            user.getEmail(), null, authorities
+                    );
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                } else {
+                    logger.warn("JWT token provided for non-existent user: " + email);
+                }
             } catch (Exception e) {
                 logger.error("Could not set user authentication in security context", e);
             }
