@@ -83,6 +83,11 @@ function normalizeApplication(application, index = 0) {
     return {
         ...application,
         id: application?.id ?? application?.applicationId ?? `application-${index}`,
+        studentId: application?.studentId
+            ?? application?.etudiantId
+            ?? application?.idEtudiant
+            ?? student.id
+            ?? null,
         firstName,
         lastName,
         name: String(fullName || "").trim(),
@@ -401,7 +406,13 @@ function ApplicationDetails({application, language, onBack, onClose, onScheduleI
                     <div className="mt-6 pt-5 border-t border-line flex justify-end">
                         <button
                             type="button"
-                            onClick={() => onScheduleInterview(application)}
+                            onClick={() =>{
+                                console.log("Full application object:", application);
+                                onScheduleInterview({
+                                    application,
+                                    id: application.studentId,
+                                });
+                            }}
                             className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink-soft transition-colors"
                         >
                             {t("employerOffers.interviews.title", "Planifier une entrevue")}
@@ -606,6 +617,7 @@ export default function EmployeurOffres({
     const [isFileCleared, setIsFileCleared] = useState(false);
     const [localDrafts, setLocalDrafts] = useState({});
     const [interviewCandidate, setInterviewCandidate] = useState(null);
+    const [interviewOfferId, setInterviewOfferId] = useState(null);
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
@@ -1020,6 +1032,10 @@ export default function EmployeurOffres({
     if (isLoadingOffers) return <Loading/>;
     if (loadError) return <ErrorPage error={loadError}/>;
 
+    if (interviewCandidate) {
+        console.log("Modal Render Check - selectedOffer:", selectedOffer?.id, "applicationsOffer:", applicationsOffer?.id, "candidate:", interviewCandidate);
+    }
+
     return (
         <section className="flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">
@@ -1369,6 +1385,7 @@ export default function EmployeurOffres({
                                 setApplicationsOffer(null);
                             }}
                             onScheduleInterview={(candidate) => {
+                                setInterviewOfferId(applicationsOffer?.id ?? null);
                                 setIsApplicationsOpen(false);
                                 setApplicationsOffer(null);
                                 setInterviewCandidate(candidate);
@@ -1378,13 +1395,10 @@ export default function EmployeurOffres({
 
                     {interviewCandidate && (
                         <ScheduleInterviewModal
-                            offerId={selectedOffer?.id ?? applicationsOffer?.id}
+                            offerId={interviewOfferId}
                             candidat={interviewCandidate}
                             onClose={() => setInterviewCandidate(null)}
-                            onSuccess={() => {
-                                setInterviewCandidate(null);
-                                setSuccessMessage(t("employerOffers.interviews.success.planned", "Entrevue planifiée avec succès."));
-                            }}
+                            onSuccess={() => {}}
                         />
                     )}
                 </div>

@@ -27,6 +27,7 @@ public class EntrevueService {
     private final DocumentRepository documentRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Transactional
     public EntrevueDTO scheduleInterview(HttpServletRequest request, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
         validateRequiredFields(interviewDTO);
         validateFutureDate(interviewDTO);
