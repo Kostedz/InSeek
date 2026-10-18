@@ -95,6 +95,7 @@ export const api = {
     employer: {
         offers: {
             list: () => fetcher("/employeur/offres", {
+                cache: "no-store",
                 headers: {Accept: "application/json"},
             }),
 
@@ -117,6 +118,12 @@ export const api = {
                     "Content-Type": "application/json;charset=UTF-8",
                 },
                 body: JSON.stringify(payload),
+            }),
+        },
+        applications: {
+            list: (offerId) => fetcher(`/api/applications/offer/${encodeURIComponent(offerId)}`, {
+                cache: "no-store",
+                headers: {Accept: "application/json"},
             }),
         },
     },

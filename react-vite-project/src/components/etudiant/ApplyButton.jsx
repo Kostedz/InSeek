@@ -19,7 +19,7 @@ export default function ApplyButton({ offerId, initialApplied = false, onApplied
             if (!response.ok) {
                 if (response.status === 400 || response.status === 409) {
                     setHasApplied(true);
-                    setErrorMsg(t("studentOffers.offres.errors.alreadyApplied", "Déjà postulé"));
+                    setErrorMsg(t("studentOffers.application.errors.alreadySubmitted"));
                     return;
                 }
                 throw new Error("apply_failed");
@@ -30,7 +30,7 @@ export default function ApplyButton({ offerId, initialApplied = false, onApplied
                 onAppliedSuccess(offerId);
             }
         } catch {
-            setErrorMsg(t("errors.requestFailedGeneric", "Une erreur est survenue"));
+            setErrorMsg(t("errors.requestFailedGeneric"));
         } finally {
             setApplying(false);
         }
@@ -49,10 +49,10 @@ export default function ApplyButton({ offerId, initialApplied = false, onApplied
                 }`}
             >
                 {hasApplied
-                    ? t("studentOffers.offres.applied", "Candidature transmise")
+                    ? t("studentOffers.application.alreadySubmittedButton")
                     : applying
-                        ? t("studentOffers.offres.applying", "Envoi…")
-                        : t("studentOffers.offres.apply", "Postuler")}
+                        ? t("studentOffers.application.submitting")
+                        : t("studentOffers.application.apply")}
             </button>
 
             {errorMsg && (
