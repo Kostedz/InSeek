@@ -7,6 +7,8 @@ import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.OffreDeStage;
 import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.ApplicationStage;
+import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import jakarta.transaction.Transactional;
@@ -49,6 +51,7 @@ public class DevDemoScenarioService {
             """.getBytes(StandardCharsets.US_ASCII);
 
     private final DocumentRepository documentRepository;
+    private final ApplicationStageRepository applicationStageRepository;
     private final UtilisateurRepository utilisateurRepository;
 
     @Transactional
@@ -64,7 +67,8 @@ public class DevDemoScenarioService {
         }
 
         prepareValidatedCv(etudiant);
-        prepareValidatedOffers(employeur);
+        List<OffreDeStage> offers = prepareValidatedOffers(employeur);
+        prepareDemoApplications(etudiant, offers);
     }
 
     private void prepareValidatedCv(Etudiant student) {
@@ -90,8 +94,9 @@ public class DevDemoScenarioService {
         documentRepository.save(cv);
     }
 
-    private void prepareValidatedOffers(Employeur employer) {
+    private List<OffreDeStage> prepareValidatedOffers(Employeur employer) {
         List<OffreDeStage> existingOffers = documentRepository.findOffersByEmployer(employer);
+        List<OffreDeStage> preparedOffers = new java.util.ArrayList<>();
         List<Disciplines> disciplines = Arrays.asList(Disciplines.values());
         LocalDate firstStartDate = LocalDate.now().plusDays(7);
 
@@ -129,7 +134,24 @@ public class DevDemoScenarioService {
             offer.setContentType("application/pdf");
             offer.setSize(DEMO_PDF.length);
             offer.setUpdatedAt(LocalDateTime.now());
-            documentRepository.save(offer);
+            preparedOffers.add(documentRepository.save(offer));
         }
+
+        return preparedOffers;
+    }
+
+    private void prepareDemoApplications(Etudiant student, List<OffreDeStage> offers) {
+        offers.stream()
+                .limit(3)
+                .forEach(offer -> {
+                    if (applicationStageRepository.findByEtudiantIdAndOffreDeStageId(student.getId(), offer.getId()).isPresent()) {
+                        return;
+                    }
+
+                    ApplicationStage application = new ApplicationStage();
+                    application.setEtudiant(student);
+                    application.setOffreDeStage(offer);
+                    applicationStageRepository.save(application);
+                });
     }
 }

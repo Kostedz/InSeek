@@ -27,6 +27,7 @@ public class EntrevueService {
     private final DocumentRepository documentRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Transactional
     public EntrevueDTO scheduleInterview(HttpServletRequest request, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
         validateRequiredFields(interviewDTO);
         validateFutureDate(interviewDTO);
@@ -87,7 +88,7 @@ public class EntrevueService {
     }
 
     private OffreDeStage findInternshipOffer(Long offerId) throws NotFoundException {
-        return documentRepository.findInternshipOfferById(offerId)
+        return documentRepository.findOffreStageById(offerId)
                 .orElseThrow(() -> new NotFoundException("Offre de stage non trouvée."));
     }
 

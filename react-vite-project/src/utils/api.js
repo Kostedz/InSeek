@@ -67,12 +67,22 @@ export const api = {
         },
 
         applyToOffer: (offerId) =>
-            fetcher(`/etudiant/offres/${encodeURIComponent(offerId)}/postuler`, {
+            fetcher(`/api/applications/${encodeURIComponent(offerId)}`, {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json;charset=UTF-8",
                 },
+            }),
+
+        getAppliedOfferIds: () =>
+            fetcher("/api/applications/my-applications", {
+                headers: {Accept: "application/json"},
+            }),
+
+        getApplications: () =>
+            fetcher("/api/applications/my-applications/details", {
+                headers: {Accept: "application/json"},
             }),
     },
 
@@ -85,6 +95,7 @@ export const api = {
     employer: {
         offers: {
             list: () => fetcher("/employeur/offres", {
+                cache: "no-store",
                 headers: {Accept: "application/json"},
             }),
 
@@ -97,16 +108,27 @@ export const api = {
                 method: "PUT",
                 body: formData,
             }),
-            getCandidats: (offerId) => fetcher(`/employeur/offres/${offerId}/candidats`, {
-                headers: { Accept: "application/json" },
-            }),
-            planifierEntrevue: (offerId, candidatId, payload) => fetcher(`/employeur/offres/${offerId}/candidats/${candidatId}/entrevue`, {
+            planifierEntrevue: (offerId, candidatId, payload) => fetcher("/interviews/schedule", {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json;charset=UTF-8",
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({
+                    offerId: Number(offerId),
+                    studentId: Number(candidatId),
+                    DateAndTime: payload.dateHeure,
+                    dateAndTime: payload.dateHeure,
+                    mode: payload.mode,
+                    locationOrLink: payload.lieuOuLien,
+                    message: payload.messageOptionnel || "",
+                }),
+            }),
+        },
+        applications: {
+            list: (offerId) => fetcher(`/api/applications/offer/${encodeURIComponent(offerId)}`, {
+                cache: "no-store",
+                headers: {Accept: "application/json"},
             }),
         },
     },
