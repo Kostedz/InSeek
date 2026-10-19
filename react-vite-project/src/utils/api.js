@@ -46,7 +46,7 @@ export const api = {
             headers: {Accept: "application/json"},
         }),
 
-        getOffers: () => fetcher("/documents/stage", {
+        getOffers: () => fetcher("/documents/stages", {
             headers: {Accept: "application/json"},
         }),
 
