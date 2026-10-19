@@ -16,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.IOException;
@@ -331,5 +332,92 @@ public class DocumentServiceTest {
 
         assertNotNull(result);
         assertInstanceOf(OffreDeStageDTO.class, result);
+    }
+
+    @Test
+    @DisplayName("findStagesByDiscipline - should return stages matching student's discipline")
+    public void testFindStagesByDiscipline() throws NotFoundException, BadRequestException {
+        OffreDeStage offer = OffreDeStage.builder()
+                .id(17L)
+                .fileName("offer.pdf")
+                .targetDiscipline(Disciplines.INFORMATIQUE)
+                .employeur(employeur)
+                .position("Développeur Java")
+                .descriptionPosition("Développement Spring Boot")
+                .dateDebutStage(LocalDate.now())
+                .dateFinStage(LocalDate.now().plusDays(30))
+                .adresseEntreprise("Montréal")
+                .build();
+
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt"))
+                .thenReturn("test@example.com");
+        when(utilisateurService.findEntityByEmail("test@example.com"))
+                .thenReturn(etudiant);
+        when(documentRepository.findOffreStageByTargetDiscipline(Disciplines.INFORMATIQUE))
+                .thenReturn(List.of(offer));
+
+        List<OffreDeStageDTO> result =
+                documentService.findStagesByDiscipline(request);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(17L, result.getFirst().id());
+
+        verify(jwtTokenProvider).getEmailFromJWT("fake-jwt");
+        verify(utilisateurService).findEntityByEmail("test@example.com");
+        verify(documentRepository)
+                .findOffreStageByTargetDiscipline(Disciplines.INFORMATIQUE);
+    }
+
+    @Test
+    @DisplayName("findStagesByDiscipline - should reject a non-student user")
+    public void testFindStagesByDisciplineNonStudent()
+            throws NotFoundException, BadRequestException {
+
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt"))
+                .thenReturn("employeur@example.com");
+        when(utilisateurService.findEntityByEmail("employeur@example.com"))
+                .thenReturn(employeur);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> documentService.findStagesByDiscipline(request)
+        );
+
+        assertEquals(
+                "Seul un étudiant peut consulter les stages par discipline",
+                exception.getMessage()
+        );
+
+        verify(jwtTokenProvider).getEmailFromJWT("fake-jwt");
+        verify(utilisateurService).findEntityByEmail("employeur@example.com");
+        verify(documentRepository, never())
+                .findOffreStageByTargetDiscipline(any());
+    }
+
+    @Test
+    @DisplayName("findStagesByDiscipline - should reject an unauthenticated user")
+    public void testFindStagesByDisciplineUnauthenticated()
+            throws NotFoundException, BadRequestException {
+
+        when(jwtTokenProvider.getEmailFromJWT("fake-jwt"))
+                .thenReturn("unknown@example.com");
+        when(utilisateurService.findEntityByEmail("unknown@example.com"))
+                .thenReturn(null);
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> documentService.findStagesByDiscipline(request)
+        );
+
+        assertEquals(
+                "Utilisateur non authentifié",
+                exception.getMessage()
+        );
+
+        verify(jwtTokenProvider).getEmailFromJWT("fake-jwt");
+        verify(utilisateurService).findEntityByEmail("unknown@example.com");
+        verify(documentRepository, never())
+                .findOffreStageByTargetDiscipline(any());
     }
 }
