@@ -183,6 +183,39 @@ public class DocumentControllerTest {
     }
 
     @Test
+    @DisplayName("Get les stages par /documents/stages - Success")
+    void getStagesSuccess() throws Exception {
+        when(documentService.findStagesByDiscipline(any(HttpServletRequest.class)))
+                .thenReturn(List.of(offerDto()));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/documents/stages")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Get les stages par /documents/stages - NotFoundException")
+    void getStagesNotFound() throws Exception {
+        when(documentService.findStagesByDiscipline(any(HttpServletRequest.class)))
+                .thenThrow(new NotFoundException("No utilisateurs found"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/documents/stages")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Get les stages par /documents/stages - BadRequestException")
+    void getStagesBadRequest() throws Exception {
+        when(documentService.findStagesByDiscipline(any(HttpServletRequest.class)))
+                .thenThrow(new BadRequestException("Invalid request"));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/documents/stages")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("Lister les offres de l'employeur par GET /employeur/offres - Success")
     void listEmployerOffers() throws Exception {
         when(documentService.findOffersForEmployer(any(HttpServletRequest.class)))
