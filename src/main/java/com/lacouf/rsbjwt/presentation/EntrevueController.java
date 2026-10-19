@@ -30,9 +30,11 @@ public class EntrevueController {
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+
+
     }
 
-    @PutMapping("/schedule")
+    @PutMapping("/update")
     public ResponseEntity<?> updateInterview(@RequestBody CreateEntrevueDTO InterviewDTO, HttpServletRequest request) {
         try {
             EntrevueDTO updatedInterview = interviewService.updateInterview(request, InterviewDTO);

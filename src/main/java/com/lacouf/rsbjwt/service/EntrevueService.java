@@ -38,11 +38,11 @@ public class EntrevueService {
         Etudiant student = findStudent(interviewDTO.studentId());
         OffreDeStage internshipOffer = findInternshipOffer(interviewDTO.offerId());
 
-        Entrevue interview = createInterview(employer, student, internshipOffer, interviewDTO);
-
         validateNoExistingInterview(student, internshipOffer);
 
-        updateStudent(student, interviewDTO);
+        Entrevue interview = createInterview(employer, student, internshipOffer, interviewDTO);
+
+       updateStudent(student, interviewDTO);
 
         return EntrevueDTO.of(interview);
 

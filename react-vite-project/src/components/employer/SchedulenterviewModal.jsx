@@ -12,8 +12,10 @@ const DEFAULT_FORM_STATE = {
     message: "",
 };
 
-export default function ScheduleInterviewModal({ offerId, candidat, onClose, onSuccess }) {
+export default function ScheduleInterviewModal({ offerId, candidat, initialData, onClose, onSuccess }) {
     const { t } = useTranslation();
+    const [isEdit, setIsEdit] = useState(Boolean(candidat?.isEdit));
+    const [submittedData, setSubmittedData] = useState(null);
 
     const storageKey = `interview_draft_${offerId}_${candidat?.id}`;
 
@@ -29,7 +31,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                 // Ignorer les erreurs de parsing
             }
         }
-        return DEFAULT_FORM_STATE;
+        return initialData ?? DEFAULT_FORM_STATE;
     });
 
     const [errors, setErrors] = useState({});
@@ -101,8 +103,8 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                 messageOptionnel: formData.message.trim(),
             };
 
-            const response = await api.employer.offers.planifierEntrevue(offerId, candidat?.id, payload);
-
+            const call = isEdit ? api.employer.offers.modifierEntrevue : api.employer.offers.planifierEntrevue;
+            const response = await call(offerId, candidat.id, payload);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.messageKey || errorData.message || "employerOffers.interviews.errors.submitFailed");
@@ -110,12 +112,14 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
 
             sessionStorage.removeItem(storageKey);
 
+            setSubmittedData(formData);
+
             setFormData(DEFAULT_FORM_STATE);
             setErrors({});
 
             setIsSuccess(true);
 
-            if (onSuccess) onSuccess();
+            if (onSuccess) onSuccess(formData);
         } catch (err) {
             setServerError({ key: err.message || "employerOffers.interviews.errors.submitFailed" });
         } finally {
@@ -139,7 +143,9 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
             <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:p-8">
                 <div className="flex items-center justify-between border-b border-line pb-4">
                     <h2 className="text-xl font-black text-ink">
-                        {t("employerOffers.interviews.title", "Planifier une entrevue")}
+                        {isEdit
+                            ? t("employerOffers.interviews.editTitle", "Modifier l'entrevue")
+                            : t("employerOffers.interviews.title", "Planifier une entrevue")}
                     </h2>
                     <button
                         type="button"
@@ -163,7 +169,9 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                             </svg>
                         </div>
                         <h3 className="text-lg font-black text-ink">
-                            {t("employerOffers.interviews.success.title", "Entrevue planifiée avec succès !")}
+                            {isEdit
+                                ? t("employerOffers.interviews.success.updatedTitle", "Entrevue modifiée avec succès !")
+                                : t("employerOffers.interviews.success.title", "Entrevue planifiée avec succès !")}
                         </h3>
                         <p className="mt-2 text-sm text-ink-soft">
                             {t("employerOffers.interviews.success.description", "L'invitation a été envoyée au candidat.")}
@@ -171,10 +179,14 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                         <div className="mt-6 flex justify-center gap-3">
                             <button
                                 type="button"
-                                onClick={() => setIsSuccess(false)}
+                                onClick={() => {
+                                    setFormData(submittedData ?? DEFAULT_FORM_STATE);
+                                    setIsEdit(true);
+                                    setIsSuccess(false);
+                                }}
                                 className="rounded-xl border border-line px-5 py-2.5 text-sm font-bold text-ink hover:bg-canvas"
                             >
-                                {t("employerOffers.interviews.planAnother", "Planifier une autre heure")}
+                                {t("employerOffers.interviews.edit", "Modifier l'entrevue")}
                             </button>
                             <button
                                 type="button"
@@ -283,7 +295,11 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                                     disabled={submitting}
                                     className="rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-ink-soft disabled:opacity-50"
                                 >
-                                    {submitting ? t("employerOffers.interviews.submitting", "Planification...") : t("employerOffers.interviews.submit", "Confirmer l'entrevue")}
+                                    {submitting
+                                        ? t("employerOffers.interviews.submitting", "Planification...")
+                                        : isEdit
+                                            ? t("employerOffers.interviews.saveChanges", "Enregistrer les modifications")
+                                            : t("employerOffers.interviews.submit", "Confirmer l'entrevue")}
                                 </button>
                             </div>
                         </form>
