@@ -26,6 +26,9 @@ public class ApplicationStageController {
     private final UtilisateurService utilisateurService;
     private final DocumentRepository documentRepository;
 
+
+    // P: enleve le transactional du controlleur ramses sinon je vais te le foutre au cul
+    // P: aussi utilise les ResponseEntity<T> pour renvoyer les infos avec leur code
     @PostMapping("/{offreId}")
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
@@ -34,9 +37,11 @@ public class ApplicationStageController {
             Authentication authentication
     ) throws BadRequestException, NotFoundException {
 
+        // P: bad ramses, bad. la logique d'auth ce fait dans le service.
         Utilisateur utilisateur = utilisateurService
                 .findEntityByEmail(authentication.getName());
 
+        // wtf, call au repo???? encore plus important que ça se passe dans le service
         OffreDeStage offreDeStage = documentRepository
                 .findOffreStageById(offreId)
                 .orElseThrow(() ->
@@ -52,6 +57,7 @@ public class ApplicationStageController {
     @GetMapping("/my-applications")
     public List<Long> getMyApplications(Authentication authentication)
             throws BadRequestException, NotFoundException {
+        // P: meme chose que en haut, la logique devrait etre dans le service
         Utilisateur utilisateur = utilisateurService
                 .findEntityByEmail(authentication.getName());
 

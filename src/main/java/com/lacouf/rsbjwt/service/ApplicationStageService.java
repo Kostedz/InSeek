@@ -18,6 +18,7 @@ public class ApplicationStageService {
     private final ApplicationStageRepository applicationStageRepository;
     private final DocumentRepository documentRepository;
 
+    // P: utilise @RequiredArgsConstructor pour eviter d'ecrire le constructeur (ca sauve des lignes!)
     public ApplicationStageService(
             ApplicationStageRepository applicationStageRepository,
             DocumentRepository documentRepository
@@ -37,6 +38,7 @@ public class ApplicationStageService {
         if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(offreDeStage.getId(), StatutValidation.ACCEPTE))
             throw new BadRequestException("Cette offre de stage a déjà été attribuée à un autre étudiant.");
 
+        // P: c'est fine, mais tu pourrais juste faire un builder de ApplicationStage pour la consistence
         ApplicationStage applicationStage = new ApplicationStage();
         applicationStage.setEtudiant(etudiant);
         applicationStage.setOffreDeStage(offreDeStage);
@@ -66,7 +68,7 @@ public class ApplicationStageService {
                 .map(application -> {
                     Long offerId = application.getOffreDeStage().getId();
                     OffreDeStageDTO offer = documentRepository.findOffreStageSummaryById(offerId)
-                            .orElseThrow(() -> new IllegalStateException("Offre de stage introuvable"));
+                            .orElseThrow(() -> new IllegalStateException("Offre de stage introuvable")); // P: *Buzzer sound effect* WRONG! utilise nos exceptions (BadRequestException, NotFoundException, etc)
 
                     return new ApplicationStageDTO(
                             application.getId(),
@@ -79,6 +81,7 @@ public class ApplicationStageService {
                 .toList();
     }
 
+    // P: fait plutôt une méthode statique "of" dans le DTO
     public ApplicationStageDTO toDto(ApplicationStage applicationStage){
         return  new ApplicationStageDTO(applicationStage.getId(),
                                         applicationStage.getDateApplique(),
