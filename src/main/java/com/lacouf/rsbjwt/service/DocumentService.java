@@ -30,7 +30,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final UtilisateurService utilisateurService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
 
     @Transactional
@@ -42,7 +42,6 @@ public class DocumentService {
         }
 
         Utilisateur uploader = getAuthenticatedUser(request);
-        String targetDiscipline;
 
         CV existingCV = documentRepository.findByUtilisateur(uploader);
         if (existingCV != null) {
@@ -52,17 +51,10 @@ public class DocumentService {
             documentRepository.delete(existingCV);
         }
 
-        logger.info("Form content: " + formContent);
-        logger.info("Type: " + type);
-        logger.info("Uploader: " + uploader);
-        if (type.equals("CV")) {
-            logger.info("Uploader is submitting a CV: " + uploader);
-            targetDiscipline = targetDisciplineForCv(uploader, result).toString();
-        } else {
+        if (!"CV".equals(type)) {
             throw new BadRequestException("Invalid document type");
         }
 
-        logger.info(targetDiscipline);
         Document document = createDocument(type, file, result, uploader);
 
         if (documentRepository.findByUtilisateur(uploader) != null && documentRepository.findByUtilisateur(uploader).getStatut() == StatutValidation.EN_ATTENTE) {
@@ -94,7 +86,7 @@ public class DocumentService {
         }
 
         List<OffreDeStage> stages = documentRepository.findOffreStageByTargetDiscipline(etudiant.getDiscipline());
-        return stages.stream().map(OffreDeStageDTO::of).toList();
+        return toOfferDTOs(stages);
     }
 
     @Transactional
@@ -156,45 +148,28 @@ public class DocumentService {
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByCompagnieName(String nomCompagnie){
-            return documentRepository.findOffreStagedByNomCompagnie(nomCompagnie).
-                    stream().
-                    map(OffreDeStageDTO::of)
-                    .toList();
+            return toOfferDTOs(documentRepository.findOffreStagedByNomCompagnie(nomCompagnie));
+
     }
 
     public List<OffreDeStageDTO> findOffreDeStageDiscipline(Disciplines discipline){
-        return documentRepository.findOffreStageByTargetDiscipline(discipline).
-                stream().
-                map(OffreDeStageDTO::of)
-                .toList();
+        return toOfferDTOs(documentRepository.findOffreStageByTargetDiscipline(discipline));
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByPosition(String position){
-        return documentRepository.findOffreStageByPosition(position).
-                stream().
-                map(OffreDeStageDTO::of)
-                .toList();
+        return toOfferDTOs(documentRepository.findOffreStageByPosition(position));
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByMinimumSalaire(Double salaire){
-        return documentRepository.findOffreStageByMinimumSalaire(salaire).
-                stream().
-                map(OffreDeStageDTO::of)
-                .toList();
+        return toOfferDTOs(documentRepository.findOffreStageByMinimumSalaire(salaire));
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByDateDebutStage(LocalDate dateDebut){
-        return documentRepository.findOffreStageByDateDebutStage(dateDebut).
-                stream().
-                map(OffreDeStageDTO::of)
-                .toList();
+        return toOfferDTOs(documentRepository.findOffreStageByDateDebutStage(dateDebut));
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByDateFinStage(LocalDate dateFin){
-        return documentRepository.findOffreStageByDateFinStage(dateFin).
-                stream().
-                map(OffreDeStageDTO::of)
-                .toList();
+        return toOfferDTOs(documentRepository.findOffreStageByDateFinStage(dateFin));
     }
 
     private Disciplines targetDisciplineForCv(Utilisateur uploader, JsonNode result) throws BadRequestException {
@@ -220,7 +195,6 @@ public class DocumentService {
         throw new BadRequestException("Seul un étudiant ou le compte développeur peut téléverser un CV");
     }
 
-    // TODO: to be refactored/completed. wtf, empty catch clause?? oïc, you need to answer for these crimes
     @Transactional
     public List<OffreDeStageDTO> findOffersForEmployer(HttpServletRequest request)
             throws BadRequestException, NotFoundException {
@@ -230,14 +204,13 @@ public class DocumentService {
             try {
                 Utilisateur user = getAuthenticatedUser(request);
                 offers = documentRepository.findOffersByEmployer(user);
-            } catch (BadRequestException | NotFoundException | RuntimeException ignored) {
-                // Public visitors fall back to approved offers.
+            } catch (BadRequestException e) {
+               throw new BadRequestException("Invalid JWT token or user not found");
+            } catch (NotFoundException e) {
+                throw new NotFoundException("Offre de stage n'existe pas");
             }
         }
-        return offers
-                .stream()
-                .map(OffreDeStageDTO::of)
-                .toList();
+        return toOfferDTOs(offers);
     }
 
     private List<OffreDeStage> findApprovedOffers() {
@@ -308,5 +281,11 @@ public class DocumentService {
         if (!"application/pdf".equalsIgnoreCase(file.getContentType()) && !filename.endsWith(".pdf")) {
             throw new BadRequestException("Only PDF files are allowed");
         }
+    }
+
+    private List<OffreDeStageDTO> toOfferDTOs(List<OffreDeStage> offers) {
+        return offers.stream()
+                .map(OffreDeStageDTO::of)
+                .toList();
     }
 }
