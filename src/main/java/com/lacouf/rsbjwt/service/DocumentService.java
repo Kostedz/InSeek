@@ -82,6 +82,22 @@ public class DocumentService {
     }
 
     @Transactional
+    public List<OffreDeStageDTO> findStagesByDiscipline(HttpServletRequest request) throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = getAuthenticatedUser(request);
+
+        if (utilisateur == null) {
+            throw new BadRequestException("Utilisateur non authentifié");
+        }
+
+        if (!(utilisateur instanceof Etudiant etudiant)) {
+            throw new BadRequestException("Seul un étudiant peut consulter les stages par discipline");
+        }
+
+        List<OffreDeStage> stages = documentRepository.findOffreStageByTargetDiscipline(etudiant.getDiscipline());
+        return stages.stream().map(OffreDeStageDTO::of).toList();
+    }
+
+    @Transactional
     public DocumentValidationDTO findStudentCv(HttpServletRequest request)
             throws BadRequestException, NotFoundException {
         Utilisateur student = getAuthenticatedUser(request);
