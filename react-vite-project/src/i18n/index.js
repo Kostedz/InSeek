@@ -436,15 +436,25 @@ const resources = {
                 },
                 interviews: {
                     title: "Planifier une entrevue",
+                    editTitle: "Modifier l'entrevue",
+                    edit: "Modifier l'entrevue",
                     subtitle: "Candidat :",
                     date: "Date",
                     time: "Heure",
-                    duration: "Durée",
                     mode: "Mode d'entrevue",
+                    modes: {
+                        video: "Visioconférence",
+                        inPerson: "En personne",
+                    },
                     locationOrLink: "Lieu ou lien de la rencontre",
                     message: "Message optionnel",
+                    placeholders: {
+                        locationOrLink: "Ex. : https://teams.microsoft.com/… ou 123 rue Saint-Catherine",
+                        message: "Instructions particulières…",
+                    },
                     cancel: "Annuler",
                     submit: "Confirmer l'entrevue",
+                    saveChanges: "Enregistrer les modifications",
                     submitting: "Planification en cours...",
                     errors: {
                         dateRequired: "La date est requise.",
@@ -455,9 +465,11 @@ const resources = {
                         submitFailed: "Échec de la planification de l'entrevue.",
                     },
                     success: {
-                        planned: "Entrevue planifiée avec succès. L'étudiant a été notifié.",
+                        title: "Entrevue planifiée avec succès !",
+                        updatedTitle: "Entrevue modifiée avec succès !",
+                        description: "L'étudiant a été notifié.",
                     },
-                }
+                },
             },
             roles: {
                 borrower: {
@@ -508,6 +520,9 @@ const resources = {
                     title: "Erreur serveur",
                     description: "Un problème est survenu sur nos serveurs. Veuillez réessayer plus tard.",
                 },
+            },
+            common: {
+                close: "Fermer",
             },
             loading: {
                 ariaLabel: "Chargement",
@@ -1067,15 +1082,25 @@ const resources = {
                 },
                 interviews: {
                     title: "Schedule an interview",
+                    editTitle: "Edit interview",
+                    edit: "Edit interview",
                     subtitle: "Candidate:",
                     date: "Date",
                     time: "Time",
-                    duration: "Duration",
                     mode: "Interview mode",
+                    modes: {
+                        video: "Video call",
+                        inPerson: "In person",
+                    },
                     locationOrLink: "Location or meeting link",
                     message: "Optional message",
+                    placeholders: {
+                        locationOrLink: "E.g. https://teams.microsoft.com/… or 123 St-Catherine Street",
+                        message: "Special instructions…",
+                    },
                     cancel: "Cancel",
                     submit: "Confirm interview",
+                    saveChanges: "Save changes",
                     submitting: "Scheduling...",
                     errors: {
                         dateRequired: "Date is required.",
@@ -1086,9 +1111,11 @@ const resources = {
                         submitFailed: "Failed to schedule the interview.",
                     },
                     success: {
-                        planned: "Interview successfully scheduled. The student has been notified.",
+                        title: "Interview scheduled successfully!",
+                        updatedTitle: "Interview updated successfully!",
+                        description: "The student has been notified.",
                     },
-                }
+                },
             },
             roles: {
                 borrower: {
@@ -1139,6 +1166,9 @@ const resources = {
                     title: "Server error",
                     description: "Something went wrong on our servers. Please try again later.",
                 },
+            },
+            common: {
+                close: "Close",
             },
             loading: {
                 ariaLabel: "Loading",

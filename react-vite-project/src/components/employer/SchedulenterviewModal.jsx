@@ -260,7 +260,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                                     name="lieuOuLien"
                                     value={formData.lieuOuLien}
                                     onChange={handleChange}
-                                    placeholder="Ex: https://teams.microsoft.com/... ou 123 rue St-Catherine"
+                                    placeholder={t("employerOffers.interviews.placeholders.locationOrLink", "Ex. : https://teams.microsoft.com/… ou 123 rue Saint-Catherine")}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender"
                                 />
                                 {errors.lieuOuLien && <p className="mt-1 text-xs text-error">{errors.lieuOuLien}</p>}
@@ -275,7 +275,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                                     rows="3"
                                     value={formData.message}
                                     onChange={handleChange}
-                                    placeholder="Instructions particulières..."
+                                    placeholder={t("employerOffers.interviews.placeholders.message", "Instructions particulières...")}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender resize-none"
                                 ></textarea>
                             </div>
