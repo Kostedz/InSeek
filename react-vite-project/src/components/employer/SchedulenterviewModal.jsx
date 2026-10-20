@@ -6,10 +6,16 @@ import { translateMessage } from "../../utils/i18nMessage.js";
 const DEFAULT_FORM_STATE = {
     date: "",
     heure: "",
-    /* duree: "30", */
     mode: "VIDEO_CALL",
     lieuOuLien: "",
     message: "",
+};
+
+const getTodayIso = () => {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${today.getFullYear()}-${month}-${day}`;
 };
 
 export default function ScheduleInterviewModal({ offerId, candidat, initialData, onClose, onSuccess }) {
@@ -28,7 +34,6 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                 if (parsed.mode === "VISIOCONFERENCE") parsed.mode = "VIDEO_CALL";
                 return parsed;
             } catch (e) {
-                // Ignorer les erreurs de parsing
             }
         }
         return initialData ?? DEFAULT_FORM_STATE;
@@ -97,7 +102,6 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
         try {
             const payload = {
                 dateHeure: `${formData.date}T${formData.heure}:00`,
-                /* dureeMinutes: parseInt(formData.duree, 10), */
                 mode: formData.mode,
                 lieuOuLien: formData.lieuOuLien.trim(),
                 messageOptionnel: formData.message.trim(),
@@ -113,10 +117,8 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
             sessionStorage.removeItem(storageKey);
 
             setSubmittedData(formData);
-
             setFormData(DEFAULT_FORM_STATE);
             setErrors({});
-
             setIsSuccess(true);
 
             if (onSuccess) onSuccess(formData);
@@ -127,9 +129,10 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
         }
     };
 
-    const getTodayIso = () => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
+    const handleEditAfterSuccess = () => {
+        setFormData(submittedData ?? DEFAULT_FORM_STATE);
+        setIsEdit(true);
+        setIsSuccess(false);
     };
 
     return (
@@ -162,9 +165,9 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                 </p>
 
                 {isSuccess ? (
-                    <div className="mt-6 text-center py-6">
+                    <div className="mt-6 text-center py-6" role="status" aria-live="polite">
                         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-4">
-                            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
@@ -179,11 +182,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                         <div className="mt-6 flex justify-center gap-3">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setFormData(submittedData ?? DEFAULT_FORM_STATE);
-                                    setIsEdit(true);
-                                    setIsSuccess(false);
-                                }}
+                                onClick={handleEditAfterSuccess}
                                 className="rounded-xl border border-line px-5 py-2.5 text-sm font-bold text-ink hover:bg-canvas"
                             >
                                 {t("employerOffers.interviews.edit", "Modifier l'entrevue")}
@@ -205,7 +204,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                        <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="block text-sm font-bold text-ink mb-1">
@@ -248,7 +247,6 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender"
                                 >
                                     <option value="VIDEO_CALL">{t("employerOffers.interviews.modes.video", "Visioconférence")}</option>
-                                    {/*<option value="PHONE_CALL">{t("employerOffers.interviews.modes.phone", "Appel téléphonique")}</option>*/}
                                     <option value="IN_PERSON">{t("employerOffers.interviews.modes.inPerson", "En personne")}</option>
                                 </select>
                             </div>
