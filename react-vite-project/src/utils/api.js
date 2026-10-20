@@ -1,5 +1,14 @@
 import fetcher from "./fetcher.js";
 
+const interviewBody = (offerId, candidatId, payload) => JSON.stringify({
+    offerId: Number(offerId),
+    studentId: Number(candidatId),
+    DateAndTime: payload.dateHeure,
+    mode: payload.mode,
+    locationOrLink: payload.lieuOuLien,
+    message: payload.messageOptionnel || "",
+});
+
 export const api = {
     auth: {
         register: (payload) =>
@@ -31,6 +40,13 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
+        prepareStudentDemo: () =>
+            fetcher("/user/dev/student-demo", {
+                skipAuth: true,
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
         getMe: () => fetcher("user/me", {}),
     },
 
@@ -39,8 +55,12 @@ export const api = {
             headers: {Accept: "application/json"},
         }),
 
+        getOffers: () => fetcher("/documents/stage", {
+            headers: {Accept: "application/json"},
+        }),
+
         uploadCv: (file, documentType = "CV") => {
-            const formData = new FormData();
+        const formData = new FormData();
             formData.append("file", file);
 
             const formContentBlob = new Blob(
@@ -54,6 +74,25 @@ export const api = {
                 body: formData,
             });
         },
+
+        applyToOffer: (offerId) =>
+            fetcher(`/api/applications/${encodeURIComponent(offerId)}`, {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+            }),
+
+        getAppliedOfferIds: () =>
+            fetcher("/api/applications/my-applications", {
+                headers: {Accept: "application/json"},
+            }),
+
+        getApplications: () =>
+            fetcher("/api/applications/my-applications/details", {
+                headers: {Accept: "application/json"},
+            }),
     },
 
     documents: {
@@ -65,6 +104,7 @@ export const api = {
     employer: {
         offers: {
             list: () => fetcher("/employeur/offres", {
+                cache: "no-store",
                 headers: {Accept: "application/json"},
             }),
 
@@ -76,6 +116,28 @@ export const api = {
             update: (offerId, formData) => fetcher(`/employeur/offres/${offerId}`, {
                 method: "PUT",
                 body: formData,
+            }),
+            planifierEntrevue: (offerId, candidatId, payload) => fetcher("/interviews/schedule", {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: interviewBody(offerId, candidatId, payload),
+            }),
+           modifierEntrevue: (offerId, candidatId, payload) => fetcher("/interviews/update", {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: interviewBody(offerId, candidatId, payload),
+            }),
+        },
+        applications: {
+            list: (offerId) => fetcher(`/api/applications/offer/${encodeURIComponent(offerId)}`, {
+                cache: "no-store",
+                headers: {Accept: "application/json"},
             }),
         },
     },
@@ -99,6 +161,7 @@ export const api = {
                 body: JSON.stringify({ commentaire: comment }),
             }),
     },
+
 };
 
 export default api;

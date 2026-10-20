@@ -215,6 +215,8 @@ public class DocumentControllerTest {
         when(documentService.saveEmployerOffer(any(MultipartFile.class), eq(offerForm), any(), eq(17L)))
                 .thenReturn(offerDto());
 
+        when(authService.validateJwt(any(HttpServletRequest.class))).thenReturn(true);
+
         mockMvc.perform(MockMvcRequestBuilders.multipart("/employeur/offres/17")
                         .file(file)
                         .file(offerFormContent)

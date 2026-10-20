@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.repository;
 
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -64,16 +65,36 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<OffreDeStage> findOffreStageByDateFinStage(LocalDate dateFinStage);
 
     @Query("""
-            SELECT o FROM OffreDeStage o
+            SELECT new com.lacouf.rsbjwt.service.dto.OffreDeStageDTO(
+                o.id, o.fileName, o.utilisateur.credentials.email, o.nomEntreprise,
+                o.position, o.descriptionPosition, o.dateDebutStage, o.dateFinStage,
+                o.adresseEntreprise, o.statut, o.commentaireRejet, o.salaire,
+                o.targetDiscipline, o.contactName, o.contactPhone, o.version, o.updatedAt
+            )
+            FROM OffreDeStage o
+            WHERE o.statut = :statut
+            ORDER BY o.updatedAt DESC, o.id DESC
             """)
-    List<OffreDeStage> findAllOffreStage();
+    List<OffreDeStageDTO> findOffreStageSummariesByStatut(@Param("statut") StatutValidation statut);
 
     @Query("""
-            SELECT o 
+            SELECT new com.lacouf.rsbjwt.service.dto.OffreDeStageDTO(
+                o.id, o.fileName, o.utilisateur.credentials.email, o.nomEntreprise,
+                o.position, o.descriptionPosition, o.dateDebutStage, o.dateFinStage,
+                o.adresseEntreprise, o.statut, o.commentaireRejet, o.salaire,
+                o.targetDiscipline, o.contactName, o.contactPhone, o.version, o.updatedAt
+            )
             FROM OffreDeStage o
             WHERE o.id = :id
             """)
-    Optional<OffreDeStage> findOffreStageById(Long id);
+    Optional<OffreDeStageDTO> findOffreStageSummaryById(@Param("id") Long id);
+
+    @Query("""
+            SELECT o
+            FROM OffreDeStage o
+            WHERE o.id = :id
+            """)
+    Optional<OffreDeStage> findOffreStageById(@Param("id") Long id);
 
 
     @Query("""
@@ -85,6 +106,15 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<OffreDeStage> findOffersByEmployer(@Param("employeur") com.lacouf.rsbjwt.model.Utilisateur employeur);
 
     CV findByUtilisateur(Utilisateur utilisateur);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END
+            FROM CV c
+            WHERE c.utilisateur = :student
+              AND c.statut = :statut
+            """)
+    boolean existsStudentCvByStatut(@Param("student") Utilisateur student,
+                                    @Param("statut") StatutValidation statut);
 
     @Query("""
             SELECT c
