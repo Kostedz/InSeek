@@ -180,6 +180,7 @@ public class EntrevueService {
 
     private void validateInvitationExpiration(Entrevue interview) throws BadRequestException {
         if (interview.getDateInterview().isBefore(LocalDateTime.now())) {
+            interview.setInterviewInvitationStatus(StatutConvocationEntrevue.EXPIRED);
             throw new BadRequestException("La date de cette convocation est déjà passée. Vous ne pouvez plus y répondre.");
         }
     }
