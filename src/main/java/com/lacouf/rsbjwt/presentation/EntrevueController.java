@@ -73,4 +73,16 @@ public class EntrevueController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
+    @PutMapping("/update")
+    public ResponseEntity<?> updateInterview(@RequestBody CreateEntrevueDTO InterviewDTO, HttpServletRequest request) {
+        try {
+            EntrevueDTO updatedInterview = interviewService.updateInterview(request, InterviewDTO);
+            return ResponseEntity.ok(updatedInterview);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
 }

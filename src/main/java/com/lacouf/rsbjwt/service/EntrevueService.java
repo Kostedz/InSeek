@@ -29,6 +29,7 @@ public class EntrevueService {
     private final DocumentRepository documentRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Transactional
     public EntrevueDTO scheduleInterview(HttpServletRequest request, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
         validateRequiredFields(interviewDTO);
         validateFutureDate(interviewDTO);
@@ -39,9 +40,11 @@ public class EntrevueService {
         Etudiant student = findStudent(interviewDTO.studentId());
         OffreDeStage internshipOffer = findInternshipOffer(interviewDTO.offerId());
 
+        validateNoExistingInterview(student, internshipOffer);
+
         Entrevue interview = createInterview(employer, student, internshipOffer, interviewDTO);
 
-        updateStudent(student, interviewDTO);
+       updateStudent(student, interviewDTO);
 
         return EntrevueDTO.of(interview);
 
@@ -59,6 +62,32 @@ public class EntrevueService {
                 userRepository.save(student);
             }
         }
+    }
+
+    @Transactional
+    public EntrevueDTO updateInterview(HttpServletRequest request, CreateEntrevueDTO dto) throws BadRequestException, NotFoundException {
+        validateRequiredFields(dto);
+        validateFutureDate(dto);
+
+        String employerEmail = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
+        Employeur employer = findEmployerByEmail(employerEmail);
+
+        Entrevue interview = interviewRepository
+                .findByStudentIdAndInternshipOfferId(dto.studentId(), dto.offerId())
+                .orElseThrow(() -> new NotFoundException("Entrevue non trouvée."));
+
+        if (!interview.getEmployer().getId().equals(employer.getId())) {
+            throw new BadRequestException("Vous ne pouvez pas modifier cette entrevue.");
+        }
+
+        interview.setDateInterview(dto.DateAndTime());
+        interview.setModeInterview(dto.mode());
+        interview.setLocationOrLink(dto.locationOrLink());
+        interview.setMessage(dto.message());
+
+        updateStudent(interview.getStudent(), dto);
+
+        return EntrevueDTO.of(interviewRepository.save(interview));
     }
 
     public List<EntrevueDTO> getInterviewsForStudent(HttpServletRequest request) throws NotFoundException {
@@ -115,7 +144,7 @@ public class EntrevueService {
     private void validateRequiredFields(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
         if (InterviewDTO.studentId() == null || InterviewDTO.offerId() == null ||
                 InterviewDTO.DateAndTime() == null || InterviewDTO.mode() == null ||
-                InterviewDTO.locationOrLink() == null || InterviewDTO.message() == null) {
+                InterviewDTO.locationOrLink() == null) {
             throw new BadRequestException("tous les champs sont obligatoires.");
         }
     }
@@ -123,6 +152,12 @@ public class EntrevueService {
     private void validateFutureDate(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
         if (InterviewDTO.DateAndTime().isBefore(java.time.LocalDateTime.now())) {
             throw new BadRequestException("La date et l'heure de l'entrevue doivent être dans le futur.");
+        }
+    }
+
+    private void validateNoExistingInterview(Etudiant student, OffreDeStage offer) throws BadRequestException {
+        if (interviewRepository.existsByStudentIdAndInternshipOfferId(student.getId(), offer.getId())) {
+            throw new BadRequestException("Une entrevue a déjà été plannifiée pour cet étudiant et cette offre de stage.");
         }
     }
 
@@ -160,7 +195,9 @@ public class EntrevueService {
     }
 
     private Etudiant findStudent(Long studentId) throws NotFoundException {
-        return (Etudiant) userRepository.findById(studentId)
+        return userRepository.findById(studentId)
+                .filter(Etudiant.class::isInstance)
+                .map(Etudiant.class::cast)
                 .orElseThrow(() -> new NotFoundException("Étudiant non trouvé"));
     }
 
@@ -173,7 +210,7 @@ public class EntrevueService {
     }
 
     private OffreDeStage findInternshipOffer(Long offerId) throws NotFoundException {
-        return documentRepository.findInternshipOfferById(offerId)
+        return documentRepository.findOffreStageById(offerId)
                 .orElseThrow(() -> new NotFoundException("Offre de stage non trouvée."));
     }
 
@@ -202,7 +239,7 @@ public class EntrevueService {
     }
 
     private void updateStudent(Etudiant student, CreateEntrevueDTO InterviewDTO) {
-        student.setDateInterview(InterviewDTO.DateAndTime());
+        student.setDateEnterview(InterviewDTO.DateAndTime());
         student.setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
     }
 

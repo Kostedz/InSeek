@@ -5,6 +5,8 @@ import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import ErrorPage from "../ErrorPage.jsx";
 import PdfPreview from "../PdfPreview.jsx";
+import {formatOfferTitle} from "./studentOfferUtils.js";
+import ScheduleInterviewModal from "../employer/SchedulenterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -59,6 +61,81 @@ function normalizeStatus(status) {
     return "NOT_SUBMITTED";
 }
 
+function hasValue(value) {
+    return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
+function normalizeApplication(application, index = 0) {
+    const student = application?.student
+        ?? application?.etudiant
+        ?? application?.applicant
+        ?? application?.etudiantDTO
+        ?? {};
+    const firstName = application?.firstName ?? application?.prenom ?? student.firstName ?? student.prenom ?? "";
+    const lastName = application?.lastName ?? application?.nom ?? student.lastName ?? student.nom ?? "";
+    const fullName = application?.name
+        ?? application?.studentName
+        ?? application?.nomEtudiant
+        ?? [firstName, lastName].filter(Boolean).join(" ");
+    const documents = Array.isArray(application?.documents) ? application.documents : [];
+    const cvDocument = application?.cv ?? application?.resume ?? documents.find((document) => /cv|resume|ré?sumé/i.test(String(document?.type ?? document?.name ?? "")));
+
+    return {
+        ...application,
+        id: application?.id ?? application?.applicationId ?? `application-${index}`,
+        studentId: application?.studentId
+            ?? application?.etudiantId
+            ?? application?.idEtudiant
+            ?? student.id
+            ?? null,
+        interviewScheduled: Boolean(
+            application?.interviewScheduled
+            ?? application?.entrevuePlanifiee
+            ?? application?.hasInterview
+        ),
+        firstName,
+        lastName,
+        name: String(fullName || "").trim(),
+        email: application?.email ?? application?.studentEmail ?? application?.courriel ?? student.email ?? "",
+        submittedAt: application?.submittedAt
+            ?? application?.dateSoumission
+            ?? application?.dateApplique
+            ?? application?.createdAt
+            ?? application?.submissionDate,
+        phone: application?.phone ?? application?.telephone ?? student.phone ?? student.telephone ?? "",
+        address: application?.address ?? application?.adresse ?? student.address ?? student.adresse ?? "",
+        cvDocumentId: application?.cvDocumentId
+            ?? application?.cvId
+            ?? student.cvDocumentId
+            ?? student.cvId
+            ?? cvDocument?.id
+            ?? null,
+        cvFileName: application?.cvFileName
+            ?? application?.cvFilename
+            ?? student.cvFileName
+            ?? student.cvFilename
+            ?? cvDocument?.fileName
+            ?? cvDocument?.name
+            ?? "",
+    };
+}
+
+function getApplicationsForOffer(offer) {
+    const source = offer?.candidatures ?? offer?.applications ?? offer?.candidates;
+    if (Array.isArray(source)) return source.map(normalizeApplication);
+
+    return [];
+}
+
+function getApplicationCount(offer) {
+    const source = offer?.candidatures ?? offer?.applications ?? offer?.candidates;
+    if (Array.isArray(source)) return source.length;
+    if (hasValue(offer?.applicationCount ?? offer?.applicationsCount ?? offer?.nombreCandidatures)) {
+        return Number(offer.applicationCount ?? offer.applicationsCount ?? offer.nombreCandidatures) || 0;
+    }
+    return getApplicationsForOffer(offer).length;
+}
+
 function normalizeOffer(offer) {
     return {
         ...offer,
@@ -108,11 +185,26 @@ function formValuesFromOffer(offer, defaultCompanyName = "") {
 
 function formatDate(value, language) {
     if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
     return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
         day: "numeric",
         month: "short",
         year: "numeric",
-    }).format(new Date(value));
+    }).format(date);
+}
+
+function formatDateTime(value, language) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    }).format(date);
 }
 
 function StatusBadge({status}) {
@@ -158,6 +250,23 @@ function Icon({name, className = "h-5 w-5"}) {
             <circle cx="12" cy="12" r="9"/>
             <path d="M12 11v5M12 8h.01"/>
         </>,
+        users: <>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </>,
+        mail: <>
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <path d="m3 7 9 6 9-6"/>
+        </>,
+        calendar: <>
+            <rect x="3" y="4.5" width="18" height="17" rx="2"/>
+            <path d="M16 2.5v4M8 2.5v4M3 9h18"/>
+        </>,
+        phone: <path
+            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 5.2 2 2 0 0 1 4.11 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 10.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z"/>,
+        chevron: <path d="m9 18 6-6-6-6"/>,
+        back: <path d="m15 18-6-6 6-6M9 12h10"/>,
     };
 
     return (
@@ -187,6 +296,259 @@ function inputClass(error, disabled = false) {
     return `w-full rounded-xl border bg-canvas px-3.5 py-3 text-sm text-ink outline-none transition focus:border-lavender focus:ring-4 focus:ring-pink/40 ${
         error ? "border-error" : "border-line"
     } ${disabled ? "cursor-not-allowed opacity-60" : ""}`;
+}
+
+function initials(name) {
+    return String(name ?? "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase();
+}
+
+function ApplicationDocument({icon, label, fileName, documentId, t}) {
+    return (
+        <div className="rounded-2xl border border-line bg-canvas p-4">
+            <div className="flex items-start gap-3">
+                <span
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lavender/45 text-ink">
+                    <Icon name={icon} className="h-5 w-5"/>
+                </span>
+                <div className="min-w-0">
+                    <p className="text-sm font-black text-ink">{label}</p>
+                    <p className="mt-1 truncate text-xs text-ink-soft">{fileName || t("employerOffers.applications.documentUnavailable")}</p>
+                </div>
+            </div>
+            {documentId && <PdfPreview documentId={documentId} fileName={fileName} className="mt-4"/>}
+        </div>
+    );
+}
+
+function ApplicationDetails({application, language,isInterviewScheduled, onBack, onClose, onScheduleInterview}) {
+    const {t} = useTranslation();
+    const hasContactDetails = application.email || application.phone || application.address;
+
+    return (
+        <div
+            className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/70 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+            role="presentation"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}>
+            <div
+                className="flex max-h-[calc(100vh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-t-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)] sm:rounded-[2rem]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="application-detail-title">
+                <div className="overflow-y-auto p-5 sm:p-7">
+                    <div className="flex items-start justify-between gap-4 border-b border-line pb-5">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <button type="button" onClick={onBack}
+                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
+                                    aria-label={t("employerOffers.applications.backToList")}>
+                                <Icon name="back" className="h-5 w-5"/>
+                            </button>
+                            <div className="min-w-0">
+                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.applications.detailLabel")}</p>
+                                <h2 id="application-detail-title"
+                                    className="mt-1 truncate text-xl font-black tracking-tight text-ink sm:text-2xl">{application.name}</h2>
+                            </div>
+                        </div>
+                        <button type="button" onClick={onClose}
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
+                                aria-label={t("employerOffers.applications.close")}>
+                            <Icon name="close" className="h-5 w-5"/>
+                        </button>
+                    </div>
+
+                    <div
+                        className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-canvas p-4">
+                        <span
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink/55 text-lg font-black text-ink">{initials(application.name || t("employerOffers.applications.unknownStudent"))}</span>
+                        <div className="min-w-0">
+                            <p className="font-black text-ink">{application.name || t("employerOffers.applications.unknownStudent")}</p>
+                            <p className="mt-1 break-all text-sm text-ink-soft">{application.email || t("employerOffers.applications.notSpecified")}</p>
+                        </div>
+                        <p className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink-soft">
+                            <Icon name="calendar" className="h-4 w-4"/>
+                            {t("employerOffers.applications.submittedOn", {date: formatDateTime(application.submittedAt, language) || t("employerOffers.applications.notSpecified")})}
+                        </p>
+                    </div>
+
+                    <div className="mt-6">
+                        <section className="rounded-2xl border border-line bg-surface p-4">
+                            <h3 className="text-sm font-black text-ink">{t("employerOffers.applications.contactDetails")}</h3>
+                            {hasContactDetails ? <div className="mt-4 space-y-3">
+                                    {application.email && <a href={`mailto:${application.email}`}
+                                                             className="flex items-start gap-3 text-sm text-ink-soft transition-colors hover:text-ink"><Icon
+                                        name="mail" className="mt-0.5 h-4 w-4 shrink-0 text-ink"/><span
+                                        className="break-all">{application.email}</span></a>}
+                                    {application.phone && <a href={`tel:${application.phone}`}
+                                                             className="flex items-start gap-3 text-sm text-ink-soft transition-colors hover:text-ink"><Icon
+                                        name="phone"
+                                        className="mt-0.5 h-4 w-4 shrink-0 text-ink"/><span>{application.phone}</span></a>}
+                                    {application.address &&
+                                        <p className="flex items-start gap-3 text-sm text-ink-soft"><Icon name="info"
+                                                                                                          className="mt-0.5 h-4 w-4 shrink-0 text-ink"/><span>{application.address}</span>
+                                        </p>}
+                                </div> :
+                                <p className="mt-3 text-sm text-ink-soft">{t("employerOffers.applications.notSpecified")}</p>}
+                        </section>
+
+                    </div>
+
+                    <section className="mt-5">
+                        <h3 className="text-sm font-black text-ink">{t("employerOffers.applications.documentsTitle")}</h3>
+                        <div className="mt-3">
+                            <ApplicationDocument icon="file" label={t("employerOffers.applications.cv")}
+                                                 fileName={application.cvFileName} documentId={application.cvDocumentId}
+                                                 t={t}/>
+                        </div>
+                    </section>
+
+                    <div className="mt-6 pt-5 border-t border-line flex justify-end">
+                        <button
+                            type="button"
+                            onClick={() => onScheduleInterview({
+                                ...application,
+                                id: application.studentId,
+                                isEdit: Boolean(isInterviewScheduled),
+                            })}
+                            className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink-soft transition-colors"
+                        >
+                            {isInterviewScheduled
+                                ? t("employerOffers.interviews.edit", "Modifier l'entrevue")
+                                : t("employerOffers.interviews.title", "Planifier une entrevue")}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews}) {
+    const {t} = useTranslation();
+    const [selectedApplication, setSelectedApplication] = useState(null);
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const closeOnEscape = (event) => {
+            if (event.key === "Escape") {
+                if (selectedApplication) setSelectedApplication(null);
+                else onClose();
+            }
+        };
+        document.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [onClose, selectedApplication]);
+
+    if (selectedApplication) {
+        return (
+            <ApplicationDetails
+                application={selectedApplication}
+                language={language}
+                isInterviewScheduled={
+                Boolean(selectedApplication.interviewScheduled)
+                || Boolean(scheduledInterviews[`${offer.id}_${selectedApplication.studentId}`])
+                }
+
+                onBack={() => setSelectedApplication(null)}
+                onClose={onClose}
+                onScheduleInterview={onScheduleInterview}
+            />
+        );
+    }
+
+   /** if (selectedApplication) {
+        return <ApplicationDetails application={selectedApplication} language={language}
+                                   onBack={() => setSelectedApplication(null)} onClose={onClose}/>;
+    }**/
+
+    return (
+        <div
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/70 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+            role="presentation"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}>
+            <div
+                className="flex max-h-[calc(100vh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-t-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)] sm:rounded-[2rem]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="applications-title">
+                <div className="overflow-y-auto p-5 sm:p-7">
+                    <div className="flex items-start justify-between gap-4 border-b border-line pb-5">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.applications.label")}</p>
+                                <span
+                                    className="rounded-full bg-pink/55 px-2.5 py-1 text-xs font-black text-ink">{applications.length}</span>
+                            </div>
+                            <h2 id="applications-title"
+                                className="mt-2 text-2xl font-black tracking-tight text-ink">{t("employerOffers.applications.title")}</h2>
+                            <p className="mt-2 max-w-xl text-sm leading-6 text-ink-soft">{formatOfferTitle(offer.position) || t("employerOffers.untitledOffer")}</p>
+                        </div>
+                        <button type="button" onClick={onClose}
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
+                                aria-label={t("employerOffers.applications.close")}>
+                            <Icon name="close" className="h-5 w-5"/>
+                        </button>
+                    </div>
+
+                    {isLoading ? (
+                        <div className="mt-6 rounded-2xl border border-line bg-canvas px-5 py-12 text-center">
+                            <Loading/>
+                        </div>
+                    ) : error ? (
+                        <div className="mt-6 rounded-2xl border border-error bg-blush/30 px-5 py-12 text-center">
+                            <p className="text-base font-black text-error">{t("employerOffers.errors.loadFailed")}</p>
+                        </div>
+                    ) : applications.length === 0 ? (
+                        <div
+                            className="mt-6 rounded-2xl border border-dashed border-line bg-canvas px-5 py-12 text-center">
+                            <p className="text-base font-black text-ink">{t("employerOffers.applications.emptyTitle")}</p>
+                            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-ink-soft">{t("employerOffers.applications.emptyDescription")}</p>
+                        </div>
+                    ) : (
+                        <div className="mt-6 space-y-3">
+                            {applications.map((application) => (
+                                <button key={application.id} type="button"
+                                        onClick={() => setSelectedApplication(application)}
+                                        className="group flex w-full items-center gap-3 rounded-2xl border border-line bg-canvas p-4 text-left transition-colors hover:border-lavender hover:bg-lavender/15 focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                    <span
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink/55 text-sm font-black text-ink">{initials(application.name || t("employerOffers.applications.unknownStudent"))}</span>
+                                    <span className="min-w-0 flex-1">
+                                        <span
+                                            className="block truncate text-sm font-black text-ink">{application.name || t("employerOffers.applications.unknownStudent")}</span>
+                                        <span className="mt-1 flex items-center gap-1.5 truncate text-xs text-ink-soft"><Icon
+                                            name="mail"
+                                            className="h-3.5 w-3.5 shrink-0"/>{application.email || t("employerOffers.applications.notSpecified")}</span>
+                                        <span
+                                            className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-ink-soft sm:hidden"><Icon
+                                            name="calendar"
+                                            className="h-3.5 w-3.5 shrink-0"/>{formatDate(application.submittedAt, language) || t("employerOffers.applications.notSpecified")}</span>
+                                    </span>
+                                    <span
+                                        className="hidden shrink-0 items-center gap-1.5 text-xs font-semibold text-ink-soft sm:flex"><Icon
+                                        name="calendar"
+                                        className="h-3.5 w-3.5"/>{formatDate(application.submittedAt, language) || t("employerOffers.applications.notSpecified")}</span>
+                                    <Icon name="chevron"
+                                          className="h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5"/>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export function buildOfferSubmissionFormData({file, fields, offerId}) {
@@ -228,6 +590,7 @@ export default function EmployeurOffres({
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
+    const editorScrollRef = useRef(null);
     const {t, i18n} = useTranslation();
     const employerCompanyName = String(
         user?.nomCompagnie
@@ -235,7 +598,6 @@ export default function EmployeurOffres({
         || user?.companyName
         || user?.entreprise
         || companyName
-        || (user?.isDevAccess ? "InSeek" : "")
     ).trim();
     const usesRemoteOffers = offers === undefined;
     const [remoteOffers, setRemoteOffers] = useState(null);
@@ -246,7 +608,7 @@ export default function EmployeurOffres({
         (displayedOffers ?? []).map(normalizeOffer)
     ), [displayedOffers]);
     const [offerList, setOfferList] = useState(initialOffers);
-    const [selectedId, setSelectedId] = useState(initialOffers[0]?.id ?? null);
+    const [selectedId, setSelectedId] = useState(null);
     const [formValues, setFormValues] = useState(() => formValuesFromOffer(initialOffers[0], employerCompanyName));
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -255,14 +617,25 @@ export default function EmployeurOffres({
     const [formError, setFormError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isNewOffer, setIsNewOffer] = useState(!initialOffers[0]);
+    const [isNewOffer, setIsNewOffer] = useState(false);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [isApplicationsOpen, setIsApplicationsOpen] = useState(false);
+    const [applicationsOffer, setApplicationsOffer] = useState(null);
+    const [applicationsByOffer, setApplicationsByOffer] = useState({});
+    const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+    const [applicationsError, setApplicationsError] = useState("");
     const [isFileCleared, setIsFileCleared] = useState(false);
     const [localDrafts, setLocalDrafts] = useState({});
+    const [interviewCandidate, setInterviewCandidate] = useState(null);
+    const [interviewOfferId, setInterviewOfferId] = useState(null);
+    const [scheduledInterviews, setScheduledInterviews] = useState({});
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
     const selectedOffer = offerList.find((offer) => offer.id === selectedId) ?? null;
+    const selectedApplications = selectedOffer
+        ? applicationsByOffer[String(selectedOffer.id)] ?? getApplicationsForOffer(selectedOffer)
+        : [];
     const isOfferReadOnly = !canManageOffers || ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
     const pendingCount = offerList.filter((offer) => offer.statut === "EN_ATTENTE").length;
     const publishedCount = offerList.filter((offer) => offer.statut === "VALIDE").length;
@@ -326,8 +699,8 @@ export default function EmployeurOffres({
 
     useEffect(() => {
         setOfferList(initialOffers);
-        setSelectedId(initialOffers[0]?.id ?? null);
-        setIsNewOffer(!initialOffers[0]);
+        setSelectedId(null);
+        setIsNewOffer(false);
         setIsFileCleared(false);
         setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
     }, [initialOffers, employerCompanyName]);
@@ -341,15 +714,71 @@ export default function EmployeurOffres({
             setFieldErrors({});
             setFileError("");
             setFormError("");
-            setSuccessMessage("");
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
     }, [selectedId, isNewOffer, employerCompanyName, drafts]);
+
+    const loadApplications = async (offer) => {
+        if (!offer?.id) return;
+
+        const offerKey = String(offer.id);
+        setApplicationsOffer(offer);
+        setIsApplicationsOpen(true);
+        setIsLoadingApplications(true);
+        setApplicationsError("");
+
+        try {
+            const response = await api.employer.applications.list(offer.id);
+            if (!response.ok) throw new Error("applications_request_failed");
+
+            const data = await response.json();
+            setApplicationsByOffer((current) => ({
+                ...current,
+                [offerKey]: Array.isArray(data) ? data.map(normalizeApplication) : [],
+            }));
+        } catch {
+            setApplicationsError("applications_request_failed");
+        } finally {
+            setIsLoadingApplications(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!usesRemoteOffers) return undefined;
+
+        const validatedOffers = offerList.filter((offer) => offer.statut === "VALIDE");
+        if (validatedOffers.length === 0) return undefined;
+
+        let isMounted = true;
+
+        Promise.all(validatedOffers.map(async (offer) => {
+            try {
+                const response = await api.employer.applications.list(offer.id);
+                if (!response.ok) return null;
+
+                const data = await response.json();
+                return [String(offer.id), Array.isArray(data) ? data.map(normalizeApplication) : []];
+            } catch {
+                return null;
+            }
+        })).then((entries) => {
+            if (!isMounted) return;
+
+            const loadedApplications = Object.fromEntries(entries.filter(Boolean));
+            setApplicationsByOffer((current) => ({...current, ...loadedApplications}));
+        });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [offerList, usesRemoteOffers]);
 
     const selectOffer = (offer) => {
         const draft = drafts[String(offer.id)];
         setIsNewOffer(false);
         setSelectedId(offer.id);
+        setIsApplicationsOpen(false);
+        setApplicationsOffer(null);
         setIsEditorOpen(true);
         setIsFileCleared(draft?.fileCleared ?? false);
         setFormValues(draft?.fields ?? formValuesFromOffer(offer, employerCompanyName));
@@ -366,6 +795,7 @@ export default function EmployeurOffres({
         const draftFields = draft?.fields ?? EMPTY_FORM;
         setIsNewOffer(true);
         setSelectedId(null);
+        setIsApplicationsOpen(false);
         setIsEditorOpen(true);
         setIsFileCleared(false);
         setFormValues({
@@ -578,6 +1008,7 @@ export default function EmployeurOffres({
         } catch (error) {
             setFormError(error?.key || "employerOffers.errors.submissionConnection");
         } finally {
+            window.requestAnimationFrame(() => editorScrollRef.current?.scrollTo({top: 0, behavior: "smooth"}));
             setIsSubmitting(false);
         }
     };
@@ -612,6 +1043,10 @@ export default function EmployeurOffres({
     if (isLoadingOffers) return <Loading/>;
     if (loadError) return <ErrorPage error={loadError}/>;
 
+    if (interviewCandidate) {
+        console.log("Modal Render Check - selectedOffer:", selectedOffer?.id, "applicationsOffer:", applicationsOffer?.id, "candidate:", interviewCandidate);
+    }
+
     return (
         <section className="flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">
@@ -634,44 +1069,44 @@ export default function EmployeurOffres({
                     </div>
                 )}
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{offerList.length}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{offerList.length === 1 ? t("employerOffers.stats.savedSingular") : t("employerOffers.stats.savedPlural")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
+                        <p className="text-xl font-black text-ink">{offerList.length}</p>
                     </div>
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{pendingCount}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.stats.pendingDescription")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
+                        <p className="text-xl font-black text-ink">{pendingCount}</p>
                     </div>
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.published")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{publishedCount}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.stats.publishedDescription")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.published")}</p>
+                        <p className="text-xl font-black text-ink">{publishedCount}</p>
                     </div>
                 </div>
 
                 <div className="mt-6">
                     <aside
                         className="rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-6">
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="rounded-2xl border border-line bg-canvas p-3 sm:p-4">
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
-                                <h2 className="mt-2 text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
+                                    <h2 className="text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="min-w-0 flex-1 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
+                                {canManageOffers && <button type="button" onClick={startNewOffer}
+                                                            className="inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold whitespace-nowrap text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                    <Icon name="plus" className="h-3.5 w-3.5"/> {t("employerOffers.newOffer")}
+                                </button>}
                             </div>
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
 
-                        {canManageOffers && <button type="button" onClick={startNewOffer}
-                                                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40">
-                            <Icon name="plus" className="h-4 w-4"/> {t("employerOffers.newOffer")}
-                        </button>}
-
-                        <div className="mt-6 space-y-3">
+                        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {offerList.length === 0 && (
                                 <div className="rounded-2xl border border-dashed border-line bg-canvas p-5 text-center">
                                     <p className="mt-0 text-sm font-bold text-ink">{t("employerOffers.emptyTitle")}</p>
@@ -679,25 +1114,43 @@ export default function EmployeurOffres({
                                 </div>
                             )}
                             {offerList.map((offer) => (
-                                <button
+                                <div
                                     key={offer.id}
-                                    type="button"
-                                    onClick={() => selectOffer(offer)}
                                     className={`w-full rounded-2xl border p-4 text-left transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${selectedId === offer.id && !isNewOffer ? "border-ink bg-lavender/30" : "border-line bg-canvas hover:border-lavender hover:bg-lavender/15"}`}
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <span
-                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-ink"><Icon
-                                            name="file" className="h-4 w-4"/></span>
-                                        <StatusBadge status={offer.statut}/>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="line-clamp-2 text-sm font-black leading-5 text-ink">{formatOfferTitle(offer.position) || t("employerOffers.untitledOffer")}</p>
+                                            <p className="mt-1 truncate text-xs text-ink-soft">{offer.fileName || t("employerOffers.noFile")}</p>
+                                        </div>
+                                        <div className="flex flex-wrap justify-end gap-2">
+                                            <span
+                                                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-bold text-ink-soft">
+                                                <Icon name="users" className="h-3.5 w-3.5"/>
+                                                {applicationsByOffer[String(offer.id)]?.length ?? getApplicationCount(offer)}
+                                            </span>
+                                            <StatusBadge status={offer.statut}/>
+                                        </div>
                                     </div>
-                                    <p className="mt-4 line-clamp-2 text-sm font-black leading-5 text-ink">{offer.position || t("employerOffers.untitledOffer")}</p>
-                                    <p className="mt-1 truncate text-xs text-ink-soft">{offer.fileName || t("employerOffers.noFile")}</p>
-                                    <div className="mt-4 flex items-center justify-between gap-2 text-xs text-ink-soft">
-                                        <span>{t("employerOffers.version", {version: offer.version ?? 1})}</span>
+                                    <div className="mt-4 flex items-center gap-2 text-xs text-ink-soft">
+                                        <Icon name="calendar" className="h-3.5 w-3.5"/>
                                         <span>{formatDate(offer.updatedAt, i18n.resolvedLanguage)}</span>
                                     </div>
-                                </button>
+                                    <div
+                                        className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
+                                        {canManageOffers && <button type="button" onClick={() => selectOffer(offer)}
+                                                                    className="inline-flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-2 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                            <Icon name="file" className="h-3.5 w-3.5 shrink-0"/>
+                                            {t("employerOffers.actions.update")}
+                                        </button>}
+                                        {offer.statut === "VALIDE" && <button type="button"
+                                                                              onClick={() => loadApplications(offer)}
+                                                                              className="ml-auto inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                            <Icon name="users" className="h-3.5 w-3.5 shrink-0"/>
+                                            {t("employerOffers.actions.applications")}
+                                        </button>}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </aside>
@@ -711,10 +1164,10 @@ export default function EmployeurOffres({
                          role="dialog"
                          aria-modal="true"
                          aria-labelledby="employer-offer-editor-title">
-                        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                        <div ref={editorScrollRef} className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
                         <div
-                            className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
+                            className="flex flex-row items-start justify-between gap-3 border-b border-line pb-6">
+                            <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
                                     {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
@@ -877,7 +1330,7 @@ export default function EmployeurOffres({
                                                                              onChange={updateField}
                                                                              className={`${inputClass(fieldErrors.salaire)} pr-12`}
                                                                              placeholder={t("employerOffers.placeholders.hourlyPay")}/><span
-                                                className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">$/h</span>
+                                                className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">{t("employerOffers.units.hourlyRate")}</span>
                                             </div>
                                         </Field>
                                     </div>
@@ -931,6 +1384,42 @@ export default function EmployeurOffres({
                         </div>
                     </div>
                     </div>}
+                    {isApplicationsOpen && applicationsOffer?.statut === "VALIDE" && (
+                        <ApplicationsModal
+                            offer={applicationsOffer}
+                            applications={applicationsByOffer[String(applicationsOffer.id)] ?? getApplicationsForOffer(applicationsOffer)}
+                            language={i18n.resolvedLanguage}
+                            isLoading={isLoadingApplications}
+                            scheduledInterviews={scheduledInterviews}
+                            error={applicationsError}
+
+                            onClose={() => {
+                                setIsApplicationsOpen(false);
+                                setApplicationsOffer(null);
+                            }}
+                            onScheduleInterview={(candidate) => {
+                                setInterviewOfferId(applicationsOffer?.id ?? null);
+                                setIsApplicationsOpen(false);
+                                setApplicationsOffer(null);
+                                setInterviewCandidate(candidate);
+                            }}
+                        />
+                    )}
+
+                    {interviewCandidate && (
+                        <ScheduleInterviewModal
+                            offerId={interviewOfferId}
+                            candidat={interviewCandidate}
+                            initialData={scheduledInterviews[`${interviewOfferId}_${interviewCandidate?.id}`]}
+                            onClose={() => setInterviewCandidate(null)}
+                            onSuccess={(submittedData) => {
+                                setScheduledInterviews((current) => ({
+                                    ...current,
+                                    [`${interviewOfferId}_${interviewCandidate?.id}`]: submittedData,
+                                }));
+                            }}
+                        />
+                    )}
                 </div>
             </div>
         </section>

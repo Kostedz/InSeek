@@ -10,6 +10,7 @@ import ErrorPage from "./components/ErrorPage.jsx";
 import Logout from "./components/auth/Logout.jsx";
 import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx";
 import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
+import EtudiantCandidatures from "./components/page/EtudiantCandidatures.jsx";
 import EmployeurOffres from "./components/page/EmployeurOffres.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
@@ -100,7 +101,22 @@ function App() {
                                                           allowedRoles={["ETUDIANT"]}>
                                               <EtudiantTeleverseCV user={user}/>
                                          </ProtectedRoute>
-                                     }/>
+              }/>
+
+              <Route path='etudiant/offres' element={
+                                                 <ProtectedRoute user={user} authChecked={authChecked}
+                                                                 allowedRoles={["ETUDIANT"]}>
+                                                    <EtudiantAccueil user={user}/>
+                                                </ProtectedRoute>
+                                            }/>
+
+              <Route path='etudiant/candidatures' element={
+                                                       <ProtectedRoute user={user} authChecked={authChecked}
+                                                                       allowedRoles={["ETUDIANT"]}>
+                                                          <EtudiantCandidatures/>
+                                                      </ProtectedRoute>
+                                                  }/>
+
               <Route path='employeur' element={
                                            <ProtectedRoute user={user} authChecked={authChecked}
                                                            allowedRoles={["EMPLOYEUR"]}>

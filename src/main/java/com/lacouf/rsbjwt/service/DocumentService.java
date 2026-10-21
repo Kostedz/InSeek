@@ -3,6 +3,7 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.*;
@@ -13,6 +14,9 @@ import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
@@ -28,6 +32,7 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class DocumentService {
     private final DocumentRepository documentRepository;
+    private final ApplicationStageRepository applicationStageRepository;
     private final UtilisateurService utilisateurService;
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -107,7 +112,13 @@ public class DocumentService {
                 && document instanceof OffreDeStage
                 && document.getStatut() == StatutValidation.VALIDE
                 && documentRepository.existsStudentCvByStatut(requester, StatutValidation.VALIDE);
-        if (!isManager && !isOwner && !isStudentWithValidatedCv) {
+        boolean isEmployerWithApplicantCv = requester instanceof Employeur
+                && document instanceof CV
+                && document.getStatut() == StatutValidation.VALIDE
+                && document.getUtilisateur() != null
+                && applicationStageRepository.existsByEtudiantIdAndEmployerId(
+                document.getUtilisateur().getId(), requester.getId());
+        if (!isManager && !isOwner && !isStudentWithValidatedCv && !isEmployerWithApplicantCv) {
             throw new NotFoundException("Document non trouvé");
         }
 
@@ -204,20 +215,19 @@ public class DocumentService {
         throw new BadRequestException("Seul un étudiant ou le compte développeur peut téléverser un CV");
     }
 
-    // TODO: to be refactored/completed. wtf, empty catch clause?? oïc, you need to answer for these crimes
     @Transactional
     public List<OffreDeStageDTO> findOffersForEmployer(HttpServletRequest request)
             throws BadRequestException, NotFoundException {
-        List<OffreDeStage> offers = findApprovedOffers();
-        String authorization = request.getHeader("Authorization");
-        if (authorization != null && authorization.startsWith("Bearer ")) {
-            try {
-                Utilisateur user = getAuthenticatedUser(request);
-                offers = documentRepository.findOffersByEmployer(user);
-            } catch (BadRequestException | NotFoundException | RuntimeException ignored) {
-                // Public visitors fall back to approved offers.
-            }
-        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAuthenticated = authentication != null
+                && authentication.isAuthenticated()
+                && !(authentication instanceof AnonymousAuthenticationToken);
+
+        List<OffreDeStage> offers = isAuthenticated
+                ? documentRepository.findOffersByEmployer(
+                utilisateurService.findEntityByEmail(authentication.getName()))
+                : findApprovedOffers();
+
         return offers
                 .stream()
                 .map(OffreDeStageDTO::of)

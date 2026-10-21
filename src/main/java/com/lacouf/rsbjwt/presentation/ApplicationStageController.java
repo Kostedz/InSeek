@@ -1,0 +1,80 @@
+package com.lacouf.rsbjwt.presentation;
+
+import com.lacouf.rsbjwt.exception.BadRequestException;
+import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.OffreDeStage;
+import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.service.ApplicationStageService;
+import com.lacouf.rsbjwt.service.UtilisateurService;
+import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/applications")
+@RequiredArgsConstructor
+public class ApplicationStageController {
+
+    private final ApplicationStageService applicationStageService;
+    private final UtilisateurService utilisateurService;
+    private final DocumentRepository documentRepository;
+
+    @PostMapping("/{offreId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
+    public ApplicationStageDTO addApplicationStage(
+            @PathVariable Long offreId,
+            Authentication authentication
+    ) throws BadRequestException, NotFoundException {
+
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        OffreDeStage offreDeStage = documentRepository
+                .findOffreStageById(offreId)
+                .orElseThrow(() ->
+                        new NotFoundException("Offre de stage introuvable")
+                );
+
+        return applicationStageService.createApplicationStage(
+                utilisateur,
+                offreDeStage
+        );
+    }
+
+    @GetMapping("/my-applications")
+    public List<Long> getMyApplications(Authentication authentication)
+            throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.findAppliedOfferIds(utilisateur);
+    }
+
+    @GetMapping("/my-applications/details")
+    public List<ApplicationStageDTO> getMyApplicationDetails(Authentication authentication)
+            throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.findApplicationsForStudent(utilisateur);
+    }
+
+    @GetMapping("/offer/{offreId}")
+    public List<ApplicationStageDTO> getApplicationsForOffer(
+            @PathVariable Long offreId,
+            Authentication authentication
+    ) throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.findApplicationsForEmployer(utilisateur, offreId);
+    }
+}
