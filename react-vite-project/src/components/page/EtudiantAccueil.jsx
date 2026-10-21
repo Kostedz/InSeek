@@ -461,8 +461,10 @@ export default function EtudiantAccueil({user}) {
                     </div>
                 </div>
                 <StudentMenu/>
-                <StudentConvocation user={user} t={t} language={language}/>
 
+                {(cvState === "ready" ) && (
+                    <StudentConvocation user={user} t={t} language={language}/>
+                )}
 
 
                 {(cvState === "blocked" || cvState === "no-cv") && (
