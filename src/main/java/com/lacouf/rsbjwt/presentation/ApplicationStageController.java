@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -47,6 +48,29 @@ public class ApplicationStageController {
                 utilisateur,
                 offreDeStage
         );
+    }
+
+    @PutMapping("/{applicationId}/accept")
+    public ApplicationStageDTO accepter(
+            @PathVariable Long applicationId,
+            Authentication authentication
+    ) throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.accepter(utilisateur, applicationId);
+    }
+
+    @PutMapping("/{applicationId}/reject")
+    public ApplicationStageDTO refuser(
+            @PathVariable Long applicationId,
+            @RequestBody Map<String, String> body,
+            Authentication authentication
+    ) throws BadRequestException, NotFoundException {
+        Utilisateur utilisateur = utilisateurService
+                .findEntityByEmail(authentication.getName());
+
+        return applicationStageService.refuser(utilisateur, applicationId, body.get("commentaire"));
     }
 
     @GetMapping("/my-applications")
