@@ -92,11 +92,15 @@ public class CandidatureService {
             throws BadRequestException, NotFoundException {
         String email = getEmailEmployeur(request);
         Candidature c = candidatureRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Candidature non trouvée"));
+                .orElseThrow(() -> new NotFoundException("Candidature non trouvée (id " + id + " inexistant dans la table candidature)"));
+
         Utilisateur proprietaire = c.getOffre().getUtilisateur();
+        System.out.println("CHECK candidature=" + id
+                + " proprietaire=" + (proprietaire == null ? null : proprietaire.getEmail())
+                + " employeurConnecte=" + email);
+
         if (proprietaire == null || !proprietaire.getEmail().equals(email)) {
-            // on ne révèle pas l'existence d'une candidature qui n'est pas à lui
-            throw new NotFoundException("Candidature non trouvée");
+            throw new NotFoundException("Candidature non trouvée (propriétaire de l'offre différent de l'employeur connecté)");
         }
         return c;
     }

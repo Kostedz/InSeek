@@ -11,5 +11,6 @@ public record ApplicationStageDTO(
         OffreDeStageDTO offreDeStageDTO,
         StatutValidation statutValidation,
         Long cvDocumentId,
-        String cvFileName) {
+        String cvFileName,
+        String commentaireRefus) {
 }

@@ -11,6 +11,7 @@ import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -46,6 +47,39 @@ public class ApplicationStageService {
         return toDto(sauvegarde);
     }
 
+    @Transactional
+    public ApplicationStageDTO accepter(Utilisateur utilisateur, Long applicationId)
+            throws BadRequestException, NotFoundException {
+        ApplicationStage application = findApplicationOfEmployer(utilisateur, applicationId);
+        verifierEnAttente(application);
+
+        if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(
+                application.getOffreDeStage().getId(), StatutValidation.ACCEPTE))
+            throw new BadRequestException("Cette offre de stage a déjà été attribuée à un autre étudiant.");
+
+        application.setStatutValidation(StatutValidation.ACCEPTE);
+        application.setCommentaireRefus(null);
+        application.setDateDecision(LocalDateTime.now());
+
+        return toDto(applicationStageRepository.save(application));
+    }
+
+    @Transactional
+    public ApplicationStageDTO refuser(Utilisateur utilisateur, Long applicationId, String commentaire)
+            throws BadRequestException, NotFoundException {
+        if (commentaire == null || commentaire.isBlank())
+            throw new BadRequestException("Le commentaire est obligatoire pour refuser une candidature.");
+
+        ApplicationStage application = findApplicationOfEmployer(utilisateur, applicationId);
+        verifierEnAttente(application);
+
+        application.setStatutValidation(StatutValidation.REJETE);
+        application.setCommentaireRefus(commentaire.trim());
+        application.setDateDecision(LocalDateTime.now());
+
+        return toDto(applicationStageRepository.save(application));
+    }
+
     @Transactional(readOnly = true)
     public List<Long> findAppliedOfferIds(Utilisateur utilisateur) throws BadRequestException {
         if (!(utilisateur instanceof Etudiant etudiant)) {
@@ -77,7 +111,8 @@ public class ApplicationStageService {
                             offer,
                             application.getStatutValidation(),
                             cv == null ? null : cv.getId(),
-                            cv == null ? null : cv.getFileName()
+                            cv == null ? null : cv.getFileName(),
+                            application.getCommentaireRefus()
                     );
                 })
                 .toList();
@@ -107,11 +142,34 @@ public class ApplicationStageService {
     public ApplicationStageDTO toDto(ApplicationStage applicationStage){
         CV cv = documentRepository.findByUtilisateur(applicationStage.getEtudiant());
         return  new ApplicationStageDTO(applicationStage.getId(),
-                                        applicationStage.getDateApplique(),
-                                        EtudiantDTO.of(applicationStage.getEtudiant()),
-                                        OffreDeStageDTO.of(applicationStage.getOffreDeStage()),
+                applicationStage.getDateApplique(),
+                EtudiantDTO.of(applicationStage.getEtudiant()),
+                OffreDeStageDTO.of(applicationStage.getOffreDeStage()),
                 applicationStage.getStatutValidation(),
                 cv == null ? null : cv.getId(),
-                cv == null ? null : cv.getFileName());
+                cv == null ? null : cv.getFileName(),
+                applicationStage.getCommentaireRefus());
+    }
+
+    private ApplicationStage findApplicationOfEmployer(Utilisateur utilisateur, Long applicationId)
+            throws BadRequestException, NotFoundException {
+        if (!(utilisateur instanceof Employeur)) {
+            throw new BadRequestException("Seuls les employeurs peuvent traiter les candidatures reçues.");
+        }
+
+        ApplicationStage application = applicationStageRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("Candidature introuvable"));
+
+        Utilisateur proprietaire = application.getOffreDeStage().getUtilisateur();
+        if (proprietaire == null || !proprietaire.getId().equals(utilisateur.getId())) {
+            throw new NotFoundException("Candidature introuvable");
+        }
+        return application;
+    }
+
+    private void verifierEnAttente(ApplicationStage application) throws BadRequestException {
+        if (application.getStatutValidation() != StatutValidation.EN_ATTENTE) {
+            throw new BadRequestException("Cette candidature a déjà été traitée.");
+        }
     }
 }

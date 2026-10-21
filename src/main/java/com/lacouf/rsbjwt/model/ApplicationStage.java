@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -32,4 +33,9 @@ public class ApplicationStage {
 
     @Enumerated(EnumType.STRING)
     private StatutValidation statutValidation = StatutValidation.EN_ATTENTE;
+
+    @Column(length = 1000)
+    private String commentaireRefus;
+
+    private LocalDateTime dateDecision;
 }
