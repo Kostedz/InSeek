@@ -10,6 +10,7 @@ import com.lacouf.rsbjwt.service.dto.DocumentValidationDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,8 +53,19 @@ public class DocumentController {
     }
 
     @GetMapping("/documents/stage")
-    public List<OffreDeStageDTO> findAllStages() {
+    public List<OffreDeStageDTO> findAllStages(HttpServletRequest request) {
         return documentService.findAllOffreDeStage();
+    }
+
+    @GetMapping("/documents/stages")
+    public ResponseEntity<List<OffreDeStageDTO>> findStagesByDiscipline(HttpServletRequest request) throws BadRequestException, NotFoundException {
+        try {
+            return ResponseEntity.ok(documentService.findStagesByDiscipline(request));
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 
     @GetMapping("/documents/student/cv")
@@ -98,7 +110,7 @@ public class DocumentController {
         return documentService.findOffreDeStageById(id);
     }
 
-    @GetMapping("/documents/stage/discipline/{discipline}")
+    @GetMapping("/documents/stage/{discipline}")
     public List<OffreDeStageDTO> getOffreDeStageByDiscipline(@PathVariable Disciplines discipline) {
         return documentService.findOffreDeStageDiscipline(discipline);
     }
