@@ -96,6 +96,13 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             """)
     Optional<OffreDeStage> findOffreStageById(@Param("id") Long id);
 
+    @Query("""
+            SELECT o
+            FROM OffreDeStage o
+            WHERE o.id = :id
+            """)
+    OffreDeStage findOffreById(@Param("id") Long id);
+
 
     @Query("""
             SELECT o

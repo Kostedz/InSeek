@@ -28,32 +28,23 @@ public class ApplicationStageController {
     private final UtilisateurService utilisateurService;
     private final DocumentRepository documentRepository;
 
+
+    // P: enleve le transactional du controlleur ramses sinon je vais te le foutre au cul
+    // P: aussi utilise les ResponseEntity<T> pour renvoyer les infos avec leur code
     @PostMapping("/{offreId}")
-    @ResponseStatus(HttpStatus.CREATED)
-    @Transactional
-    public ApplicationStageDTO addApplicationStage(
+    public ResponseEntity<ApplicationStageDTO> addApplicationStage(
             @PathVariable Long offreId,
             Authentication authentication
     ) throws BadRequestException, NotFoundException {
-
-        Utilisateur utilisateur = utilisateurService
-                .findEntityByEmail(authentication.getName());
-
-        OffreDeStage offreDeStage = documentRepository
-                .findOffreStageById(offreId)
-                .orElseThrow(() ->
-                        new NotFoundException("Offre de stage introuvable")
-                );
-
-        return applicationStageService.createApplicationStage(
-                utilisateur,
-                offreDeStage
-        );
+        Utilisateur utilisateur = utilisateurService.findEntityByEmail(authentication.getName());
+        ApplicationStageDTO dto = applicationStageService.createApplicationStage1(utilisateur.getId(), offreId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
     @GetMapping("/my-applications")
     public List<Long> getMyApplications(Authentication authentication)
             throws BadRequestException, NotFoundException {
+        // P: meme chose que en haut, la logique devrait etre dans le service
         Utilisateur utilisateur = utilisateurService
                 .findEntityByEmail(authentication.getName());
 
