@@ -93,6 +93,10 @@ public class EntrevueService {
     public List<EntrevueDTO> getInterviewsForStudent(HttpServletRequest request) throws NotFoundException {
         String studentEmail = getEmailFromRequest(request);
         Etudiant student = findStudentByEmail(studentEmail);
+
+        if (student == null) {
+            throw new NotFoundException("Étudiant non trouvé.");
+        }
         return interviewRepository.findByStudentId(student.getId())
                 .stream()
                 .map(EntrevueDTO::of)
@@ -239,7 +243,7 @@ public class EntrevueService {
     }
 
     private void updateStudent(Etudiant student, CreateEntrevueDTO InterviewDTO) {
-        student.setDateEnterview(InterviewDTO.DateAndTime());
+        student.setDateInterview(InterviewDTO.DateAndTime());
         student.setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
     }
 
