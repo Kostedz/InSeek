@@ -150,26 +150,6 @@ export const api = {
                 body: interviewBody(offerId, candidatId, payload),
             }),
         },
-        /*candidatures: {
-            accepterCandidature: (id) => fetcher(`/employeur/candidatures/${id}/accept`, {
-                method: "PUT",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json;charset=UTF-8",
-                },
-            }),
-
-            refuserCandidature: (id, commentaire) => fetcher(`/employeur/candidatures/${id}/reject`, {
-                method: "PUT",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json;charset=UTF-8",
-                },
-                body: JSON.stringify({
-                    commentaire: commentaire ? commentaire.trim() : "",
-                }),
-            }),
-        }, */
         applications: {
             list: (offerId) => fetcher(`/api/applications/offer/${encodeURIComponent(offerId)}`, {
                 cache: "no-store",
