@@ -23,7 +23,6 @@ public class Entrevue {
     @JoinColumn(nullable = false)
     private Etudiant student;
 
-
     @ManyToOne
     @JoinColumn(nullable = false)
     private OffreDeStage internshipOffer;
