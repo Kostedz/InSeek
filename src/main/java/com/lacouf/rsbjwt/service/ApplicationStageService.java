@@ -25,51 +25,56 @@ public class ApplicationStageService {
 
 
     @Transactional
-    public ApplicationStageDTO createApplicationStage(Utilisateur utilisateur, OffreDeStage offreDeStage) throws BadRequestException {
-        if(! (utilisateur instanceof Etudiant etudiant))
-            throw new BadRequestException("Seul les etudiants peuvent appliquer à une offrre de stage.");
+    public ApplicationStageDTO createApplicationStage1(
+            Long idUtilisateur,
+            Long idOffreDeStage
+    ) throws BadRequestException {
 
-        if(applicationStageRepository.existsByEtudiantIdAndOffreDeStageId(etudiant.getId(), offreDeStage.getId()))
-            throw  new BadRequestException("Vous ne puvez pas appliquer à la même offre de stage plus qu'une fois.");
+        Utilisateur utilisateur =
+                utilisateurRepository.findUtilisateurById(idUtilisateur);
 
-        if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(offreDeStage.getId(), StatutValidation.ACCEPTE))
-            throw new BadRequestException("Cette offre de stage a déjà été attribuée à un autre étudiant.");
-
-        ApplicationStage applicationStage = new ApplicationStage();
-        applicationStage.setEtudiant(etudiant);
-        applicationStage.setOffreDeStage(offreDeStage);
-
-        ApplicationStage sauvegarde = applicationStageRepository.save(applicationStage);
-        return toDto(sauvegarde);
-    }
-
-    @Transactional
-    public ApplicationStageDTO createApplicationStage1(Long idUtilisateur, Long idOffreDeStage) throws BadRequestException {
-
-        if (utilisateurRepository.findUtilisateurById(idUtilisateur) == null)
+        if (utilisateur == null) {
             throw new BadRequestException("Cet utilisateur n'existe pas");
+        }
 
-        if (documentRepository.findOffreById(idOffreDeStage) == null)
-            throw new BadRequestException("Cet offre de stage n'existe pas");
+        if (!(utilisateur instanceof Etudiant etudiant)) {
+            throw new BadRequestException(
+                    "Seuls les étudiants peuvent postuler à une offre de stage."
+            );
+        }
 
-        if(! (utilisateurRepository.findUtilisateurById(idUtilisateur) instanceof Etudiant etudiant))
-            throw new BadRequestException("Seul les etudiants peuvent appliquer à une offrre de stage.");
+        OffreDeStage offreDeStage =
+                documentRepository.findOffreById(idOffreDeStage);
 
-        if (! (documentRepository.findOffreById(idOffreDeStage) instanceof OffreDeStage offreDeStage))
-            throw new BadRequestException("Les étudiants peuvent seulement appliquer à des offres de stage.");
+        if (offreDeStage == null) {
+            throw new BadRequestException(
+                    "Cette offre de stage n'existe pas"
+            );
+        }
 
-        if(applicationStageRepository.existsByEtudiantIdAndOffreDeStageId(idUtilisateur, idOffreDeStage))
-            throw  new BadRequestException("Vous ne puvez pas appliquer à la même offre de stage plus qu'une fois.");
+        if (applicationStageRepository
+                .existsByEtudiantIdAndOffreDeStageId(
+                        etudiant.getId(), offreDeStage.getId())) {
+            throw new BadRequestException(
+                    "Vous ne pouvez pas postuler deux fois à la même offre."
+            );
+        }
 
-        if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(offreDeStage.getId(), StatutValidation.ACCEPTE))
-            throw new BadRequestException("Cette offre de stage a déjà été attribuée à un autre étudiant.");
+        if (applicationStageRepository
+                .existsByOffreDeStageIdAndStatutValidation(
+                        offreDeStage.getId(), StatutValidation.ACCEPTE)) {
+            throw new BadRequestException(
+                    "Cette offre de stage a déjà été attribuée à un autre étudiant."
+            );
+        }
 
-        // P: c'est fine, mais tu pourrais juste faire un builder de ApplicationStage pour la consistence
         ApplicationStage applicationStage = new ApplicationStage();
         applicationStage.setEtudiant(etudiant);
         applicationStage.setOffreDeStage(offreDeStage);
 
-        ApplicationStage sauvegarde = applicationStageRepository.save(applicationStage);
+        ApplicationStage sauvegarde =
+                applicationStageRepository.save(applicationStage);
+
         return toDto(sauvegarde);
     }
 
