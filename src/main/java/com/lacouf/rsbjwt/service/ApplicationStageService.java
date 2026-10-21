@@ -5,9 +5,11 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,35 +17,65 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ApplicationStageService {
 
     private final ApplicationStageRepository applicationStageRepository;
     private final DocumentRepository documentRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
-    public ApplicationStageService(
-            ApplicationStageRepository applicationStageRepository,
-            DocumentRepository documentRepository
-    ) {
-        this.applicationStageRepository = applicationStageRepository;
-        this.documentRepository = documentRepository;
-    }
 
     @Transactional
-    public ApplicationStageDTO createApplicationStage(Utilisateur utilisateur, OffreDeStage offreDeStage) throws BadRequestException {
-        if(! (utilisateur instanceof Etudiant etudiant))
-            throw new BadRequestException("Seul les etudiants peuvent appliquer à une offrre de stage.");
+    public ApplicationStageDTO createApplicationStage1(
+            Long idUtilisateur,
+            Long idOffreDeStage
+    ) throws BadRequestException {
 
-        if(applicationStageRepository.existsByEtudiantIdAndOffreDeStageId(etudiant.getId(), offreDeStage.getId()))
-            throw  new BadRequestException("Vous ne puvez pas appliquer à la même offre de stage plus qu'une fois.");
+        Utilisateur utilisateur =
+                utilisateurRepository.findUtilisateurById(idUtilisateur);
 
-        if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(offreDeStage.getId(), StatutValidation.ACCEPTE))
-            throw new BadRequestException("Cette offre de stage a déjà été attribuée à un autre étudiant.");
+        if (utilisateur == null) {
+            throw new BadRequestException("Cet utilisateur n'existe pas");
+        }
+
+        if (!(utilisateur instanceof Etudiant etudiant)) {
+            throw new BadRequestException(
+                    "Seuls les étudiants peuvent postuler à une offre de stage."
+            );
+        }
+
+        OffreDeStage offreDeStage =
+                documentRepository.findOffreById(idOffreDeStage);
+
+        if (offreDeStage == null) {
+            throw new BadRequestException(
+                    "Cette offre de stage n'existe pas"
+            );
+        }
+
+        if (applicationStageRepository
+                .existsByEtudiantIdAndOffreDeStageId(
+                        etudiant.getId(), offreDeStage.getId())) {
+            throw new BadRequestException(
+                    "Vous ne pouvez pas postuler deux fois à la même offre."
+            );
+        }
+
+        if (applicationStageRepository
+                .existsByOffreDeStageIdAndStatutValidation(
+                        offreDeStage.getId(), StatutValidation.ACCEPTE)) {
+            throw new BadRequestException(
+                    "Cette offre de stage a déjà été attribuée à un autre étudiant."
+            );
+        }
 
         ApplicationStage applicationStage = new ApplicationStage();
         applicationStage.setEtudiant(etudiant);
         applicationStage.setOffreDeStage(offreDeStage);
 
-        ApplicationStage sauvegarde = applicationStageRepository.save(applicationStage);
+        ApplicationStage sauvegarde =
+                applicationStageRepository.save(applicationStage);
+
         return toDto(sauvegarde);
     }
 
@@ -136,6 +168,13 @@ public class ApplicationStageService {
         return applicationStageRepository.findByOffreDeStageId(offreId)
                 .stream()
                 .map(this::toDto)
+                .toList();
+    }
+
+    public List<EtudiantDTO> findEtudiantsByOffreDeStage(Long idOffreDeStage){
+        return applicationStageRepository.findEtudiantsByOffreDeStage(idOffreDeStage)
+                .stream()
+                .map(EtudiantDTO::of)
                 .toList();
     }
 
