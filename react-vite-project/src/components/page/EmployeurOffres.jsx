@@ -4,6 +4,9 @@ import {createTranslationMessage, translateMessage} from "../../utils/i18nMessag
 import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import ErrorPage from "../ErrorPage.jsx";
+import PdfPreview from "../PdfPreview.jsx";
+import {formatOfferTitle} from "./studentOfferUtils.js";
+import ScheduleInterviewModal from "../employer/SchedulenterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -33,6 +36,22 @@ const EMPTY_FORM = {
     descriptionPosition: "",
 };
 const EMPTY_OFFERS = [];
+const NEW_OFFER_DRAFT_KEY = "new";
+
+function getTodayIso() {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${today.getFullYear()}-${month}-${day}`;
+}
+
+function sanitizeSalary(value) {
+    const sanitized = String(value ?? "")
+        .replace(",", ".")
+        .replace(/[^\d.]/g, "");
+    const [whole, ...decimalParts] = sanitized.split(".");
+    return decimalParts.length > 0 ? `${whole}.${decimalParts.join("")}` : whole;
+}
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
@@ -40,6 +59,101 @@ function normalizeStatus(status) {
     if (["REJECTED", "REJECTE", "REJETÉ", "REJETE"].includes(normalized)) return "REJETE";
     if (["PENDING", "EN_ATTENTE", "EN ATTENTE"].includes(normalized)) return "EN_ATTENTE";
     return "NOT_SUBMITTED";
+}
+
+function getApplicationStatus(application) {
+    const status = String(
+        application?.status
+        ?? application?.statut
+        ?? application?.statutCandidature
+        ?? "PENDING"
+    ).toUpperCase();
+    if (["ACCEPTED", "ACCEPTEE", "ACCEPTÉE", "VALIDE", "APPROVED"].includes(status)) return "ACCEPTED";
+    if (["REJECTED", "REJETE", "REJETÉ", "REFUSEE", "REFUSÉE"].includes(status)) return "REJECTED";
+    return "PENDING";
+}
+
+function applyDecisions(applications, decisions) {
+    return applications.map((application) => {
+        const decision = decisions[String(application.id)];
+        if (!decision || getApplicationStatus(application) !== "PENDING") return application;
+        return {...application, status: decision.status, rejectionComment: decision.comment};
+    });
+}
+
+function hasValue(value) {
+    return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
+function normalizeApplication(application, index = 0) {
+    const student = application?.student
+        ?? application?.etudiant
+        ?? application?.applicant
+        ?? application?.etudiantDTO
+        ?? {};
+    const firstName = application?.firstName ?? application?.prenom ?? student.firstName ?? student.prenom ?? "";
+    const lastName = application?.lastName ?? application?.nom ?? student.lastName ?? student.nom ?? "";
+    const fullName = application?.name
+        ?? application?.studentName
+        ?? application?.nomEtudiant
+        ?? [firstName, lastName].filter(Boolean).join(" ");
+    const documents = Array.isArray(application?.documents) ? application.documents : [];
+    const cvDocument = application?.cv ?? application?.resume ?? documents.find((document) => /cv|resume|ré?sumé/i.test(String(document?.type ?? document?.name ?? "")));
+
+    return {
+        ...application,
+        id: application?.id ?? application?.applicationId ?? `application-${index}`,
+        studentId: application?.studentId
+            ?? application?.etudiantId
+            ?? application?.idEtudiant
+            ?? student.id
+            ?? null,
+        interviewScheduled: Boolean(
+            application?.interviewScheduled
+            ?? application?.entrevuePlanifiee
+            ?? application?.hasInterview
+        ),
+        firstName,
+        lastName,
+        name: String(fullName || "").trim(),
+        email: application?.email ?? application?.studentEmail ?? application?.courriel ?? student.email ?? "",
+        submittedAt: application?.submittedAt
+            ?? application?.dateSoumission
+            ?? application?.dateApplique
+            ?? application?.createdAt
+            ?? application?.submissionDate,
+        phone: application?.phone ?? application?.telephone ?? student.phone ?? student.telephone ?? "",
+        address: application?.address ?? application?.adresse ?? student.address ?? student.adresse ?? "",
+        cvDocumentId: application?.cvDocumentId
+            ?? application?.cvId
+            ?? student.cvDocumentId
+            ?? student.cvId
+            ?? cvDocument?.id
+            ?? null,
+        cvFileName: application?.cvFileName
+            ?? application?.cvFilename
+            ?? student.cvFileName
+            ?? student.cvFilename
+            ?? cvDocument?.fileName
+            ?? cvDocument?.name
+            ?? "",
+    };
+}
+
+function getApplicationsForOffer(offer) {
+    const source = offer?.candidatures ?? offer?.applications ?? offer?.candidates;
+    if (Array.isArray(source)) return source.map(normalizeApplication);
+
+    return [];
+}
+
+function getApplicationCount(offer) {
+    const source = offer?.candidatures ?? offer?.applications ?? offer?.candidates;
+    if (Array.isArray(source)) return source.length;
+    if (hasValue(offer?.applicationCount ?? offer?.applicationsCount ?? offer?.nombreCandidatures)) {
+        return Number(offer.applicationCount ?? offer.applicationsCount ?? offer.nombreCandidatures) || 0;
+    }
+    return getApplicationsForOffer(offer).length;
 }
 
 function normalizeOffer(offer) {
@@ -90,17 +204,27 @@ function formValuesFromOffer(offer, defaultCompanyName = "") {
 }
 
 function formatDate(value, language) {
-    if (!value) return "—";
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
     return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
         day: "numeric",
         month: "short",
         year: "numeric",
-    }).format(new Date(value));
+    }).format(date);
 }
 
-function formatFileSize(bytes, t) {
-    if (!bytes) return "";
-    return `${(bytes / (1024 * 1024)).toFixed(1)} ${t("employerOffers.units.megabytes")}`;
+function formatDateTime(value, language) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    }).format(date);
 }
 
 function StatusBadge({status}) {
@@ -127,6 +251,30 @@ function StatusBadge({status}) {
     );
 }
 
+function ApplicationStatusBadge({status}) {
+    const {t} = useTranslation();
+
+    if (status === "ACCEPTED") {
+        return (
+            <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                {t("employerOffers.applications.status.accepted", "Acceptée")}
+            </span>
+        );
+    }
+    if (status === "REJECTED") {
+        return (
+            <span className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+                {t("employerOffers.applications.status.rejected", "Refusée")}
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+            {t("employerOffers.applications.status.pending", "En attente")}
+        </span>
+    );
+}
+
 function Icon({name, className = "h-5 w-5"}) {
     const paths = {
         check: <path d="m5 12 4 4L19 6"/>,
@@ -134,25 +282,35 @@ function Icon({name, className = "h-5 w-5"}) {
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <path d="M14 2v6h6M8 13h8M8 17h5"/>
         </>,
-        upload: <>
-            <path d="M12 16V4M7 9l5-5 5 5"/>
-            <path d="M5 20h14"/>
-        </>,
         plus: <>
             <path d="M12 5v14M5 12h14"/>
         </>,
         arrow: <>
             <path d="M5 12h14M13 6l6 6-6 6"/>
         </>,
+        close: <path d="M6 6l12 12M18 6 6 18"/>,
         shield: <path d="M12 3 4.5 6v5.2c0 4.8 3.2 8.1 7.5 9.8 4.3-1.7 7.5-5 7.5-9.8V6z"/>,
         info: <>
             <circle cx="12" cy="12" r="9"/>
             <path d="M12 11v5M12 8h.01"/>
         </>,
-        edit: <>
-            <path d="M12 20h9"/>
-            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z"/>
+        users: <>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
         </>,
+        mail: <>
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <path d="m3 7 9 6 9-6"/>
+        </>,
+        calendar: <>
+            <rect x="3" y="4.5" width="18" height="17" rx="2"/>
+            <path d="M16 2.5v4M8 2.5v4M3 9h18"/>
+        </>,
+        phone: <path
+            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 5.2 2 2 0 0 1 4.11 3h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 10.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z"/>,
+        chevron: <path d="m9 18 6-6-6-6"/>,
+        back: <path d="m15 18-6-6 6-6M9 12h10"/>,
     };
 
     return (
@@ -182,6 +340,456 @@ function inputClass(error, disabled = false) {
     return `w-full rounded-xl border bg-canvas px-3.5 py-3 text-sm text-ink outline-none transition focus:border-lavender focus:ring-4 focus:ring-pink/40 ${
         error ? "border-error" : "border-line"
     } ${disabled ? "cursor-not-allowed opacity-60" : ""}`;
+}
+
+function initials(name) {
+    return String(name ?? "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase();
+}
+
+function ApplicationDocument({icon, label, fileName, documentId, t}) {
+    return (
+        <div className="rounded-2xl border border-line bg-canvas p-4">
+            <div className="flex items-start gap-3">
+                <span
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lavender/45 text-ink">
+                    <Icon name={icon} className="h-5 w-5"/>
+                </span>
+                <div className="min-w-0">
+                    <p className="text-sm font-black text-ink">{label}</p>
+                    <p className="mt-1 truncate text-xs text-ink-soft">{fileName || t("employerOffers.applications.documentUnavailable")}</p>
+                </div>
+            </div>
+            {documentId && <PdfPreview documentId={documentId} fileName={fileName} className="mt-4"/>}
+        </div>
+    );
+}
+
+function ApplicationDetails({ application, language, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh, onDecision }) {
+    const { t } = useTranslation();
+    const hasContactDetails = application.email || application.phone || application.address;
+
+    const [showDecisionModal, setShowDecisionModal] = useState(false);
+    const [decisionType, setDecisionType] = useState(null); // 'ACCEPTED' | 'REJECTED'
+    const [rejectionComment, setRejectionComment] = useState("");
+    const [commentError, setCommentError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [serverError, setServerError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [decidedStatus, setDecidedStatus] = useState(null);
+    const [decidedComment, setDecidedComment] = useState("");
+
+    // Le statut local (décision qui vient d'être prise) a priorité sur celui de la candidature
+    const currentStatus = decidedStatus ?? getApplicationStatus(application);
+    const isPending = currentStatus === "PENDING";
+    const isAccepted = currentStatus === "ACCEPTED";
+    const isRejected = currentStatus === "REJECTED";
+    const shownRejectionComment = decidedComment || application.rejectionComment || application.commentaireRefus || "";
+
+    const handleOpenDecisionModal = (type) => {
+        setDecisionType(type);
+        setRejectionComment("");
+        setCommentError("");
+        setServerError(null);
+        setShowDecisionModal(true);
+    };
+
+    const handleSubmitDecision = async () => {
+        setServerError(null);
+
+        if (decisionType === "REJECTED" && !rejectionComment.trim()) {
+            setCommentError(t("employerOffers.applications.errors.commentRequired", "Un commentaire expliquant le refus est obligatoire."));
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            let response;
+            if (decisionType === "ACCEPTED") {
+                response = await api.employer.applications.accept(application.id);
+            } else {
+                response = await api.employer.applications.reject(application.id, rejectionComment);
+            }
+
+            if (!response.ok) {
+                const raw = await response.text().catch(() => "");
+                let message = raw;
+                try {
+                    const parsed = JSON.parse(raw);
+                    message = parsed.messageKey || parsed.message || "";
+                } catch {
+                }
+                console.error("Decision failed", response.status, raw);
+                throw new Error(message || "employerOffers.applications.errors.decisionFailed");
+            }
+
+            setShowDecisionModal(false);
+            setDecidedStatus(decisionType);
+            setDecidedComment(decisionType === "REJECTED" ? rejectionComment : "");
+            setSuccessMessage(
+                decisionType === "ACCEPTED"
+                    ? t("employerOffers.applications.success.accepted", "Candidature acceptée avec succès.")
+                    : t("employerOffers.applications.success.rejected", "Candidature refusée avec succès.")
+            );
+
+            if (onDecision) onDecision(application.id, decisionType, decisionType === "REJECTED" ? rejectionComment : "");
+            if (onRefresh) onRefresh();
+        } catch (err) {
+            setServerError({ key: err.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-[80] flex items-end justify-center bg-ink/70 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+            role="presentation"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}>
+            <div
+                className="flex max-h-[calc(100vh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-t-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)] sm:rounded-[2rem]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="application-detail-title">
+                <div className="overflow-y-auto p-5 sm:p-7">
+                    <div className="flex items-start justify-between gap-4 border-b border-line pb-5">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <button type="button" onClick={onBack}
+                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
+                                    aria-label={t("employerOffers.applications.backToList")}>
+                                <Icon name="back" className="h-5 w-5"/>
+                            </button>
+                            <div className="min-w-0">
+                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.applications.detailLabel")}</p>
+                                <h2 id="application-detail-title"
+                                    className="mt-1 truncate text-xl font-black tracking-tight text-ink sm:text-2xl">{application.name}</h2>
+                            </div>
+                        </div>
+                        <button type="button" onClick={onClose}
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
+                                aria-label={t("employerOffers.applications.close")}>
+                            <Icon name="close" className="h-5 w-5"/>
+                        </button>
+                    </div>
+
+                    {successMessage && (
+                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+                            {successMessage}
+                        </div>
+                    )}
+
+                    <div
+                        className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-canvas p-4">
+                        <span
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink/55 text-lg font-black text-ink">{initials(application.name || t("employerOffers.applications.unknownStudent"))}</span>
+                        <div className="min-w-0">
+                            <p className="font-black text-ink">{application.name || t("employerOffers.applications.unknownStudent")}</p>
+                            <p className="mt-1 break-all text-sm text-ink-soft">{application.email || t("employerOffers.applications.notSpecified")}</p>
+                        </div>
+
+                        <div className="ml-auto">
+                            {isPending && (
+                                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+                                    {t("employerOffers.applications.status.pending", "En attente")}
+                                </span>
+                            )}
+                            {isAccepted && (
+                                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                                    {t("employerOffers.applications.status.accepted", "Acceptée")}
+                                </span>
+                            )}
+                            {isRejected && (
+                                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+                                    {t("employerOffers.applications.status.rejected", "Refusée")}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {isRejected && shownRejectionComment && (
+                        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/50 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-rose-800">
+                                {t("employerOffers.applications.rejectionReason", "Raison du refus")}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-ink">
+                                {shownRejectionComment}
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="mt-6">
+                        <section className="rounded-2xl border border-line bg-surface p-4">
+                            <h3 className="text-sm font-black text-ink">{t("employerOffers.applications.contactDetails")}</h3>
+                            {hasContactDetails ? <div className="mt-4 space-y-3">
+                                    {application.email && <a href={`mailto:${application.email}`}
+                                                             className="flex items-start gap-3 text-sm text-ink-soft transition-colors hover:text-ink"><Icon
+                                        name="mail" className="mt-0.5 h-4 w-4 shrink-0 text-ink"/><span
+                                        className="break-all">{application.email}</span></a>}
+                                    {application.phone && <a href={`tel:${application.phone}`}
+                                                             className="flex items-start gap-3 text-sm text-ink-soft transition-colors hover:text-ink"><Icon
+                                        name="phone"
+                                        className="mt-0.5 h-4 w-4 shrink-0 text-ink"/><span>{application.phone}</span></a>}
+                                    {application.address &&
+                                        <p className="flex items-start gap-3 text-sm text-ink-soft"><Icon name="info"
+                                                                                                          className="mt-0.5 h-4 w-4 shrink-0 text-ink"/><span>{application.address}</span>
+                                        </p>}
+                                </div> :
+                                <p className="mt-3 text-sm text-ink-soft">{t("employerOffers.applications.notSpecified")}</p>}
+                        </section>
+                    </div>
+
+                    <section className="mt-5">
+                        <h3 className="text-sm font-black text-ink">{t("employerOffers.applications.documentsTitle")}</h3>
+                        <div className="mt-3">
+                            <ApplicationDocument icon="file" label={t("employerOffers.applications.cv")}
+                                                 fileName={application.cvFileName} documentId={application.cvDocumentId}
+                                                 t={t}/>
+                        </div>
+                    </section>
+
+                    <div className="mt-6 pt-5 border-t border-line flex flex-wrap items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            disabled={!isPending}
+                            title={!isPending ? t("employerOffers.interviews.disabledAfterDecision", "Une décision a déjà été prise pour cette candidature.") : undefined}
+                            onClick={() => {
+                                if (!isPending) return;
+                                onScheduleInterview({
+                                    ...application,
+                                    id: application.studentId,
+                                    isEdit: Boolean(isInterviewScheduled),
+                                });
+                            }}
+                            className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink hover:bg-canvas transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+                        >
+                            {isInterviewScheduled
+                                ? t("employerOffers.interviews.edit", "Modifier l'entrevue")
+                                : t("employerOffers.interviews.title", "Planifier une entrevue")}
+                        </button>
+
+                        {isPending ? (
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenDecisionModal("REJECTED")}
+                                    className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 transition-colors"
+                                >
+                                    {t("employerOffers.applications.reject", "Refuser")}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenDecisionModal("ACCEPTED")}
+                                    className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors"
+                                >
+                                    {t("employerOffers.applications.accept", "Accepter")}
+                                </button>
+                            </div>
+                        ) : (
+                            <p className="text-xs font-semibold italic text-ink-soft">
+                                {t("employerOffers.applications.readOnlyNotice", "Décision déjà enregistrée.")}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal de Confirmation / Saisie du motif de refus */}
+            {showDecisionModal && (
+                <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl space-y-4">
+                        <h3 className="text-lg font-black text-ink">
+                            {decisionType === "ACCEPTED"
+                                ? t("employerOffers.applications.confirmAcceptTitle", "Accepter la candidature")
+                                : t("employerOffers.applications.confirmRejectTitle", "Refuser la candidature")}
+                        </h3>
+
+                        <p className="text-sm text-ink-soft">
+                            {decisionType === "ACCEPTED"
+                                ? t("employerOffers.applications.confirmAcceptDesc", "Souhaitez-vous vraiment accepter cette candidature ? L'étudiant sera notifié.")
+                                : t("employerOffers.applications.confirmRejectDesc", "Veuillez expliquer les raisons du refus. Ce commentaire sera transmis à l'étudiant.")}
+                        </p>
+
+                        {serverError && (
+                            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+                                {translateMessage(t, serverError)}
+                            </div>
+                        )}
+
+                        {decisionType === "REJECTED" && (
+                            <div>
+                                <label className="block text-xs font-bold text-ink mb-1">
+                                    {t("employerOffers.applications.commentLabel", "Raison du refus *")}
+                                </label>
+                                <textarea
+                                    rows="3"
+                                    value={rejectionComment}
+                                    onChange={(e) => {
+                                        setRejectionComment(e.target.value);
+                                        if (commentError) setCommentError("");
+                                    }}
+                                    placeholder={t("employerOffers.applications.commentPlaceholder", "Saisissez les raisons du refus...")}
+                                    className="w-full rounded-xl border border-line bg-canvas p-3 text-sm text-ink outline-none focus:border-lavender resize-none"
+                                />
+                                {commentError && <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-3 border-t border-line">
+                            <button
+                                type="button"
+                                onClick={() => setShowDecisionModal(false)}
+                                className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-canvas"
+                            >
+                                {t("common.cancel", "Annuler")}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={handleSubmitDecision}
+                                className={`rounded-xl px-4 py-2 text-sm font-bold text-white transition-colors ${
+                                    decisionType === "ACCEPTED" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
+                                } disabled:opacity-50`}
+                            >
+                                {isSubmitting ? t("common.saving", "Traitement...") : t("common.confirm", "Confirmer")}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews, onRefresh, onDecision}) {
+    const {t} = useTranslation();
+    const [selectedApplication, setSelectedApplication] = useState(null);
+
+    // Garde la candidature sélectionnée synchronisée avec la liste rafraîchie
+    const currentApplication = selectedApplication
+        ? applications.find((application) => application.id === selectedApplication.id) ?? selectedApplication
+        : null;
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const closeOnEscape = (event) => {
+            if (event.key === "Escape") {
+                if (selectedApplication) setSelectedApplication(null);
+                else onClose();
+            }
+        };
+        document.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [onClose, selectedApplication]);
+
+    if (currentApplication) {
+        return (
+            <ApplicationDetails
+                application={currentApplication}
+                language={language}
+                isInterviewScheduled={
+                    Boolean(currentApplication.interviewScheduled)
+                    || Boolean(scheduledInterviews[`${offer.id}_${currentApplication.studentId}`])
+                }
+                onBack={() => setSelectedApplication(null)}
+                onClose={onClose}
+                onScheduleInterview={onScheduleInterview}
+                onRefresh={onRefresh}
+                onDecision={onDecision}
+            />
+        );
+    }
+
+    return (
+        <div
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/70 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+            role="presentation"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}>
+            <div
+                className="flex max-h-[calc(100vh-1rem)] w-full max-w-3xl flex-col overflow-hidden rounded-t-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)] sm:rounded-[2rem]"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="applications-title">
+                <div className="overflow-y-auto p-5 sm:p-7">
+                    <div className="flex items-start justify-between gap-4 border-b border-line pb-5">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.applications.label")}</p>
+                                <span
+                                    className="rounded-full bg-pink/55 px-2.5 py-1 text-xs font-black text-ink">{applications.length}</span>
+                            </div>
+                            <h2 id="applications-title"
+                                className="mt-2 text-2xl font-black tracking-tight text-ink">{t("employerOffers.applications.title")}</h2>
+                            <p className="mt-2 max-w-xl text-sm leading-6 text-ink-soft">{formatOfferTitle(offer.position) || t("employerOffers.untitledOffer")}</p>
+                        </div>
+                        <button type="button" onClick={onClose}
+                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
+                                aria-label={t("employerOffers.applications.close")}>
+                            <Icon name="close" className="h-5 w-5"/>
+                        </button>
+                    </div>
+
+                    {isLoading ? (
+                        <div className="mt-6 rounded-2xl border border-line bg-canvas px-5 py-12 text-center">
+                            <Loading/>
+                        </div>
+                    ) : error ? (
+                        <div className="mt-6 rounded-2xl border border-error bg-blush/30 px-5 py-12 text-center">
+                            <p className="text-base font-black text-error">{t("employerOffers.errors.loadFailed")}</p>
+                        </div>
+                    ) : applications.length === 0 ? (
+                        <div
+                            className="mt-6 rounded-2xl border border-dashed border-line bg-canvas px-5 py-12 text-center">
+                            <p className="text-base font-black text-ink">{t("employerOffers.applications.emptyTitle")}</p>
+                            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-ink-soft">{t("employerOffers.applications.emptyDescription")}</p>
+                        </div>
+                    ) : (
+                        <div className="mt-6 space-y-3">
+                            {applications.map((application) => (
+                                <button key={application.id} type="button"
+                                        onClick={() => setSelectedApplication(application)}
+                                        className="group flex w-full items-center gap-3 rounded-2xl border border-line bg-canvas p-4 text-left transition-colors hover:border-lavender hover:bg-lavender/15 focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                    <span
+                                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink/55 text-sm font-black text-ink">{initials(application.name || t("employerOffers.applications.unknownStudent"))}</span>
+                                    <span className="min-w-0 flex-1">
+                                        <span
+                                            className="block truncate text-sm font-black text-ink">{application.name || t("employerOffers.applications.unknownStudent")}</span>
+                                        <span className="mt-1 flex items-center gap-1.5 truncate text-xs text-ink-soft"><Icon
+                                            name="mail"
+                                            className="h-3.5 w-3.5 shrink-0"/>{application.email || t("employerOffers.applications.notSpecified")}</span>
+                                        <span
+                                            className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-ink-soft sm:hidden"><Icon
+                                            name="calendar"
+                                            className="h-3.5 w-3.5 shrink-0"/>{formatDate(application.submittedAt, language) || t("employerOffers.applications.notSpecified")}</span>
+                                    </span>
+                                    <span
+                                        className="hidden shrink-0 items-center gap-1.5 text-xs font-semibold text-ink-soft sm:flex"><Icon
+                                        name="calendar"
+                                        className="h-3.5 w-3.5"/>{formatDate(application.submittedAt, language) || t("employerOffers.applications.notSpecified")}</span>
+                                    <ApplicationStatusBadge status={getApplicationStatus(application)}/>
+                                    <Icon name="chevron"
+                                          className="h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5"/>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export function buildOfferSubmissionFormData({file, fields, offerId}) {
@@ -218,15 +826,19 @@ export default function EmployeurOffres({
                                             onSubmit,
                                             user,
                                             companyName = "",
+                                            drafts: externalDrafts,
+                                            setDrafts: setExternalDrafts,
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
+    const editorScrollRef = useRef(null);
     const {t, i18n} = useTranslation();
     const employerCompanyName = String(
         user?.nomCompagnie
-        ?? user?.companyName
-        ?? companyName
-        ?? ""
+        || user?.nomEntreprise
+        || user?.companyName
+        || user?.entreprise
+        || companyName
     ).trim();
     const usesRemoteOffers = offers === undefined;
     const [remoteOffers, setRemoteOffers] = useState(null);
@@ -237,7 +849,7 @@ export default function EmployeurOffres({
         (displayedOffers ?? []).map(normalizeOffer)
     ), [displayedOffers]);
     const [offerList, setOfferList] = useState(initialOffers);
-    const [selectedId, setSelectedId] = useState(initialOffers[0]?.id ?? null);
+    const [selectedId, setSelectedId] = useState(null);
     const [formValues, setFormValues] = useState(() => formValuesFromOffer(initialOffers[0], employerCompanyName));
     const [selectedFile, setSelectedFile] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -246,12 +858,30 @@ export default function EmployeurOffres({
     const [formError, setFormError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isNewOffer, setIsNewOffer] = useState(!initialOffers[0]);
+    const [isNewOffer, setIsNewOffer] = useState(false);
+    const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [isApplicationsOpen, setIsApplicationsOpen] = useState(false);
+    const [applicationsOffer, setApplicationsOffer] = useState(null);
+    const [applicationsByOffer, setApplicationsByOffer] = useState({});
+    const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+    const [applicationsError, setApplicationsError] = useState("");
+    const [isFileCleared, setIsFileCleared] = useState(false);
+    const [localDrafts, setLocalDrafts] = useState({});
+    const [interviewCandidate, setInterviewCandidate] = useState(null);
+    const [interviewOfferId, setInterviewOfferId] = useState(null);
+    const [scheduledInterviews, setScheduledInterviews] = useState({});
+    const decisionsRef = useRef({});
+    const drafts = externalDrafts ?? localDrafts;
+    const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
     const selectedOffer = offerList.find((offer) => offer.id === selectedId) ?? null;
+    const selectedApplications = selectedOffer
+        ? applicationsByOffer[String(selectedOffer.id)] ?? getApplicationsForOffer(selectedOffer)
+        : [];
     const isOfferReadOnly = !canManageOffers || ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
     const pendingCount = offerList.filter((offer) => offer.statut === "EN_ATTENTE").length;
     const publishedCount = offerList.filter((offer) => offer.statut === "VALIDE").length;
+    const minimumStageDate = getTodayIso();
     const editorTitleKey = isNewOffer
         ? "employerOffers.editor.newTitle"
         : selectedOffer?.statut === "REJETE"
@@ -261,6 +891,25 @@ export default function EmployeurOffres({
                 : selectedOffer?.statut === "VALIDE"
                     ? "employerOffers.editor.updateTitle"
                     : "employerOffers.editor.editTitle";
+
+    useEffect(() => {
+        if (!isEditorOpen) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const closeOnEscape = (event) => {
+            if (event.key === "Escape" && !isSubmitting) {
+                event.preventDefault();
+                setIsEditorOpen(false);
+            }
+        };
+
+        document.addEventListener("keydown", closeOnEscape);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener("keydown", closeOnEscape);
+        };
+    }, [isEditorOpen, isSubmitting]);
 
     useEffect(() => {
         if (!usesRemoteOffers) return undefined;
@@ -292,34 +941,122 @@ export default function EmployeurOffres({
 
     useEffect(() => {
         setOfferList(initialOffers);
-        setSelectedId(initialOffers[0]?.id ?? null);
-        setIsNewOffer(!initialOffers[0]);
+        setSelectedId(null);
+        setIsNewOffer(false);
+        setIsFileCleared(false);
         setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
     }, [initialOffers, employerCompanyName]);
 
     useEffect(() => {
         if (!isNewOffer) {
-            setFormValues(formValuesFromOffer(selectedOffer, employerCompanyName));
-            setSelectedFile(null);
+            const draft = drafts[String(selectedId)];
+            setFormValues(draft?.fields ?? formValuesFromOffer(selectedOffer, employerCompanyName));
+            setSelectedFile(draft?.file ?? null);
+            setIsFileCleared(draft?.fileCleared ?? false);
             setFieldErrors({});
             setFileError("");
             setFormError("");
-            setSuccessMessage("");
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
-    }, [selectedId, isNewOffer, employerCompanyName]);
+    }, [selectedId, isNewOffer, employerCompanyName, drafts]);
+
+    const loadApplications = async (offer) => {
+        if (!offer?.id) return;
+
+        const offerKey = String(offer.id);
+        setApplicationsOffer(offer);
+        setIsApplicationsOpen(true);
+        setIsLoadingApplications(true);
+        setApplicationsError("");
+
+        try {
+            const response = await api.employer.applications.list(offer.id);
+            if (!response.ok) throw new Error("applications_request_failed");
+
+            const data = await response.json();
+            setApplicationsByOffer((current) => ({
+                ...current,
+                [offerKey]: Array.isArray(data) ? applyDecisions(data.map(normalizeApplication), decisionsRef.current) : [],
+            }));
+        } catch {
+            setApplicationsError("applications_request_failed");
+        } finally {
+            setIsLoadingApplications(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!usesRemoteOffers) return undefined;
+
+        const validatedOffers = offerList.filter((offer) => offer.statut === "VALIDE");
+        if (validatedOffers.length === 0) return undefined;
+
+        let isMounted = true;
+
+        Promise.all(validatedOffers.map(async (offer) => {
+            try {
+                const response = await api.employer.applications.list(offer.id);
+                if (!response.ok) return null;
+
+                const data = await response.json();
+                return [String(offer.id), Array.isArray(data) ? applyDecisions(data.map(normalizeApplication), decisionsRef.current) : []];
+            } catch {
+                return null;
+            }
+        })).then((entries) => {
+            if (!isMounted) return;
+
+            const loadedApplications = Object.fromEntries(entries.filter(Boolean));
+            setApplicationsByOffer((current) => ({...current, ...loadedApplications}));
+        });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [offerList, usesRemoteOffers]);
+
+    const recordDecision = (applicationId, status, comment) => {
+        decisionsRef.current[String(applicationId)] = {status, comment};
+        setApplicationsByOffer((current) => Object.fromEntries(
+            Object.entries(current).map(([offerKey, list]) => [
+                offerKey,
+                list.map((application) => String(application.id) === String(applicationId)
+                    ? {...application, status, rejectionComment: comment}
+                    : application),
+            ])
+        ));
+    };
 
     const selectOffer = (offer) => {
+        const draft = drafts[String(offer.id)];
         setIsNewOffer(false);
         setSelectedId(offer.id);
+        setIsApplicationsOpen(false);
+        setApplicationsOffer(null);
+        setIsEditorOpen(true);
+        setIsFileCleared(draft?.fileCleared ?? false);
+        setFormValues(draft?.fields ?? formValuesFromOffer(offer, employerCompanyName));
+        setSelectedFile(draft?.file ?? null);
+        setFieldErrors({});
+        setFileError("");
+        setFormError("");
+        setSuccessMessage("");
         window.requestAnimationFrame(() => formRef.current?.scrollIntoView({behavior: "smooth", block: "start"}));
     };
 
     const startNewOffer = () => {
+        const draft = drafts[NEW_OFFER_DRAFT_KEY];
+        const draftFields = draft?.fields ?? EMPTY_FORM;
         setIsNewOffer(true);
         setSelectedId(null);
-        setFormValues({...EMPTY_FORM, nomEntreprise: employerCompanyName});
-        setSelectedFile(null);
+        setIsApplicationsOpen(false);
+        setIsEditorOpen(true);
+        setIsFileCleared(false);
+        setFormValues({
+            ...draftFields,
+            nomEntreprise: employerCompanyName || draftFields.nomEntreprise || "",
+        });
+        setSelectedFile(draft?.file ?? null);
         setFieldErrors({});
         setFileError("");
         setFormError("");
@@ -330,7 +1067,14 @@ export default function EmployeurOffres({
 
     const updateField = (event) => {
         const {name, value} = event.target;
-        setFormValues((current) => ({...current, [name]: value}));
+        const nextValue = name === "salaire" ? sanitizeSalary(value) : value;
+        const nextValues = {...formValues, [name]: nextValue};
+        const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+        setFormValues(nextValues);
+        saveDrafts((current) => ({
+            ...current,
+            [draftKey]: {fields: nextValues, file: selectedFile, fileCleared: isFileCleared},
+        }));
         setFieldErrors((current) => ({...current, [name]: ""}));
         setFormError("");
         setSuccessMessage("");
@@ -352,12 +1096,26 @@ export default function EmployeurOffres({
             return false;
         }
         setSelectedFile(file);
+        setIsFileCleared(false);
+        const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+        saveDrafts((current) => ({
+            ...current,
+            [draftKey]: {fields: formValues, file, fileCleared: false},
+        }));
         return true;
     };
 
     const handleFileChange = (event) => {
         const file = event.target.files?.[0];
-        if (!validateFile(file)) setSelectedFile(null);
+        if (!validateFile(file)) {
+            setSelectedFile(null);
+            setIsFileCleared(true);
+            const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+            saveDrafts((current) => ({
+                ...current,
+                [draftKey]: {fields: formValues, file: null, fileCleared: true},
+            }));
+        }
     };
 
     const handleDrop = (event) => {
@@ -365,11 +1123,20 @@ export default function EmployeurOffres({
         setIsDragging(false);
         if (!isAccountEmailValidated || isOfferReadOnly) return;
         const file = event.dataTransfer.files?.[0];
-        if (!validateFile(file)) setSelectedFile(null);
+        if (!validateFile(file)) {
+            setSelectedFile(null);
+            setIsFileCleared(true);
+            const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+            saveDrafts((current) => ({
+                ...current,
+                [draftKey]: {fields: formValues, file: null, fileCleared: true},
+            }));
+        }
     };
 
     const validateForm = () => {
         const errors = {};
+        const companyNameForOffer = employerCompanyName || String(formValues.nomEntreprise ?? "").trim();
         const requiredFields = {
             nomEntreprise: "employerOffers.errors.companyRequired",
             position: "employerOffers.errors.positionRequired",
@@ -381,10 +1148,20 @@ export default function EmployeurOffres({
         };
 
         Object.entries(requiredFields).forEach(([field, message]) => {
-            if (!String(formValues[field] ?? "").trim()) errors[field] = message;
+            const value = field === "nomEntreprise" ? companyNameForOffer : formValues[field];
+            if (!String(value ?? "").trim()) errors[field] = message;
         });
         if (formValues.email && !/^\S+@\S+\.\S+$/.test(formValues.email)) {
             errors.email = "employerOffers.errors.invalidEmail";
+        }
+        if (formValues.salaire && !/^\d+(\.\d+)?$/.test(formValues.salaire)) {
+            errors.salaire = "employerOffers.errors.invalidSalary";
+        }
+        if (formValues.dateDebutStage && formValues.dateDebutStage < minimumStageDate) {
+            errors.dateDebutStage = "employerOffers.errors.startDateInPast";
+        }
+        if (formValues.dateFinStage && formValues.dateFinStage < minimumStageDate) {
+            errors.dateFinStage = "employerOffers.errors.endDateInPast";
         }
         if (formValues.dateDebutStage && formValues.dateFinStage && formValues.dateFinStage < formValues.dateDebutStage) {
             errors.dateFinStage = "employerOffers.errors.endDateAfterStart";
@@ -393,6 +1170,9 @@ export default function EmployeurOffres({
             errors.descriptionPosition = "employerOffers.errors.descriptionTooShort";
         }
         setFieldErrors(errors);
+        if (errors.nomEntreprise) {
+            setFormError(errors.nomEntreprise);
+        }
         return Object.keys(errors).length === 0;
     };
 
@@ -440,12 +1220,12 @@ export default function EmployeurOffres({
             });
 
             const result = await submitOffer({
-                    offerId: selectedOffer?.id ?? null,
-                    mode: isNewOffer ? "create" : "update",
-                    fields: formValues,
-                    file: selectedFile,
-                    formData,
-                });
+                offerId: selectedOffer?.id ?? null,
+                mode: isNewOffer ? "create" : "update",
+                fields: {...formValues, nomEntreprise: employerCompanyName || formValues.nomEntreprise},
+                file: selectedFile,
+                formData,
+            });
             const response = result?.response ?? result;
             if (response?.status === 403) {
                 setFormError("employerOffers.errors.accountMustBeValidated");
@@ -459,6 +1239,7 @@ export default function EmployeurOffres({
                 throw createTranslationMessage("employerOffers.errors.submissionFailed");
             }
             const submittedOffer = normalizeOffer(result.offer);
+            const submittedDraftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedOffer?.id ?? selectedId);
             setOfferList((current) => {
                 const exists = current.some((offer) => offer.id === submittedOffer.id);
                 return exists
@@ -467,7 +1248,13 @@ export default function EmployeurOffres({
             });
             setSelectedId(submittedOffer.id);
             setIsNewOffer(false);
+            setIsFileCleared(false);
             setSelectedFile(null);
+            saveDrafts((current) => {
+                const nextDrafts = {...current};
+                delete nextDrafts[submittedDraftKey];
+                return nextDrafts;
+            });
             if (fileInputRef.current) fileInputRef.current.value = "";
             setSuccessMessage(isNewOffer
                 ? "employerOffers.success.created"
@@ -475,12 +1262,44 @@ export default function EmployeurOffres({
         } catch (error) {
             setFormError(error?.key || "employerOffers.errors.submissionConnection");
         } finally {
+            window.requestAnimationFrame(() => editorScrollRef.current?.scrollTo({top: 0, behavior: "smooth"}));
             setIsSubmitting(false);
         }
     };
 
+    const handleEditorBackdropMouseDown = (event) => {
+        if (event.target === event.currentTarget && !isSubmitting) setIsEditorOpen(false);
+    };
+
+    const closeEditor = () => {
+        if (!isSubmitting) setIsEditorOpen(false);
+    };
+
+    const clearForm = () => {
+        const clearedValues = {...EMPTY_FORM, nomEntreprise: employerCompanyName};
+        const draftKey = isNewOffer ? NEW_OFFER_DRAFT_KEY : String(selectedId);
+
+        setFormValues(clearedValues);
+        setSelectedFile(null);
+        setIsFileCleared(true);
+        setFieldErrors({});
+        setFileError("");
+        setFormError("");
+        setSuccessMessage("");
+        setIsDragging(false);
+        saveDrafts((current) => ({
+            ...current,
+            [draftKey]: {fields: clearedValues, file: null, fileCleared: true},
+        }));
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
     if (isLoadingOffers) return <Loading/>;
     if (loadError) return <ErrorPage error={loadError}/>;
+
+    if (interviewCandidate) {
+        console.log("Modal Render Check - selectedOffer:", selectedOffer?.id, "applicationsOffer:", applicationsOffer?.id, "candidate:", interviewCandidate);
+    }
 
     return (
         <section className="flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -504,286 +1323,359 @@ export default function EmployeurOffres({
                     </div>
                 )}
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{offerList.length}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{offerList.length === 1 ? t("employerOffers.stats.savedSingular") : t("employerOffers.stats.savedPlural")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
+                        <p className="text-xl font-black text-ink">{offerList.length}</p>
                     </div>
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{pendingCount}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.stats.pendingDescription")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
+                        <p className="text-xl font-black text-ink">{pendingCount}</p>
                     </div>
                     <div
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_10px_30px_rgba(48,35,55,0.05)]">
-                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.stats.published")}</p>
-                        <p className="mt-2 text-2xl font-black text-ink">{publishedCount}</p>
-                        <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.stats.publishedDescription")}</p>
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.published")}</p>
+                        <p className="text-xl font-black text-ink">{publishedCount}</p>
                     </div>
                 </div>
 
-                <div className="mt-6 grid items-start gap-6 lg:grid-cols-[0.82fr_1.55fr]">
+                <div className="mt-6">
                     <aside
                         className="rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-6">
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="rounded-2xl border border-line bg-canvas p-3 sm:p-4">
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
-                                <h2 className="mt-2 text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.workspace")}</p>
+                                    <h2 className="text-xl font-black tracking-tight text-ink">{t("employerOffers.myOffersTitle")}</h2>
+                                </div>
                             </div>
-                            {canManageOffers && <button type="button" onClick={startNewOffer}
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
-                                    aria-label={t("employerOffers.newOfferAriaLabel")}>
-                                <Icon name="plus" className="h-5 w-5"/>
-                            </button>}
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="min-w-0 flex-1 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
+                                {canManageOffers && <button type="button" onClick={startNewOffer}
+                                                            className="inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold whitespace-nowrap text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                    <Icon name="plus" className="h-3.5 w-3.5"/> {t("employerOffers.newOffer")}
+                                </button>}
+                            </div>
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-ink-soft">{t("employerOffers.selectOfferDescription")}</p>
 
-                        <div className="mt-6 space-y-3">
+                        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {offerList.length === 0 && (
                                 <div className="rounded-2xl border border-dashed border-line bg-canvas p-5 text-center">
-                                    <span
-                                        className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-lavender/50 text-ink"><Icon
-                                        name="file"/></span>
-                                    <p className="mt-3 text-sm font-bold text-ink">{t("employerOffers.emptyTitle")}</p>
+                                    <p className="mt-0 text-sm font-bold text-ink">{t("employerOffers.emptyTitle")}</p>
                                     <p className="mt-1 text-xs leading-5 text-ink-soft">{t("employerOffers.emptyDescription")}</p>
                                 </div>
                             )}
                             {offerList.map((offer) => (
-                                <button
+                                <div
                                     key={offer.id}
-                                    type="button"
-                                    onClick={() => selectOffer(offer)}
                                     className={`w-full rounded-2xl border p-4 text-left transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${selectedId === offer.id && !isNewOffer ? "border-ink bg-lavender/30" : "border-line bg-canvas hover:border-lavender hover:bg-lavender/15"}`}
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <span
-                                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-ink"><Icon
-                                            name="file" className="h-4 w-4"/></span>
-                                        <StatusBadge status={offer.statut}/>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="line-clamp-2 text-sm font-black leading-5 text-ink">{formatOfferTitle(offer.position) || t("employerOffers.untitledOffer")}</p>
+                                            <p className="mt-1 truncate text-xs text-ink-soft">{offer.fileName || t("employerOffers.noFile")}</p>
+                                        </div>
+                                        <div className="flex flex-wrap justify-end gap-2">
+                                            <span
+                                                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-bold text-ink-soft">
+                                                <Icon name="users" className="h-3.5 w-3.5"/>
+                                                {applicationsByOffer[String(offer.id)]?.length ?? getApplicationCount(offer)}
+                                            </span>
+                                            <StatusBadge status={offer.statut}/>
+                                        </div>
                                     </div>
-                                    <p className="mt-4 line-clamp-2 text-sm font-black leading-5 text-ink">{offer.position || t("employerOffers.untitledOffer")}</p>
-                                    <p className="mt-1 truncate text-xs text-ink-soft">{offer.fileName || t("employerOffers.noFile")}</p>
-                                    <div className="mt-4 flex items-center justify-between gap-2 text-xs text-ink-soft">
-                                        <span>{t("employerOffers.version", {version: offer.version ?? 1})}</span>
+                                    <div className="mt-4 flex items-center gap-2 text-xs text-ink-soft">
+                                        <Icon name="calendar" className="h-3.5 w-3.5"/>
                                         <span>{formatDate(offer.updatedAt, i18n.resolvedLanguage)}</span>
                                     </div>
-                                </button>
+                                    <div
+                                        className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
+                                        {canManageOffers && <button type="button" onClick={() => selectOffer(offer)}
+                                                                    className="inline-flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-2 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                            <Icon name="file" className="h-3.5 w-3.5 shrink-0"/>
+                                            {t("employerOffers.actions.update")}
+                                        </button>}
+                                        {offer.statut === "VALIDE" && <button type="button"
+                                                                              onClick={() => loadApplications(offer)}
+                                                                              className="ml-auto inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
+                                            <Icon name="users" className="h-3.5 w-3.5 shrink-0"/>
+                                            {t("employerOffers.actions.applications")}
+                                        </button>}
+                                    </div>
+                                </div>
                             ))}
                         </div>
-
-                        {canManageOffers && <button type="button" onClick={startNewOffer}
-                                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-ink bg-surface px-4 py-3 text-sm font-bold text-ink transition-colors hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40">
-                            <Icon name="plus" className="h-4 w-4"/> {t("employerOffers.newOffer")}
-                        </button>}
                     </aside>
 
-                    <div ref={formRef}
-                         className="rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-7">
-                        <div
-                            className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
-                                    {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
+                    {isEditorOpen && <div
+                        className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-ink/70 p-3 backdrop-blur-sm sm:p-6 lg:items-center"
+                        onMouseDown={handleEditorBackdropMouseDown}
+                    >
+                        <div ref={formRef}
+                             className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)]"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="employer-offer-editor-title">
+                            <div ref={editorScrollRef} className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                                <div
+                                    className="flex flex-row items-start justify-between gap-3 border-b border-line pb-6">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
+                                            {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
+                                        </div>
+                                        <h2 id="employer-offer-editor-title"
+                                            className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
+                                        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{isOfferReadOnly
+                                            ? selectedOffer?.statut === "EN_ATTENTE"
+                                                ? t("employerOffers.editor.pendingDescription")
+                                                : t("employerOffers.editor.rejectedDescription")
+                                            : t("employerOffers.editor.newDescription")}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={closeEditor}
+                                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40 disabled:cursor-not-allowed disabled:opacity-50"
+                                        aria-label={t("employerOffers.closeModal")}
+                                        disabled={isSubmitting}
+                                    >
+                                        <Icon name="close" className="h-5 w-5"/>
+                                    </button>
                                 </div>
-                                <h2 className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
-                                <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{isOfferReadOnly
-                                    ? selectedOffer?.statut === "EN_ATTENTE"
-                                        ? t("employerOffers.editor.pendingDescription")
-                                        : t("employerOffers.editor.rejectedDescription")
-                                    : t("employerOffers.editor.newDescription")}</p>
-                            </div>
-                            <span
-                                className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pink/70 text-ink sm:flex"><Icon
-                                name="upload"/></span>
-                        </div>
 
-                        {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
-                            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
-                                 role="status">
+                                {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
+                                    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
+                                         role="status">
                                 <span
                                     className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface/80 text-error"><Icon
                                     name="info" className="h-4 w-4"/></span>
-                                <div>
-                                    <p className="text-sm font-black text-ink">{t("employerOffers.rejectionComment")}</p>
-                                    <p className="mt-1 text-sm leading-6 text-ink-soft">{selectedOffer.commentaireRejet}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {successMessage && <div
-                            className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
-                            role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
-                            className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
-                        {formError && <div
-                            className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
-                            role="alert">{translateMessage(t, formError)}</div>}
-
-                        <form className="mt-7 space-y-8" onSubmit={handleSubmit} noValidate>
-                            <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
-                                      className="space-y-8">
-                                <div>
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                         <div>
-                                            <h3 className="text-lg font-black text-ink">{t("employerOffers.fileStepTitle")}</h3>
-                                            <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileStepDescription")}</p>
+                                            <p className="text-sm font-black text-ink">{t("employerOffers.rejectionComment")}</p>
+                                            <p className="mt-1 text-sm leading-6 text-ink-soft">{selectedOffer.commentaireRejet}</p>
                                         </div>
                                     </div>
-                                    {isOfferReadOnly ? (
-                                        <div
-                                            className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-canvas px-4 py-3.5"
-                                            role="status">
+                                )}
+
+                                {successMessage && <div
+                                    className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
+                                    role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
+                                    className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
+                                {formError && <div
+                                    className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
+                                    role="alert">{translateMessage(t, formError)}</div>}
+
+                                <form className="mt-7 space-y-8" onSubmit={handleSubmit} noValidate>
+                                    <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
+                                              className="space-y-8">
+                                        <div>
+                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                                                <div>
+                                                    <h3 className="text-lg font-black text-ink">{t("employerOffers.fileStepTitle")}</h3>
+                                                    <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileStepDescription")}</p>
+                                                </div>
+                                            </div>
+                                            {isOfferReadOnly ? (
+                                                <div
+                                                    className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-canvas px-4 py-3.5"
+                                                    role="status">
                                             <span
                                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lavender/50 text-ink"><Icon
                                                 name="file" className="h-5 w-5"/></span>
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.submittedDocument")}</p>
-                                                <p className="mt-1 truncate text-sm font-bold text-ink">{selectedOffer?.fileName || t("employerOffers.noFile")}</p>
-                                            </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.submittedDocument")}</p>
+                                                        <p className="mt-1 truncate text-sm font-bold text-ink">{selectedOffer?.fileName || t("employerOffers.noFile")}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className={`mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${isDragging ? "border-pink bg-pink/25" : fileError ? "border-error bg-blush/15" : "border-line bg-canvas hover:border-lavender"}`}
+                                                    onDragOver={(event) => {
+                                                        event.preventDefault();
+                                                        if (!isAccountEmailValidated) return;
+                                                        setIsDragging(true);
+                                                    }}
+                                                    onDragLeave={(event) => {
+                                                        event.preventDefault();
+                                                        setIsDragging(false);
+                                                    }}
+                                                    onDrop={handleDrop}
+                                                >
+                                                    <input ref={fileInputRef} id="offer-file" type="file"
+                                                           accept="application/pdf,.pdf" onChange={handleFileChange}
+                                                           className="sr-only"/>
+                                                    <label htmlFor="offer-file"
+                                                           className="cursor-pointer text-sm font-bold text-ink underline decoration-pink decoration-4 underline-offset-4">
+                                                        {t("studentCv.chooseFile")}
+                                                    </label>
+                                                    <p className="mt-2 text-sm text-ink-soft">{t("studentCv.dropFile")}</p>
+                                                    <p className="mt-1 text-xs text-ink-soft">{t("studentCv.maximumSize")}</p>
+                                                    {selectedFile && <p
+                                                        className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
+                                                        role="status">{selectedFile.name}</p>}
+                                                    {!selectedFile && !isFileCleared && selectedOffer?.fileName && <div
+                                                        className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
+                                                        <Icon name="file" className="h-4 w-4 shrink-0"/><span
+                                                        className="truncate">{t("employerOffers.currentFile")} <strong
+                                                        className="text-ink">{selectedOffer.fileName}</strong></span></div>}
+                                                </div>
+                                            )}
+                                            {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) && <PdfPreview
+                                                file={selectedFile}
+                                                documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
+                                                fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
+                                                className="mt-5"
+                                            />}
+                                            {fileError && <p className="mt-2 text-sm font-semibold text-error"
+                                                             role="alert">{translateMessage(t, fileError)}</p>}
                                         </div>
-                                    ) : (
-                                        <div
-                                            className={`mt-4 rounded-2xl border-2 border-dashed p-5 transition-colors sm:p-6 ${isDragging ? "border-pink bg-pink/25" : fileError ? "border-error bg-blush/15" : "border-line bg-canvas hover:border-lavender"}`}
-                                            onDragOver={(event) => {
-                                                event.preventDefault();
-                                                if (!isAccountEmailValidated) return;
-                                                setIsDragging(true);
-                                            }}
-                                            onDragLeave={(event) => {
-                                                event.preventDefault();
-                                                setIsDragging(false);
-                                            }}
-                                            onDrop={handleDrop}
-                                        >
-                                            <input ref={fileInputRef} id="offer-file" type="file"
-                                                   accept="application/pdf,.pdf" onChange={handleFileChange}
-                                                   className="sr-only"/>
-                                            <div className="flex flex-col items-center justify-center text-center">
-                                                <span
-                                                    className="flex h-12 w-12 items-center justify-center rounded-2xl bg-lavender/60 text-ink"><Icon
-                                                    name="upload"/></span>
-                                                <p className="mt-3 text-sm font-bold text-ink">{selectedFile ? t("employerOffers.fileDrop.selected") : selectedOffer?.fileName ? t("employerOffers.fileDrop.replace") : t("employerOffers.fileDrop.initial")}</p>
-                                                <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileDrop.instruction")}</p>
-                                                <label htmlFor="offer-file"
-                                                       className="mt-2 cursor-pointer text-sm font-black text-ink underline decoration-pink decoration-4 underline-offset-4">{t("employerOffers.fileDrop.browse")}</label>
-                                                <p className="mt-3 text-xs text-ink-soft">{t("employerOffers.maximumSize")}</p>
-                                            </div>
-                                            {selectedFile && <div
-                                                className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-lavender/45 px-3 py-2.5 text-sm"
-                                                role="status"><span
-                                                className="flex min-w-0 items-center gap-2 font-bold text-ink"><Icon
-                                                name="file" className="h-4 w-4 shrink-0"/><span
-                                                className="truncate">{selectedFile.name}</span></span><span
-                                                className="shrink-0 text-xs font-semibold text-ink-soft">{formatFileSize(selectedFile.size, t)}</span>
-                                            </div>}
-                                            {!selectedFile && selectedOffer?.fileName && <div
-                                                className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
-                                                <Icon name="file" className="h-4 w-4 shrink-0"/><span
-                                                className="truncate">{t("employerOffers.currentFile")} <strong
-                                                className="text-ink">{selectedOffer.fileName}</strong></span></div>}
-                                        </div>
-                                    )}
-                                    {fileError && <p className="mt-2 text-sm font-semibold text-error"
-                                                     role="alert">{translateMessage(t, fileError)}</p>}
-                                </div>
 
-                                <div>
-                                    <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
-                                    <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
-                                    <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                                        <Field id="position" label={t("employerOffers.fields.position")} required
-                                               error={fieldErrors.position}>
-                                            <input id="position" name="position" value={formValues.position}
-                                                   onChange={updateField} className={inputClass(fieldErrors.position)}
-                                                   placeholder="Ex. Stagiaire en développement web"/>
-                                        </Field>
-                                        <Field id="targetDiscipline" label={t("employerOffers.fields.discipline")}
-                                               required
-                                               error={fieldErrors.targetDiscipline}>
-                                            <select id="targetDiscipline" name="targetDiscipline"
-                                                    value={formValues.targetDiscipline} onChange={updateField}
-                                                    className={inputClass(fieldErrors.targetDiscipline)}>
-                                                <option value="">{t("employerOffers.fields.selectDiscipline")}</option>
-                                                {DISCIPLINES.map(([value]) => <option key={value}
-                                                                                      value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
-                                            </select>
-                                        </Field>
-                                        <Field id="adresseEntreprise" label={t("employerOffers.fields.companyAddress")}
-                                               required
-                                               error={fieldErrors.adresseEntreprise}>
-                                            <input id="adresseEntreprise" name="adresseEntreprise"
-                                                   value={formValues.adresseEntreprise} onChange={updateField}
-                                                   className={inputClass(fieldErrors.adresseEntreprise)}
-                                                   placeholder="Ville, province"/>
-                                        </Field>
-                                        <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
-                                               error={fieldErrors.dateDebutStage}>
-                                            <input id="dateDebutStage" type="date" name="dateDebutStage"
-                                                   value={formValues.dateDebutStage} onChange={updateField}
-                                                   className={inputClass(fieldErrors.dateDebutStage)}/>
-                                        </Field>
-                                        <Field id="dateFinStage" label={t("employerOffers.fields.endDate")} required
-                                               error={fieldErrors.dateFinStage}>
-                                            <input id="dateFinStage" type="date" name="dateFinStage"
-                                                   value={formValues.dateFinStage} onChange={updateField}
-                                                   className={inputClass(fieldErrors.dateFinStage)}/>
-                                        </Field>
-                                        <Field id="salaire" label={t("employerOffers.fields.hourlyPay")}
-                                               error={fieldErrors.salaire}>
-                                            <div className="relative"><input id="salaire" type="number" min="0"
-                                                                             step="0.01" name="salaire"
-                                                                             value={formValues.salaire}
-                                                                             onChange={updateField}
-                                                                             className={`${inputClass(fieldErrors.salaire)} pr-12`}
-                                                                             placeholder="Ex. 22,50"/><span
-                                                className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">$/h</span>
+                                        <div>
+                                            <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
+                                            <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
+                                            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                                                <Field id="position" label={t("employerOffers.fields.position")} required
+                                                       error={fieldErrors.position}>
+                                                    <input id="position" name="position" value={formValues.position}
+                                                           onChange={updateField} className={inputClass(fieldErrors.position)}
+                                                           placeholder={t("employerOffers.placeholders.position")}/>
+                                                </Field>
+                                                <Field id="targetDiscipline" label={t("employerOffers.fields.discipline")}
+                                                       required
+                                                       error={fieldErrors.targetDiscipline}>
+                                                    <select id="targetDiscipline" name="targetDiscipline"
+                                                            value={formValues.targetDiscipline} onChange={updateField}
+                                                            className={inputClass(fieldErrors.targetDiscipline)}>
+                                                        <option value="">{t("employerOffers.fields.selectDiscipline")}</option>
+                                                        {DISCIPLINES.map(([value]) => <option key={value}
+                                                                                              value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
+                                                    </select>
+                                                </Field>
+                                                <Field id="adresseEntreprise" label={t("employerOffers.fields.companyAddress")}
+                                                       required
+                                                       error={fieldErrors.adresseEntreprise}>
+                                                    <input id="adresseEntreprise" name="adresseEntreprise"
+                                                           value={formValues.adresseEntreprise} onChange={updateField}
+                                                           className={inputClass(fieldErrors.adresseEntreprise)}
+                                                           placeholder={t("employerOffers.placeholders.companyAddress")}/>
+                                                </Field>
+                                                <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
+                                                       error={fieldErrors.dateDebutStage}>
+                                                    <input id="dateDebutStage" type="date" name="dateDebutStage"
+                                                           min={minimumStageDate}
+                                                           value={formValues.dateDebutStage} onChange={updateField}
+                                                           className={inputClass(fieldErrors.dateDebutStage)}/>
+                                                </Field>
+                                                <Field id="dateFinStage" label={t("employerOffers.fields.endDate")} required
+                                                       error={fieldErrors.dateFinStage}>
+                                                    <input id="dateFinStage" type="date" name="dateFinStage"
+                                                           min={formValues.dateDebutStage || minimumStageDate}
+                                                           value={formValues.dateFinStage} onChange={updateField}
+                                                           className={inputClass(fieldErrors.dateFinStage)}/>
+                                                </Field>
+                                                <Field id="salaire" label={t("employerOffers.fields.hourlyPay")}
+                                                       error={fieldErrors.salaire}>
+                                                    <div className="relative"><input id="salaire" type="text"
+                                                                                     inputMode="decimal"
+                                                                                     pattern="[0-9]*([.,][0-9]+)?"
+                                                                                     name="salaire"
+                                                                                     value={formValues.salaire}
+                                                                                     onChange={updateField}
+                                                                                     className={`${inputClass(fieldErrors.salaire)} pr-12`}
+                                                                                     placeholder={t("employerOffers.placeholders.hourlyPay")}/><span
+                                                        className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">{t("employerOffers.units.hourlyRate")}</span>
+                                                    </div>
+                                                </Field>
                                             </div>
-                                        </Field>
-                                    </div>
-                                    <Field id="descriptionPosition" label={t("employerOffers.fields.description")}
-                                           required
-                                           error={fieldErrors.descriptionPosition} className="mt-5">
+                                            <Field id="descriptionPosition" label={t("employerOffers.fields.description")}
+                                                   required
+                                                   error={fieldErrors.descriptionPosition} className="mt-5">
                                         <textarea id="descriptionPosition" name="descriptionPosition" rows="4"
                                                   value={formValues.descriptionPosition} onChange={updateField}
                                                   className={`${inputClass(fieldErrors.descriptionPosition)} resize-y`}
-                                                  placeholder="Décrivez les responsabilités, les livrables attendus et les compétences recherchées."/>
-                                        <p className="mt-1.5 text-right text-xs text-ink-soft">{t("employerOffers.characterCount", {count: formValues.descriptionPosition.length})}</p>
-                                    </Field>
-                                </div>
+                                                  placeholder={t("employerOffers.placeholders.description")}/>
+                                                <p className="mt-1.5 text-right text-xs text-ink-soft">{t("employerOffers.characterCount", {count: formValues.descriptionPosition.length})}</p>
+                                            </Field>
+                                        </div>
 
-                            </fieldset>
+                                    </fieldset>
 
-                            <div
-                                className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-                                {isOfferReadOnly ? (
-                                    <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft"><Icon
-                                        name="info"
-                                        className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
-                                        ? t("employerOffers.readOnlyMessage", {
-                                            status: selectedOffer?.statut === "EN_ATTENTE"
-                                                ? t("employerOffers.status.pendingLower")
-                                                : t("employerOffers.status.rejectedLower")
-                                        })
-                                        : t("employerOffers.viewerReadOnlyMessage")}</p>
-                                ) : (
-                                    <>
-                                        <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft"><Icon
-                                            name="info"
-                                            className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
-                                        </p>
-                                        <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
-                                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
-                                            {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
-                                            {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
-                                        </button>
-                                    </>
-                                )}
+                                    <div
+                                        className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+                                        {isOfferReadOnly ? (
+                                            <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft"><Icon
+                                                name="info"
+                                                className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
+                                                ? t("employerOffers.readOnlyMessage", {
+                                                    status: selectedOffer?.statut === "EN_ATTENTE"
+                                                        ? t("employerOffers.status.pendingLower")
+                                                        : t("employerOffers.status.rejectedLower")
+                                                })
+                                                : t("employerOffers.viewerReadOnlyMessage")}</p>
+                                        ) : (
+                                            <>
+                                                <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft"><Icon
+                                                    name="info"
+                                                    className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
+                                                </p>
+                                                <div className="flex flex-col gap-3 sm:flex-row">
+                                                    <button type="button" onClick={clearForm}
+                                                            disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
+                                                            className="inline-flex items-center justify-center rounded-xl border border-error bg-white px-5 py-3.5 text-sm font-bold text-error transition-colors hover:bg-[#fff0f3] focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        {t("employerOffers.clear")}
+                                                    </button>
+                                                    <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
+                                                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
+                                                        {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </form>
                             </div>
-                        </form>
-                    </div>
+                        </div>
+                    </div>}
+                    {isApplicationsOpen && applicationsOffer?.statut === "VALIDE" && (
+                        <ApplicationsModal
+                            offer={applicationsOffer}
+                            applications={applicationsByOffer[String(applicationsOffer.id)] ?? getApplicationsForOffer(applicationsOffer)}
+                            language={i18n.resolvedLanguage}
+                            isLoading={isLoadingApplications}
+                            scheduledInterviews={scheduledInterviews}
+                            error={applicationsError}
+
+                            onClose={() => {
+                                setIsApplicationsOpen(false);
+                                setApplicationsOffer(null);
+                            }}
+                            onScheduleInterview={(candidate) => {
+                                setInterviewOfferId(applicationsOffer?.id ?? null);
+                                setIsApplicationsOpen(false);
+                                setApplicationsOffer(null);
+                                setInterviewCandidate(candidate);
+                            }}
+                            onRefresh={() => loadApplications(applicationsOffer)}
+                            onDecision={recordDecision}
+                        />
+                    )}
+
+                    {interviewCandidate && (
+                        <ScheduleInterviewModal
+                            offerId={interviewOfferId}
+                            candidat={interviewCandidate}
+                            initialData={scheduledInterviews[`${interviewOfferId}_${interviewCandidate?.id}`]}
+                            onClose={() => setInterviewCandidate(null)}
+                            onSuccess={(submittedData) => {
+                                setScheduledInterviews((current) => ({
+                                    ...current,
+                                    [`${interviewOfferId}_${interviewCandidate?.id}`]: submittedData,
+                                }));
+                            }}
+                        />
+                    )}
                 </div>
             </div>
         </section>

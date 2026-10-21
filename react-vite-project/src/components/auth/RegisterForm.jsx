@@ -181,8 +181,8 @@ export default function RegisterForm({ user, authChecked, setUser }) {
         return <Loading />;
     }
 
-    if (user?.isLoggedIn) {
-        return <Navigate to={getRedirectPath(user.role)} replace state={{ authNotice: true }} />;
+    if (user?.isLoggedIn && !loading) {
+        return <Navigate to={getRedirectPath(user.role)} replace/>;
     }
 
     return (

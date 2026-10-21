@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter @Setter
 @NoArgsConstructor
@@ -17,6 +19,11 @@ public class Etudiant extends Utilisateur {
 
     @Enumerated(EnumType.STRING)
     private Disciplines discipline;
+
+    @Enumerated(EnumType.STRING)
+    private StatutRechercheEtudiant statutRecherche = StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP;
+
+    private LocalDateTime dateInterview;
     
     @Builder
     public Etudiant(Long id, String nom, String prenom, Disciplines discipline, String email, String password) {
