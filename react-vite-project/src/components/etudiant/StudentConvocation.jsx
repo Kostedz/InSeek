@@ -11,14 +11,14 @@ function normalizeStatus(value) {
         .toUpperCase();
 
     if (["ACCEPTEE", "ACCEPTED"].includes(normalized)) {
-        return "ACCEPTEE";
+        return "ACCEPTED";
     }
 
     if (["REFUSEE", "REJECTED", "DECLINED"].includes(normalized)) {
-        return "REFUSEE";
+        return "REJECTED";
     }
 
-    return "EN_ATTENTE";
+    return "PENDING";
 }
 
 function normalizeInterview(item) {
@@ -68,15 +68,15 @@ function formatDate(interview, language) {
 
 function StatusBadge({ status, t }) {
     const styles = {
-        EN_ATTENTE: "border-gold bg-gold/45 text-ink",
-        ACCEPTEE: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
-        REFUSEE: "border-[#eab0bf] bg-[#fff0f3] text-error",
+        PENDING: "border-gold bg-gold/45 text-ink",
+        ACCEPTED: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
+        REJECTED: "border-[#eab0bf] bg-[#fff0f3] text-error",
     };
 
     return (
         <span
             className={`inline-flex rounded-full border px-2.5 py-1
-                text-xs font-bold ${styles[status] ?? styles.EN_ATTENTE}`}
+                text-xs font-bold ${styles[status] ?? styles.PENDING}`}
         >
             {t(`studentInterviews.status.${status}`)}
         </span>
@@ -113,7 +113,7 @@ function InterviewDetails({
     const [action, setAction] = useState(null);
     const [comment, setComment] = useState("");
     const expired = isExpired(interview);
-    const alreadyResponded = interview.status !== "EN_ATTENTE";
+    const alreadyResponded = interview.status !== "PENDING";
     const canRespond = !expired && !alreadyResponded;
 
     useEffect(() => {
@@ -131,7 +131,7 @@ function InterviewDetails({
         await onRespond(
             interview,
             action,
-            action === "REFUSEE" ? comment.trim() : ""
+            action === "REJECTED" ? comment.trim() : ""
         );
         setAction(null);
     };
