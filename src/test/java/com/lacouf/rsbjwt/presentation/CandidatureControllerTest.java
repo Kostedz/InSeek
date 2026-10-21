@@ -60,6 +60,7 @@ class CandidatureControllerTest {
     @MockitoBean
     PasswordEncoder passwordEncoder;
 
+    // P: mais pourquoi vous faites toutes ça, utilisez juste @BeforeEach. Beaucoup plus clean
     private CandidatureDTO dto(StatutCandidature statut, String commentaire) {
         return new CandidatureDTO(
                 5L,

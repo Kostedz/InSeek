@@ -21,6 +21,7 @@ import java.util.List;
 public class CandidatureController {
     private final CandidatureService candidatureService;
 
+    // P: ResponseEntity<?> pourquoi pas ResponseEntity<List<CandidatureDTO>> ?
     @GetMapping
     public ResponseEntity<?> lister(@RequestParam(required = false) Long offreId,
                                     HttpServletRequest request) {
@@ -34,6 +35,7 @@ public class CandidatureController {
         }
     }
 
+    // même remarque que pour lister()
     @GetMapping("/{id}")
     public ResponseEntity<?> detail(@PathVariable Long id, HttpServletRequest request) {
         try {
