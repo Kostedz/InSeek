@@ -80,7 +80,7 @@ export const api = {
         },
 
         respondToConvocation: (interviewId, responseDTO) => {
-            return fetcher(`/interviews/student/${interviewId}/respond`, {
+            return fetcher(`/interviews/${interviewId}/respond`, {
                 method: "PATCH",
                 headers: {
                     Accept: "application/json",
