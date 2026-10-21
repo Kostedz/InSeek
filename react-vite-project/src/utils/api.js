@@ -50,6 +50,10 @@ export const api = {
             headers: {Accept: "application/json"},
         }),
 
+        getConvocations: () => fetcher("/interviews/student", {
+            headers: {Accept: "application/json"},
+        }),
+
         uploadCv: (file, documentType = "CV") => {
             const formData = new FormData();
             formData.append("file", file);
@@ -65,6 +69,18 @@ export const api = {
                 body: formData,
             });
         },
+
+        respondToConvocation: (interviewId, responseDTO) => {
+            return fetcher(`/interviews/student/${interviewId}/respond`, {
+                method: "PATCH",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify(responseDTO),
+            });
+        }
+
     },
 
     documents: {
