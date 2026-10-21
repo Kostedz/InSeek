@@ -34,8 +34,6 @@ public class EntrevueController {
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
-
-
     }
 
     @GetMapping("/student")
