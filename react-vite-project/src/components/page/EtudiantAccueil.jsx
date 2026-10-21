@@ -356,7 +356,6 @@ export default function EtudiantAccueil({user}) {
     const [selectedOffer, setSelectedOffer] = useState(null);
     const [appliedOfferIds, setAppliedOfferIds] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedDiscipline, setSelectedDiscipline] = useState("");
     const [minimumSalary, setMinimumSalary] = useState("");
     const [error, setError] = useState(false);
 
@@ -432,7 +431,6 @@ export default function EtudiantAccueil({user}) {
         };
     }, [user]);
 
-    const disciplines = [...new Set(offers.map((offer) => offer.discipline).filter(Boolean))].sort();
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
     const filteredOffers = offers.filter((offer) => {
         const searchableText = [offer.title, offer.company, offer.description, offer.address]
@@ -440,9 +438,8 @@ export default function EtudiantAccueil({user}) {
             .join(" ")
             .toLocaleLowerCase();
         const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch);
-        const matchesDiscipline = !selectedDiscipline || offer.discipline === selectedDiscipline;
         const matchesSalary = !minimumSalary || (Number(offer.salary) || 0) >= Number(minimumSalary);
-        return matchesSearch && matchesDiscipline && matchesSalary;
+        return matchesSearch && matchesSalary;
     });
 
     if (cvState === "loading") return <Loading/>;
@@ -458,7 +455,10 @@ export default function EtudiantAccueil({user}) {
                         <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("studentOffers.description")}</p>
                     </div>
                 </div>
-                <StudentMenu/>
+                <StudentMenu
+                    offersCount={offers.length}
+                    applicationsCount={appliedOfferIds.length}
+                />
 
                 {(cvState === "blocked" || cvState === "no-cv") && (
                     <div className="mt-8 rounded-2xl border border-lavender bg-lavender/35 p-6" role="alert">
@@ -483,7 +483,7 @@ export default function EtudiantAccueil({user}) {
 
                 {cvState === "ready" && !error && (
                     <div
-                        className="mt-8 grid gap-3 rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.04)] sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                        className="mt-8 grid gap-3 rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.04)] sm:grid-cols-[minmax(0,1fr)_auto]">
                         <label className="sr-only"
                                htmlFor="student-offer-search">{t("studentOffers.filters.searchLabel")}</label>
                         <input
@@ -494,18 +494,6 @@ export default function EtudiantAccueil({user}) {
                             placeholder={t("studentOffers.filters.searchPlaceholder")}
                             className="rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm text-ink outline-none focus:border-ink focus:ring-4 focus:ring-pink/40"
                         />
-                        <label className="sr-only"
-                               htmlFor="student-offer-discipline">{t("studentOffers.filters.disciplineLabel")}</label>
-                        <select
-                            id="student-offer-discipline"
-                            value={selectedDiscipline}
-                            onChange={(event) => setSelectedDiscipline(event.target.value)}
-                            className="rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm text-ink outline-none focus:border-ink focus:ring-4 focus:ring-pink/40"
-                        >
-                            <option value="">{t("studentOffers.filters.allDisciplines")}</option>
-                            {disciplines.map((discipline) => <option key={discipline}
-                                                                     value={discipline}>{formatDiscipline(discipline, t)}</option>)}
-                        </select>
                         <label className="sr-only"
                                htmlFor="student-offer-salary">{t("studentOffers.filters.salaryLabel")}</label>
                         <select

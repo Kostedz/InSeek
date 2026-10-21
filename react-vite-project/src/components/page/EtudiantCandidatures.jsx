@@ -10,6 +10,7 @@ import {
     formatDate,
     formatOfferTitle,
     normalizeApplication,
+    normalizeOffer,
 } from "./studentOfferUtils.js";
 
 function sortByApplicationDate(applications) {
@@ -17,10 +18,29 @@ function sortByApplicationDate(applications) {
         new Date(second.appliedAt ?? 0) - new Date(first.appliedAt ?? 0));
 }
 
+async function loadAvailableOffersCount(applications) {
+    try {
+        const response = await api.student.getOffers();
+        if (!response.ok) return null;
+
+        const offersData = await response.json();
+        const appliedOfferIds = new Set(
+            applications.map((application) => String(application.offer.id)),
+        );
+        return (Array.isArray(offersData) ? offersData : [])
+            .map(normalizeOffer)
+            .filter((offer) => offer.statut === "VALIDE" && !appliedOfferIds.has(String(offer.id)))
+            .length;
+    } catch {
+        return null;
+    }
+}
+
 export default function EtudiantCandidatures() {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const [applications, setApplications] = useState([]);
+    const [offersCount, setOffersCount] = useState(null);
     const [cv, setCv] = useState(null);
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -37,14 +57,18 @@ export default function EtudiantCandidatures() {
                 const cvData = cvResponse.ok && cvResponse.status !== 204
                     ? await cvResponse.json()
                     : null;
+                const normalizedApplications =
+                    (Array.isArray(applicationsData) ? applicationsData : []).map(normalizeApplication);
 
                 if (!isMounted) return;
 
-                setApplications(sortByApplicationDate(
-                    (Array.isArray(applicationsData) ? applicationsData : []).map(normalizeApplication),
-                ));
+                setApplications(sortByApplicationDate(normalizedApplications));
                 setCv(cvData);
                 setLoading(false);
+
+                loadAvailableOffersCount(normalizedApplications).then((count) => {
+                    if (isMounted) setOffersCount(count);
+                });
             })
             .catch(() => {
                 if (!isMounted) return;
@@ -70,7 +94,7 @@ export default function EtudiantCandidatures() {
                     <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("studentApplications.title")}</h1>
                     <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("studentApplications.description")}</p>
                 </header>
-                <StudentMenu/>
+                <StudentMenu offersCount={offersCount} applicationsCount={applications.length}/>
 
                 {error && (
                     <div className="mt-8 rounded-2xl border border-error bg-blush/30 p-6" role="alert">
