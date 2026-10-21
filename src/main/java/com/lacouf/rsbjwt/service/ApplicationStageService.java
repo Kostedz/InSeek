@@ -4,28 +4,24 @@ import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ApplicationStageService {
 
     private final ApplicationStageRepository applicationStageRepository;
     private final DocumentRepository documentRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
-    // P: utilise @RequiredArgsConstructor pour eviter d'ecrire le constructeur (ca sauve des lignes!)
-    public ApplicationStageService(
-            ApplicationStageRepository applicationStageRepository,
-            DocumentRepository documentRepository
-    ) {
-        this.applicationStageRepository = applicationStageRepository;
-        this.documentRepository = documentRepository;
-    }
 
     @Transactional
     public ApplicationStageDTO createApplicationStage(Utilisateur utilisateur, OffreDeStage offreDeStage) throws BadRequestException {
@@ -33,6 +29,36 @@ public class ApplicationStageService {
             throw new BadRequestException("Seul les etudiants peuvent appliquer à une offrre de stage.");
 
         if(applicationStageRepository.existsByEtudiantIdAndOffreDeStageId(etudiant.getId(), offreDeStage.getId()))
+            throw  new BadRequestException("Vous ne puvez pas appliquer à la même offre de stage plus qu'une fois.");
+
+        if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(offreDeStage.getId(), StatutValidation.ACCEPTE))
+            throw new BadRequestException("Cette offre de stage a déjà été attribuée à un autre étudiant.");
+
+        // P: c'est fine, mais tu pourrais juste faire un builder de ApplicationStage pour la consistence
+        ApplicationStage applicationStage = new ApplicationStage();
+        applicationStage.setEtudiant(etudiant);
+        applicationStage.setOffreDeStage(offreDeStage);
+
+        ApplicationStage sauvegarde = applicationStageRepository.save(applicationStage);
+        return toDto(sauvegarde);
+    }
+
+    @Transactional
+    public ApplicationStageDTO createApplicationStage1(Long idUtilisateur, Long idOffreDeStage) throws BadRequestException {
+
+        if (utilisateurRepository.findUtilisateurById(idUtilisateur) == null)
+            throw new BadRequestException("Cet utilisateur n'existe pas");
+
+        if (documentRepository.findOffreById(idOffreDeStage) == null)
+            throw new BadRequestException("Cet offre de stage n'existe pas");
+
+        if(! (utilisateurRepository.findUtilisateurById(idUtilisateur) instanceof Etudiant etudiant))
+            throw new BadRequestException("Seul les etudiants peuvent appliquer à une offrre de stage.");
+
+        if (! (documentRepository.findOffreById(idOffreDeStage) instanceof OffreDeStage offreDeStage))
+            throw new BadRequestException("Les étudiants peuvent seulement appliquer à des offres de stage.");
+
+        if(applicationStageRepository.existsByEtudiantIdAndOffreDeStageId(idUtilisateur, idOffreDeStage))
             throw  new BadRequestException("Vous ne puvez pas appliquer à la même offre de stage plus qu'une fois.");
 
         if (applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(offreDeStage.getId(), StatutValidation.ACCEPTE))

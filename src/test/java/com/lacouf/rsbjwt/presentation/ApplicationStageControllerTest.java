@@ -3,13 +3,13 @@ package com.lacouf.rsbjwt.presentation;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.OffreDeStage;
-import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.service.ApplicationStageService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
+import com.lacouf.rsbjwt.model.StatutValidation;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,10 +18,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -44,14 +42,13 @@ class ApplicationStageControllerTest {
     UtilisateurService utilisateurService;
 
     @MockitoBean
-    DocumentRepository documentRepository;
+    DocumentService documentService;
 
     @MockitoBean
-    DocumentService documentService;
+    DocumentRepository documentRepository;
 
     private UsernamePasswordAuthenticationToken authentication;
     private Etudiant etudiant;
-    private OffreDeStage offre;
 
     @BeforeEach
     void setUp() {
@@ -61,60 +58,84 @@ class ApplicationStageControllerTest {
         );
 
         etudiant = mock(Etudiant.class);
-        offre = mock(OffreDeStage.class);
+        when(etudiant.getId()).thenReturn(1L);
     }
 
     @Test
     @DisplayName("POST /api/applications/5 retourne 201 lorsque la candidature est créée")
     void addApplicationStage_succes_retourne201() throws Exception {
-        when(utilisateurService.findEntityByEmail("alice@mail.com")).thenReturn(etudiant);
-        when(documentRepository.findOffreStageById(5L)).thenReturn(Optional.of(offre));
-        ApplicationStageDTO dto = new ApplicationStageDTO(10L, LocalDate.now(), null, null, StatutValidation.EN_ATTENTE);
-        when(applicationStageService.createApplicationStage(etudiant, offre)).thenReturn(dto);
+        when(utilisateurService.findEntityByEmail("alice@mail.com"))
+                .thenReturn(etudiant);
 
-        mockMvc.perform(post("/api/applications/5").principal(authentication))
+        ApplicationStageDTO dto = new ApplicationStageDTO(
+                10L,
+                LocalDate.now(),
+                null,
+                null,
+                StatutValidation.EN_ATTENTE
+        );
+
+        when(applicationStageService.createApplicationStage1(1L, 5L))
+                .thenReturn(dto);
+
+        mockMvc.perform(post("/api/applications/5")
+                        .principal(authentication))
                 .andExpect(status().isCreated());
 
         verify(utilisateurService).findEntityByEmail("alice@mail.com");
-        verify(documentRepository).findOffreStageById(5L);
-        verify(applicationStageService).createApplicationStage(etudiant, offre);
+        verify(applicationStageService).createApplicationStage1(1L, 5L);
     }
 
     @Test
-    @DisplayName("Le contrôleur lève NotFoundException si l'offre n'existe pas")
-    void addApplicationStage_offreInexistante() throws Exception {
-        when(utilisateurService.findEntityByEmail("alice@mail.com")).thenReturn(etudiant);
-        when(documentRepository.findOffreStageById(99L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class,
-                () -> controller.addApplicationStage(99L, authentication));
-
-        verify(applicationStageService, never()).createApplicationStage(any(), any());
-    }
-
-    @Test
-    @DisplayName("Le contrôleur propage une erreur de recherche de l'utilisateur")
+    @DisplayName("Le contrôleur propage NotFoundException si l'utilisateur n'existe pas")
     void addApplicationStage_utilisateurIntrouvable() throws Exception {
         when(utilisateurService.findEntityByEmail("alice@mail.com"))
                 .thenThrow(new NotFoundException("Utilisateur introuvable"));
 
-        assertThrows(NotFoundException.class,
-                () -> controller.addApplicationStage(5L, authentication));
+        assertThrows(
+                NotFoundException.class,
+                () -> controller.addApplicationStage(5L, authentication)
+        );
 
-        verifyNoInteractions(documentRepository, applicationStageService);
+        verifyNoInteractions(applicationStageService);
     }
 
     @Test
-    @DisplayName("Le contrôleur propage un refus de candidature du service")
+    @DisplayName("Le contrôleur propage BadRequestException si la candidature est refusée")
     void addApplicationStage_candidatureRefusee() throws Exception {
-        when(utilisateurService.findEntityByEmail("alice@mail.com")).thenReturn(etudiant);
-        when(documentRepository.findOffreStageById(5L)).thenReturn(Optional.of(offre));
-        when(applicationStageService.createApplicationStage(etudiant, offre))
+        when(utilisateurService.findEntityByEmail("alice@mail.com"))
+                .thenReturn(etudiant);
+
+        when(applicationStageService.createApplicationStage1(1L, 5L))
                 .thenThrow(new BadRequestException("Candidature déjà existante"));
 
-        assertThrows(BadRequestException.class,
-                () -> controller.addApplicationStage(5L, authentication));
+        assertThrows(
+                BadRequestException.class,
+                () -> controller.addApplicationStage(5L, authentication)
+        );
 
-        verify(applicationStageService).createApplicationStage(etudiant, offre);
+        verify(applicationStageService).createApplicationStage1(1L, 5L);
+    }
+
+    @Test
+    @DisplayName("Le contrôleur transmet l'identifiant de l'offre au service")
+    void addApplicationStage_transmetIdentifiantOffre() throws Exception {
+        when(utilisateurService.findEntityByEmail("alice@mail.com"))
+                .thenReturn(etudiant);
+
+        ApplicationStageDTO dto = new ApplicationStageDTO(
+                10L,
+                LocalDate.now(),
+                null,
+                null,
+                StatutValidation.EN_ATTENTE
+        );
+
+        when(applicationStageService.createApplicationStage1(1L, 99L))
+                .thenReturn(dto);
+
+        controller.addApplicationStage(99L, authentication);
+
+        verify(applicationStageService).createApplicationStage1(1L, 99L);
     }
 }

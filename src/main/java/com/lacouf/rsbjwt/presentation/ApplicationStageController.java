@@ -11,6 +11,7 @@ import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -30,28 +31,13 @@ public class ApplicationStageController {
     // P: enleve le transactional du controlleur ramses sinon je vais te le foutre au cul
     // P: aussi utilise les ResponseEntity<T> pour renvoyer les infos avec leur code
     @PostMapping("/{offreId}")
-    @ResponseStatus(HttpStatus.CREATED)
-    @Transactional
-    public ApplicationStageDTO addApplicationStage(
+    public ResponseEntity<ApplicationStageDTO> addApplicationStage(
             @PathVariable Long offreId,
             Authentication authentication
     ) throws BadRequestException, NotFoundException {
-
-        // P: bad ramses, bad. la logique d'auth ce fait dans le service.
-        Utilisateur utilisateur = utilisateurService
-                .findEntityByEmail(authentication.getName());
-
-        // wtf, call au repo???? encore plus important que ça se passe dans le service
-        OffreDeStage offreDeStage = documentRepository
-                .findOffreStageById(offreId)
-                .orElseThrow(() ->
-                        new NotFoundException("Offre de stage introuvable")
-                );
-
-        return applicationStageService.createApplicationStage(
-                utilisateur,
-                offreDeStage
-        );
+        Utilisateur utilisateur = utilisateurService.findEntityByEmail(authentication.getName());
+        ApplicationStageDTO dto = applicationStageService.createApplicationStage1(utilisateur.getId(), offreId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
     @GetMapping("/my-applications")
