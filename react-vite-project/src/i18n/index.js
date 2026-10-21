@@ -681,9 +681,9 @@ const resources = {
                 confirm: "Confirmer ma réponse",
                 saving: "Envoi en cours...",
                 status: {
-                    EN_ATTENTE: "En attente",
-                    ACCEPTEE: "Acceptée",
-                    REFUSEE: "Refusée"
+                    PENDING: "En attente",
+                    ACCEPTED: "Acceptée",
+                    REJECTED: "Refusée"
                 },
                 modes: {
                     PRESENTIEL: "En présentiel",
@@ -1373,9 +1373,9 @@ const resources = {
                 confirm: "Confirm Response",
                 saving: "Submitting...",
                 status: {
-                    EN_ATTENTE: "Pending",
-                    ACCEPTEE: "Accepted",
-                    REFUSEE: "Declined"
+                    PENDING: "Pending",
+                    ACCEPTED: "Accepted",
+                    REJECTED: "Declined"
                 },
                 modes: {
                     PRESENTIEL: "In person",
