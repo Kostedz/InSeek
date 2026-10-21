@@ -350,6 +350,25 @@ const resources = {
                     cv: "Curriculum vitae",
                     documentUnavailable: "Document non disponible",
                     notSpecified: "Non précisé",
+                    status: { pending: "En attente", accepted: "Acceptée", rejected: "Refusée" },
+                    rejectionReason: "Raison du refus",
+                    reject: "Refuser",
+                    accept: "Accepter",
+                    readOnlyNotice: "Décision déjà enregistrée.",
+                    confirmAcceptTitle: "Accepter la candidature",
+                    confirmAcceptDesc: "Souhaitez-vous vraiment accepter cette candidature ? L'étudiant sera notifié.",
+                    confirmRejectTitle: "Refuser la candidature",
+                    confirmRejectDesc: "Veuillez expliquer les raisons du refus. Ce commentaire sera transmis à l'étudiant.",
+                    commentLabel: "Raison du refus *",
+                    commentPlaceholder: "Saisissez les raisons du refus...",
+                    errors: {
+                        commentRequired: "Un commentaire expliquant le refus est obligatoire.",
+                        decisionFailed: "La décision n'a pas pu être enregistrée. Réessayez plus tard.",
+                    },
+                    success: {
+                        accepted: "Candidature acceptée avec succès.",
+                        rejected: "Candidature refusée avec succès.",
+                    },
                 },
                 editor: {
                     label: "Téléversement et informations",
@@ -523,6 +542,9 @@ const resources = {
             },
             common: {
                 close: "Fermer",
+                cancel: "Annuler",
+                saving: "Traitement...",
+                confirm: "Confirmer"
             },
             loading: {
                 ariaLabel: "Chargement",
@@ -996,6 +1018,25 @@ const resources = {
                     cv: "Résumé",
                     documentUnavailable: "Document unavailable",
                     notSpecified: "Not specified",
+                    status: { pending: "Pending", accepted: "Accepted", rejected: "Rejected" },
+                    rejectionReason: "Reason for rejection",
+                    reject: "Reject",
+                    accept: "Accept",
+                    readOnlyNotice: "Decision already recorded.",
+                    confirmAcceptTitle: "Accept application",
+                    confirmAcceptDesc: "Do you really want to accept this application? The student will be notified.",
+                    confirmRejectTitle: "Reject application",
+                    confirmRejectDesc: "Please explain the reasons for the rejection. This comment will be sent to the student.",
+                    commentLabel: "Reason for rejection *",
+                    commentPlaceholder: "Enter the reasons for the rejection...",
+                    errors: {
+                        commentRequired: "A comment explaining the rejection is required.",
+                        decisionFailed: "The decision could not be saved. Please try again later.",
+                    },
+                    success: {
+                        accepted: "Application accepted successfully.",
+                        rejected: "Application rejected successfully.",
+                    },
                 },
                 editor: {
                     label: "Upload and details",
@@ -1169,6 +1210,9 @@ const resources = {
             },
             common: {
                 close: "Close",
+                cancel: "Cancel",
+                saving: "Processing...",
+                confirm: "Confirm"
             },
             loading: {
                 ariaLabel: "Loading",

@@ -134,10 +134,43 @@ export const api = {
                 body: interviewBody(offerId, candidatId, payload),
             }),
         },
+        /*candidatures: {
+            accepterCandidature: (id) => fetcher(`/employeur/candidatures/${id}/accept`, {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+            }),
+
+            refuserCandidature: (id, commentaire) => fetcher(`/employeur/candidatures/${id}/reject`, {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify({
+                    commentaire: commentaire ? commentaire.trim() : "",
+                }),
+            }),
+        }, */
         applications: {
             list: (offerId) => fetcher(`/api/applications/offer/${encodeURIComponent(offerId)}`, {
                 cache: "no-store",
                 headers: {Accept: "application/json"},
+            }),
+            accept: (id) => fetcher(`/api/applications/${encodeURIComponent(id)}/accept`, {
+                method: "PUT",
+                headers: {Accept: "application/json"},
+            }),
+
+            reject: (id, commentaire) => fetcher(`/api/applications/${encodeURIComponent(id)}/reject`, {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify({commentaire: commentaire ? commentaire.trim() : ""}),
             }),
         },
     },

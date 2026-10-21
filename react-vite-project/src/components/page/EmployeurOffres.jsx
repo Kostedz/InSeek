@@ -61,6 +61,26 @@ function normalizeStatus(status) {
     return "NOT_SUBMITTED";
 }
 
+function getApplicationStatus(application) {
+    const status = String(
+        application?.status
+        ?? application?.statut
+        ?? application?.statutCandidature
+        ?? "PENDING"
+    ).toUpperCase();
+    if (["ACCEPTED", "ACCEPTEE", "ACCEPTÉE", "VALIDE", "APPROVED"].includes(status)) return "ACCEPTED";
+    if (["REJECTED", "REJETE", "REJETÉ", "REFUSEE", "REFUSÉE"].includes(status)) return "REJECTED";
+    return "PENDING";
+}
+
+function applyDecisions(applications, decisions) {
+    return applications.map((application) => {
+        const decision = decisions[String(application.id)];
+        if (!decision || getApplicationStatus(application) !== "PENDING") return application;
+        return {...application, status: decision.status, rejectionComment: decision.comment};
+    });
+}
+
 function hasValue(value) {
     return value !== null && value !== undefined && String(value).trim() !== "";
 }
@@ -231,6 +251,30 @@ function StatusBadge({status}) {
     );
 }
 
+function ApplicationStatusBadge({status}) {
+    const {t} = useTranslation();
+
+    if (status === "ACCEPTED") {
+        return (
+            <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                {t("employerOffers.applications.status.accepted", "Acceptée")}
+            </span>
+        );
+    }
+    if (status === "REJECTED") {
+        return (
+            <span className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+                {t("employerOffers.applications.status.rejected", "Refusée")}
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+            {t("employerOffers.applications.status.pending", "En attente")}
+        </span>
+    );
+}
+
 function Icon({name, className = "h-5 w-5"}) {
     const paths = {
         check: <path d="m5 12 4 4L19 6"/>,
@@ -326,9 +370,82 @@ function ApplicationDocument({icon, label, fileName, documentId, t}) {
     );
 }
 
-function ApplicationDetails({application, language,isInterviewScheduled, onBack, onClose, onScheduleInterview}) {
-    const {t} = useTranslation();
+function ApplicationDetails({ application, language, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh, onDecision }) {
+    const { t } = useTranslation();
     const hasContactDetails = application.email || application.phone || application.address;
+
+    const [showDecisionModal, setShowDecisionModal] = useState(false);
+    const [decisionType, setDecisionType] = useState(null); // 'ACCEPTED' | 'REJECTED'
+    const [rejectionComment, setRejectionComment] = useState("");
+    const [commentError, setCommentError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [serverError, setServerError] = useState(null);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [decidedStatus, setDecidedStatus] = useState(null);
+    const [decidedComment, setDecidedComment] = useState("");
+
+    // Le statut local (décision qui vient d'être prise) a priorité sur celui de la candidature
+    const currentStatus = decidedStatus ?? getApplicationStatus(application);
+    const isPending = currentStatus === "PENDING";
+    const isAccepted = currentStatus === "ACCEPTED";
+    const isRejected = currentStatus === "REJECTED";
+    const shownRejectionComment = decidedComment || application.rejectionComment || application.commentaireRefus || "";
+
+    const handleOpenDecisionModal = (type) => {
+        setDecisionType(type);
+        setRejectionComment("");
+        setCommentError("");
+        setServerError(null);
+        setShowDecisionModal(true);
+    };
+
+    const handleSubmitDecision = async () => {
+        setServerError(null);
+
+        if (decisionType === "REJECTED" && !rejectionComment.trim()) {
+            setCommentError(t("employerOffers.applications.errors.commentRequired", "Un commentaire expliquant le refus est obligatoire."));
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            let response;
+            if (decisionType === "ACCEPTED") {
+                response = await api.employer.applications.accept(application.id);
+            } else {
+                response = await api.employer.applications.reject(application.id, rejectionComment);
+            }
+
+            if (!response.ok) {
+                const raw = await response.text().catch(() => "");
+                let message = raw;
+                try {
+                    const parsed = JSON.parse(raw);
+                    message = parsed.messageKey || parsed.message || "";
+                } catch {
+                }
+                console.error("Decision failed", response.status, raw);
+                throw new Error(message || "employerOffers.applications.errors.decisionFailed");
+            }
+
+            setShowDecisionModal(false);
+            setDecidedStatus(decisionType);
+            setDecidedComment(decisionType === "REJECTED" ? rejectionComment : "");
+            setSuccessMessage(
+                decisionType === "ACCEPTED"
+                    ? t("employerOffers.applications.success.accepted", "Candidature acceptée avec succès.")
+                    : t("employerOffers.applications.success.rejected", "Candidature refusée avec succès.")
+            );
+
+            if (onDecision) onDecision(application.id, decisionType, decisionType === "REJECTED" ? rejectionComment : "");
+            if (onRefresh) onRefresh();
+        } catch (err) {
+            setServerError({ key: err.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div
@@ -363,6 +480,12 @@ function ApplicationDetails({application, language,isInterviewScheduled, onBack,
                         </button>
                     </div>
 
+                    {successMessage && (
+                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+                            {successMessage}
+                        </div>
+                    )}
+
                     <div
                         className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-canvas p-4">
                         <span
@@ -371,11 +494,36 @@ function ApplicationDetails({application, language,isInterviewScheduled, onBack,
                             <p className="font-black text-ink">{application.name || t("employerOffers.applications.unknownStudent")}</p>
                             <p className="mt-1 break-all text-sm text-ink-soft">{application.email || t("employerOffers.applications.notSpecified")}</p>
                         </div>
-                        <p className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink-soft">
-                            <Icon name="calendar" className="h-4 w-4"/>
-                            {t("employerOffers.applications.submittedOn", {date: formatDateTime(application.submittedAt, language) || t("employerOffers.applications.notSpecified")})}
-                        </p>
+
+                        <div className="ml-auto">
+                            {isPending && (
+                                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+                                    {t("employerOffers.applications.status.pending", "En attente")}
+                                </span>
+                            )}
+                            {isAccepted && (
+                                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                                    {t("employerOffers.applications.status.accepted", "Acceptée")}
+                                </span>
+                            )}
+                            {isRejected && (
+                                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+                                    {t("employerOffers.applications.status.rejected", "Refusée")}
+                                </span>
+                            )}
+                        </div>
                     </div>
+
+                    {isRejected && shownRejectionComment && (
+                        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50/50 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-rose-800">
+                                {t("employerOffers.applications.rejectionReason", "Raison du refus")}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-ink">
+                                {shownRejectionComment}
+                            </p>
+                        </div>
+                    )}
 
                     <div className="mt-6">
                         <section className="rounded-2xl border border-line bg-surface p-4">
@@ -396,7 +544,6 @@ function ApplicationDetails({application, language,isInterviewScheduled, onBack,
                                 </div> :
                                 <p className="mt-3 text-sm text-ink-soft">{t("employerOffers.applications.notSpecified")}</p>}
                         </section>
-
                     </div>
 
                     <section className="mt-5">
@@ -408,30 +555,127 @@ function ApplicationDetails({application, language,isInterviewScheduled, onBack,
                         </div>
                     </section>
 
-                    <div className="mt-6 pt-5 border-t border-line flex justify-end">
+                    <div className="mt-6 pt-5 border-t border-line flex flex-wrap items-center justify-between gap-3">
                         <button
                             type="button"
-                            onClick={() => onScheduleInterview({
-                                ...application,
-                                id: application.studentId,
-                                isEdit: Boolean(isInterviewScheduled),
-                            })}
-                            className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink-soft transition-colors"
+                            disabled={!isPending}
+                            title={!isPending ? t("employerOffers.interviews.disabledAfterDecision", "Une décision a déjà été prise pour cette candidature.") : undefined}
+                            onClick={() => {
+                                if (!isPending) return;
+                                onScheduleInterview({
+                                    ...application,
+                                    id: application.studentId,
+                                    isEdit: Boolean(isInterviewScheduled),
+                                });
+                            }}
+                            className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink hover:bg-canvas transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
                         >
                             {isInterviewScheduled
                                 ? t("employerOffers.interviews.edit", "Modifier l'entrevue")
                                 : t("employerOffers.interviews.title", "Planifier une entrevue")}
                         </button>
+
+                        {isPending ? (
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenDecisionModal("REJECTED")}
+                                    className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 transition-colors"
+                                >
+                                    {t("employerOffers.applications.reject", "Refuser")}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenDecisionModal("ACCEPTED")}
+                                    className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors"
+                                >
+                                    {t("employerOffers.applications.accept", "Accepter")}
+                                </button>
+                            </div>
+                        ) : (
+                            <p className="text-xs font-semibold italic text-ink-soft">
+                                {t("employerOffers.applications.readOnlyNotice", "Décision déjà enregistrée.")}
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Confirmation / Saisie du motif de refus */}
+            {showDecisionModal && (
+                <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl space-y-4">
+                        <h3 className="text-lg font-black text-ink">
+                            {decisionType === "ACCEPTED"
+                                ? t("employerOffers.applications.confirmAcceptTitle", "Accepter la candidature")
+                                : t("employerOffers.applications.confirmRejectTitle", "Refuser la candidature")}
+                        </h3>
+
+                        <p className="text-sm text-ink-soft">
+                            {decisionType === "ACCEPTED"
+                                ? t("employerOffers.applications.confirmAcceptDesc", "Souhaitez-vous vraiment accepter cette candidature ? L'étudiant sera notifié.")
+                                : t("employerOffers.applications.confirmRejectDesc", "Veuillez expliquer les raisons du refus. Ce commentaire sera transmis à l'étudiant.")}
+                        </p>
+
+                        {serverError && (
+                            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+                                {translateMessage(t, serverError)}
+                            </div>
+                        )}
+
+                        {decisionType === "REJECTED" && (
+                            <div>
+                                <label className="block text-xs font-bold text-ink mb-1">
+                                    {t("employerOffers.applications.commentLabel", "Raison du refus *")}
+                                </label>
+                                <textarea
+                                    rows="3"
+                                    value={rejectionComment}
+                                    onChange={(e) => {
+                                        setRejectionComment(e.target.value);
+                                        if (commentError) setCommentError("");
+                                    }}
+                                    placeholder={t("employerOffers.applications.commentPlaceholder", "Saisissez les raisons du refus...")}
+                                    className="w-full rounded-xl border border-line bg-canvas p-3 text-sm text-ink outline-none focus:border-lavender resize-none"
+                                />
+                                {commentError && <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-3 border-t border-line">
+                            <button
+                                type="button"
+                                onClick={() => setShowDecisionModal(false)}
+                                className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-canvas"
+                            >
+                                {t("common.cancel", "Annuler")}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isSubmitting}
+                                onClick={handleSubmitDecision}
+                                className={`rounded-xl px-4 py-2 text-sm font-bold text-white transition-colors ${
+                                    decisionType === "ACCEPTED" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
+                                } disabled:opacity-50`}
+                            >
+                                {isSubmitting ? t("common.saving", "Traitement...") : t("common.confirm", "Confirmer")}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews}) {
+function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews, onRefresh, onDecision}) {
     const {t} = useTranslation();
     const [selectedApplication, setSelectedApplication] = useState(null);
+
+    // Garde la candidature sélectionnée synchronisée avec la liste rafraîchie
+    const currentApplication = selectedApplication
+        ? applications.find((application) => application.id === selectedApplication.id) ?? selectedApplication
+        : null;
 
     useEffect(() => {
         const previousOverflow = document.body.style.overflow;
@@ -449,27 +693,23 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
         };
     }, [onClose, selectedApplication]);
 
-    if (selectedApplication) {
+    if (currentApplication) {
         return (
             <ApplicationDetails
-                application={selectedApplication}
+                application={currentApplication}
                 language={language}
                 isInterviewScheduled={
-                Boolean(selectedApplication.interviewScheduled)
-                || Boolean(scheduledInterviews[`${offer.id}_${selectedApplication.studentId}`])
+                    Boolean(currentApplication.interviewScheduled)
+                    || Boolean(scheduledInterviews[`${offer.id}_${currentApplication.studentId}`])
                 }
-
                 onBack={() => setSelectedApplication(null)}
                 onClose={onClose}
                 onScheduleInterview={onScheduleInterview}
+                onRefresh={onRefresh}
+                onDecision={onDecision}
             />
         );
     }
-
-   /** if (selectedApplication) {
-        return <ApplicationDetails application={selectedApplication} language={language}
-                                   onBack={() => setSelectedApplication(null)} onClose={onClose}/>;
-    }**/
 
     return (
         <div
@@ -539,6 +779,7 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
                                         className="hidden shrink-0 items-center gap-1.5 text-xs font-semibold text-ink-soft sm:flex"><Icon
                                         name="calendar"
                                         className="h-3.5 w-3.5"/>{formatDate(application.submittedAt, language) || t("employerOffers.applications.notSpecified")}</span>
+                                    <ApplicationStatusBadge status={getApplicationStatus(application)}/>
                                     <Icon name="chevron"
                                           className="h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5"/>
                                 </button>
@@ -629,6 +870,7 @@ export default function EmployeurOffres({
     const [interviewCandidate, setInterviewCandidate] = useState(null);
     const [interviewOfferId, setInterviewOfferId] = useState(null);
     const [scheduledInterviews, setScheduledInterviews] = useState({});
+    const decisionsRef = useRef({});
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
@@ -734,7 +976,7 @@ export default function EmployeurOffres({
             const data = await response.json();
             setApplicationsByOffer((current) => ({
                 ...current,
-                [offerKey]: Array.isArray(data) ? data.map(normalizeApplication) : [],
+                [offerKey]: Array.isArray(data) ? applyDecisions(data.map(normalizeApplication), decisionsRef.current) : [],
             }));
         } catch {
             setApplicationsError("applications_request_failed");
@@ -757,7 +999,7 @@ export default function EmployeurOffres({
                 if (!response.ok) return null;
 
                 const data = await response.json();
-                return [String(offer.id), Array.isArray(data) ? data.map(normalizeApplication) : []];
+                return [String(offer.id), Array.isArray(data) ? applyDecisions(data.map(normalizeApplication), decisionsRef.current) : []];
             } catch {
                 return null;
             }
@@ -772,6 +1014,18 @@ export default function EmployeurOffres({
             isMounted = false;
         };
     }, [offerList, usesRemoteOffers]);
+
+    const recordDecision = (applicationId, status, comment) => {
+        decisionsRef.current[String(applicationId)] = {status, comment};
+        setApplicationsByOffer((current) => Object.fromEntries(
+            Object.entries(current).map(([offerKey, list]) => [
+                offerKey,
+                list.map((application) => String(application.id) === String(applicationId)
+                    ? {...application, status, rejectionComment: comment}
+                    : application),
+            ])
+        ));
+    };
 
     const selectOffer = (offer) => {
         const draft = drafts[String(offer.id)];
@@ -966,12 +1220,12 @@ export default function EmployeurOffres({
             });
 
             const result = await submitOffer({
-                    offerId: selectedOffer?.id ?? null,
-                    mode: isNewOffer ? "create" : "update",
+                offerId: selectedOffer?.id ?? null,
+                mode: isNewOffer ? "create" : "update",
                 fields: {...formValues, nomEntreprise: employerCompanyName || formValues.nomEntreprise},
-                    file: selectedFile,
-                    formData,
-                });
+                file: selectedFile,
+                formData,
+            });
             const response = result?.response ?? result;
             if (response?.status === 403) {
                 setFormError("employerOffers.errors.accountMustBeValidated");
@@ -1159,230 +1413,230 @@ export default function EmployeurOffres({
                         className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-ink/70 p-3 backdrop-blur-sm sm:p-6 lg:items-center"
                         onMouseDown={handleEditorBackdropMouseDown}
                     >
-                    <div ref={formRef}
-                         className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)]"
-                         role="dialog"
-                         aria-modal="true"
-                         aria-labelledby="employer-offer-editor-title">
-                        <div ref={editorScrollRef} className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
-                        <div
-                            className="flex flex-row items-start justify-between gap-3 border-b border-line pb-6">
-                            <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
-                                    {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
+                        <div ref={formRef}
+                             className="relative flex max-h-[calc(100vh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border border-line bg-surface shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:max-h-[calc(100vh-3rem)]"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="employer-offer-editor-title">
+                            <div ref={editorScrollRef} className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                                <div
+                                    className="flex flex-row items-start justify-between gap-3 border-b border-line pb-6">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
+                                            {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
+                                        </div>
+                                        <h2 id="employer-offer-editor-title"
+                                            className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
+                                        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{isOfferReadOnly
+                                            ? selectedOffer?.statut === "EN_ATTENTE"
+                                                ? t("employerOffers.editor.pendingDescription")
+                                                : t("employerOffers.editor.rejectedDescription")
+                                            : t("employerOffers.editor.newDescription")}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={closeEditor}
+                                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40 disabled:cursor-not-allowed disabled:opacity-50"
+                                        aria-label={t("employerOffers.closeModal")}
+                                        disabled={isSubmitting}
+                                    >
+                                        <Icon name="close" className="h-5 w-5"/>
+                                    </button>
                                 </div>
-                                <h2 id="employer-offer-editor-title"
-                                    className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
-                                <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{isOfferReadOnly
-                                    ? selectedOffer?.statut === "EN_ATTENTE"
-                                        ? t("employerOffers.editor.pendingDescription")
-                                        : t("employerOffers.editor.rejectedDescription")
-                                    : t("employerOffers.editor.newDescription")}</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={closeEditor}
-                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40 disabled:cursor-not-allowed disabled:opacity-50"
-                                aria-label={t("employerOffers.closeModal")}
-                                disabled={isSubmitting}
-                            >
-                                <Icon name="close" className="h-5 w-5"/>
-                            </button>
-                        </div>
 
-                        {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
-                            <div className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
-                                 role="status">
+                                {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
+                                    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
+                                         role="status">
                                 <span
                                     className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface/80 text-error"><Icon
                                     name="info" className="h-4 w-4"/></span>
-                                <div>
-                                    <p className="text-sm font-black text-ink">{t("employerOffers.rejectionComment")}</p>
-                                    <p className="mt-1 text-sm leading-6 text-ink-soft">{selectedOffer.commentaireRejet}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {successMessage && <div
-                            className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
-                            role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
-                            className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
-                        {formError && <div
-                            className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
-                            role="alert">{translateMessage(t, formError)}</div>}
-
-                        <form className="mt-7 space-y-8" onSubmit={handleSubmit} noValidate>
-                            <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
-                                      className="space-y-8">
-                                <div>
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                         <div>
-                                            <h3 className="text-lg font-black text-ink">{t("employerOffers.fileStepTitle")}</h3>
-                                            <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileStepDescription")}</p>
+                                            <p className="text-sm font-black text-ink">{t("employerOffers.rejectionComment")}</p>
+                                            <p className="mt-1 text-sm leading-6 text-ink-soft">{selectedOffer.commentaireRejet}</p>
                                         </div>
                                     </div>
-                                    {isOfferReadOnly ? (
-                                        <div
-                                            className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-canvas px-4 py-3.5"
-                                            role="status">
+                                )}
+
+                                {successMessage && <div
+                                    className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
+                                    role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
+                                    className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
+                                {formError && <div
+                                    className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
+                                    role="alert">{translateMessage(t, formError)}</div>}
+
+                                <form className="mt-7 space-y-8" onSubmit={handleSubmit} noValidate>
+                                    <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
+                                              className="space-y-8">
+                                        <div>
+                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                                                <div>
+                                                    <h3 className="text-lg font-black text-ink">{t("employerOffers.fileStepTitle")}</h3>
+                                                    <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileStepDescription")}</p>
+                                                </div>
+                                            </div>
+                                            {isOfferReadOnly ? (
+                                                <div
+                                                    className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-canvas px-4 py-3.5"
+                                                    role="status">
                                             <span
                                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-lavender/50 text-ink"><Icon
                                                 name="file" className="h-5 w-5"/></span>
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.submittedDocument")}</p>
-                                                <p className="mt-1 truncate text-sm font-bold text-ink">{selectedOffer?.fileName || t("employerOffers.noFile")}</p>
-                                            </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerOffers.submittedDocument")}</p>
+                                                        <p className="mt-1 truncate text-sm font-bold text-ink">{selectedOffer?.fileName || t("employerOffers.noFile")}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className={`mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${isDragging ? "border-pink bg-pink/25" : fileError ? "border-error bg-blush/15" : "border-line bg-canvas hover:border-lavender"}`}
+                                                    onDragOver={(event) => {
+                                                        event.preventDefault();
+                                                        if (!isAccountEmailValidated) return;
+                                                        setIsDragging(true);
+                                                    }}
+                                                    onDragLeave={(event) => {
+                                                        event.preventDefault();
+                                                        setIsDragging(false);
+                                                    }}
+                                                    onDrop={handleDrop}
+                                                >
+                                                    <input ref={fileInputRef} id="offer-file" type="file"
+                                                           accept="application/pdf,.pdf" onChange={handleFileChange}
+                                                           className="sr-only"/>
+                                                    <label htmlFor="offer-file"
+                                                           className="cursor-pointer text-sm font-bold text-ink underline decoration-pink decoration-4 underline-offset-4">
+                                                        {t("studentCv.chooseFile")}
+                                                    </label>
+                                                    <p className="mt-2 text-sm text-ink-soft">{t("studentCv.dropFile")}</p>
+                                                    <p className="mt-1 text-xs text-ink-soft">{t("studentCv.maximumSize")}</p>
+                                                    {selectedFile && <p
+                                                        className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
+                                                        role="status">{selectedFile.name}</p>}
+                                                    {!selectedFile && !isFileCleared && selectedOffer?.fileName && <div
+                                                        className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
+                                                        <Icon name="file" className="h-4 w-4 shrink-0"/><span
+                                                        className="truncate">{t("employerOffers.currentFile")} <strong
+                                                        className="text-ink">{selectedOffer.fileName}</strong></span></div>}
+                                                </div>
+                                            )}
+                                            {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) && <PdfPreview
+                                                file={selectedFile}
+                                                documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
+                                                fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
+                                                className="mt-5"
+                                            />}
+                                            {fileError && <p className="mt-2 text-sm font-semibold text-error"
+                                                             role="alert">{translateMessage(t, fileError)}</p>}
                                         </div>
-                                    ) : (
-                                        <div
-                                            className={`mt-4 rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${isDragging ? "border-pink bg-pink/25" : fileError ? "border-error bg-blush/15" : "border-line bg-canvas hover:border-lavender"}`}
-                                            onDragOver={(event) => {
-                                                event.preventDefault();
-                                                if (!isAccountEmailValidated) return;
-                                                setIsDragging(true);
-                                            }}
-                                            onDragLeave={(event) => {
-                                                event.preventDefault();
-                                                setIsDragging(false);
-                                            }}
-                                            onDrop={handleDrop}
-                                        >
-                                            <input ref={fileInputRef} id="offer-file" type="file"
-                                                   accept="application/pdf,.pdf" onChange={handleFileChange}
-                                                   className="sr-only"/>
-                                            <label htmlFor="offer-file"
-                                                   className="cursor-pointer text-sm font-bold text-ink underline decoration-pink decoration-4 underline-offset-4">
-                                                {t("studentCv.chooseFile")}
-                                            </label>
-                                            <p className="mt-2 text-sm text-ink-soft">{t("studentCv.dropFile")}</p>
-                                            <p className="mt-1 text-xs text-ink-soft">{t("studentCv.maximumSize")}</p>
-                                            {selectedFile && <p
-                                                className="mt-4 rounded-xl bg-lavender/45 px-3 py-2 text-sm font-semibold text-ink"
-                                                role="status">{selectedFile.name}</p>}
-                                            {!selectedFile && !isFileCleared && selectedOffer?.fileName && <div
-                                                className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
-                                                <Icon name="file" className="h-4 w-4 shrink-0"/><span
-                                                className="truncate">{t("employerOffers.currentFile")} <strong
-                                                className="text-ink">{selectedOffer.fileName}</strong></span></div>}
-                                        </div>
-                                    )}
-                                    {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) && <PdfPreview
-                                        file={selectedFile}
-                                        documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
-                                        fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
-                                        className="mt-5"
-                                    />}
-                                    {fileError && <p className="mt-2 text-sm font-semibold text-error"
-                                                     role="alert">{translateMessage(t, fileError)}</p>}
-                                </div>
 
-                                <div>
-                                    <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
-                                    <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
-                                    <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                                        <Field id="position" label={t("employerOffers.fields.position")} required
-                                               error={fieldErrors.position}>
-                                            <input id="position" name="position" value={formValues.position}
-                                                   onChange={updateField} className={inputClass(fieldErrors.position)}
-                                                   placeholder={t("employerOffers.placeholders.position")}/>
-                                        </Field>
-                                        <Field id="targetDiscipline" label={t("employerOffers.fields.discipline")}
-                                               required
-                                               error={fieldErrors.targetDiscipline}>
-                                            <select id="targetDiscipline" name="targetDiscipline"
-                                                    value={formValues.targetDiscipline} onChange={updateField}
-                                                    className={inputClass(fieldErrors.targetDiscipline)}>
-                                                <option value="">{t("employerOffers.fields.selectDiscipline")}</option>
-                                                {DISCIPLINES.map(([value]) => <option key={value}
-                                                                                      value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
-                                            </select>
-                                        </Field>
-                                        <Field id="adresseEntreprise" label={t("employerOffers.fields.companyAddress")}
-                                               required
-                                               error={fieldErrors.adresseEntreprise}>
-                                            <input id="adresseEntreprise" name="adresseEntreprise"
-                                                   value={formValues.adresseEntreprise} onChange={updateField}
-                                                   className={inputClass(fieldErrors.adresseEntreprise)}
-                                                   placeholder={t("employerOffers.placeholders.companyAddress")}/>
-                                        </Field>
-                                        <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
-                                               error={fieldErrors.dateDebutStage}>
-                                            <input id="dateDebutStage" type="date" name="dateDebutStage"
-                                                   min={minimumStageDate}
-                                                   value={formValues.dateDebutStage} onChange={updateField}
-                                                   className={inputClass(fieldErrors.dateDebutStage)}/>
-                                        </Field>
-                                        <Field id="dateFinStage" label={t("employerOffers.fields.endDate")} required
-                                               error={fieldErrors.dateFinStage}>
-                                            <input id="dateFinStage" type="date" name="dateFinStage"
-                                                   min={formValues.dateDebutStage || minimumStageDate}
-                                                   value={formValues.dateFinStage} onChange={updateField}
-                                                   className={inputClass(fieldErrors.dateFinStage)}/>
-                                        </Field>
-                                        <Field id="salaire" label={t("employerOffers.fields.hourlyPay")}
-                                               error={fieldErrors.salaire}>
-                                            <div className="relative"><input id="salaire" type="text"
-                                                                             inputMode="decimal"
-                                                                             pattern="[0-9]*([.,][0-9]+)?"
-                                                                             name="salaire"
-                                                                             value={formValues.salaire}
-                                                                             onChange={updateField}
-                                                                             className={`${inputClass(fieldErrors.salaire)} pr-12`}
-                                                                             placeholder={t("employerOffers.placeholders.hourlyPay")}/><span
-                                                className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">{t("employerOffers.units.hourlyRate")}</span>
+                                        <div>
+                                            <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
+                                            <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
+                                            <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                                                <Field id="position" label={t("employerOffers.fields.position")} required
+                                                       error={fieldErrors.position}>
+                                                    <input id="position" name="position" value={formValues.position}
+                                                           onChange={updateField} className={inputClass(fieldErrors.position)}
+                                                           placeholder={t("employerOffers.placeholders.position")}/>
+                                                </Field>
+                                                <Field id="targetDiscipline" label={t("employerOffers.fields.discipline")}
+                                                       required
+                                                       error={fieldErrors.targetDiscipline}>
+                                                    <select id="targetDiscipline" name="targetDiscipline"
+                                                            value={formValues.targetDiscipline} onChange={updateField}
+                                                            className={inputClass(fieldErrors.targetDiscipline)}>
+                                                        <option value="">{t("employerOffers.fields.selectDiscipline")}</option>
+                                                        {DISCIPLINES.map(([value]) => <option key={value}
+                                                                                              value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
+                                                    </select>
+                                                </Field>
+                                                <Field id="adresseEntreprise" label={t("employerOffers.fields.companyAddress")}
+                                                       required
+                                                       error={fieldErrors.adresseEntreprise}>
+                                                    <input id="adresseEntreprise" name="adresseEntreprise"
+                                                           value={formValues.adresseEntreprise} onChange={updateField}
+                                                           className={inputClass(fieldErrors.adresseEntreprise)}
+                                                           placeholder={t("employerOffers.placeholders.companyAddress")}/>
+                                                </Field>
+                                                <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
+                                                       error={fieldErrors.dateDebutStage}>
+                                                    <input id="dateDebutStage" type="date" name="dateDebutStage"
+                                                           min={minimumStageDate}
+                                                           value={formValues.dateDebutStage} onChange={updateField}
+                                                           className={inputClass(fieldErrors.dateDebutStage)}/>
+                                                </Field>
+                                                <Field id="dateFinStage" label={t("employerOffers.fields.endDate")} required
+                                                       error={fieldErrors.dateFinStage}>
+                                                    <input id="dateFinStage" type="date" name="dateFinStage"
+                                                           min={formValues.dateDebutStage || minimumStageDate}
+                                                           value={formValues.dateFinStage} onChange={updateField}
+                                                           className={inputClass(fieldErrors.dateFinStage)}/>
+                                                </Field>
+                                                <Field id="salaire" label={t("employerOffers.fields.hourlyPay")}
+                                                       error={fieldErrors.salaire}>
+                                                    <div className="relative"><input id="salaire" type="text"
+                                                                                     inputMode="decimal"
+                                                                                     pattern="[0-9]*([.,][0-9]+)?"
+                                                                                     name="salaire"
+                                                                                     value={formValues.salaire}
+                                                                                     onChange={updateField}
+                                                                                     className={`${inputClass(fieldErrors.salaire)} pr-12`}
+                                                                                     placeholder={t("employerOffers.placeholders.hourlyPay")}/><span
+                                                        className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-ink-soft">{t("employerOffers.units.hourlyRate")}</span>
+                                                    </div>
+                                                </Field>
                                             </div>
-                                        </Field>
-                                    </div>
-                                    <Field id="descriptionPosition" label={t("employerOffers.fields.description")}
-                                           required
-                                           error={fieldErrors.descriptionPosition} className="mt-5">
+                                            <Field id="descriptionPosition" label={t("employerOffers.fields.description")}
+                                                   required
+                                                   error={fieldErrors.descriptionPosition} className="mt-5">
                                         <textarea id="descriptionPosition" name="descriptionPosition" rows="4"
                                                   value={formValues.descriptionPosition} onChange={updateField}
                                                   className={`${inputClass(fieldErrors.descriptionPosition)} resize-y`}
                                                   placeholder={t("employerOffers.placeholders.description")}/>
-                                        <p className="mt-1.5 text-right text-xs text-ink-soft">{t("employerOffers.characterCount", {count: formValues.descriptionPosition.length})}</p>
-                                    </Field>
-                                </div>
-
-                            </fieldset>
-
-                            <div
-                                className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-                                {isOfferReadOnly ? (
-                                    <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft"><Icon
-                                        name="info"
-                                        className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
-                                        ? t("employerOffers.readOnlyMessage", {
-                                            status: selectedOffer?.statut === "EN_ATTENTE"
-                                                ? t("employerOffers.status.pendingLower")
-                                                : t("employerOffers.status.rejectedLower")
-                                        })
-                                        : t("employerOffers.viewerReadOnlyMessage")}</p>
-                                ) : (
-                                    <>
-                                        <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft"><Icon
-                                            name="info"
-                                            className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
-                                        </p>
-                                        <div className="flex flex-col gap-3 sm:flex-row">
-                                            <button type="button" onClick={clearForm}
-                                                    disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
-                                                    className="inline-flex items-center justify-center rounded-xl border border-error bg-white px-5 py-3.5 text-sm font-bold text-error transition-colors hover:bg-[#fff0f3] focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
-                                                {t("employerOffers.clear")}
-                                            </button>
-                                            <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
-                                                {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
-                                                {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
-                                            </button>
+                                                <p className="mt-1.5 text-right text-xs text-ink-soft">{t("employerOffers.characterCount", {count: formValues.descriptionPosition.length})}</p>
+                                            </Field>
                                         </div>
-                                    </>
-                                )}
+
+                                    </fieldset>
+
+                                    <div
+                                        className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+                                        {isOfferReadOnly ? (
+                                            <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft"><Icon
+                                                name="info"
+                                                className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
+                                                ? t("employerOffers.readOnlyMessage", {
+                                                    status: selectedOffer?.statut === "EN_ATTENTE"
+                                                        ? t("employerOffers.status.pendingLower")
+                                                        : t("employerOffers.status.rejectedLower")
+                                                })
+                                                : t("employerOffers.viewerReadOnlyMessage")}</p>
+                                        ) : (
+                                            <>
+                                                <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft"><Icon
+                                                    name="info"
+                                                    className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
+                                                </p>
+                                                <div className="flex flex-col gap-3 sm:flex-row">
+                                                    <button type="button" onClick={clearForm}
+                                                            disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
+                                                            className="inline-flex items-center justify-center rounded-xl border border-error bg-white px-5 py-3.5 text-sm font-bold text-error transition-colors hover:bg-[#fff0f3] focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        {t("employerOffers.clear")}
+                                                    </button>
+                                                    <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
+                                                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
+                                                        {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
+                                                        {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </form>
                             </div>
-                        </form>
                         </div>
-                    </div>
                     </div>}
                     {isApplicationsOpen && applicationsOffer?.statut === "VALIDE" && (
                         <ApplicationsModal
@@ -1403,6 +1657,8 @@ export default function EmployeurOffres({
                                 setApplicationsOffer(null);
                                 setInterviewCandidate(candidate);
                             }}
+                            onRefresh={() => loadApplications(applicationsOffer)}
+                            onDecision={recordDecision}
                         />
                     )}
 
