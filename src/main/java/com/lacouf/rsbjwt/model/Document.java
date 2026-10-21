@@ -25,8 +25,8 @@ public abstract class Document {
     @JoinColumn(name = "utilisateur_id")
     protected Utilisateur utilisateur;
 
-    @Lob
     @Basic(fetch = FetchType.LAZY)
+    @Column(columnDefinition = "bytea")
     private byte[] data;
 
     private String contentType;
