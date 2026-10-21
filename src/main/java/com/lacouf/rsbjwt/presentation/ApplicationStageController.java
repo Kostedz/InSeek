@@ -9,8 +9,10 @@ import com.lacouf.rsbjwt.service.ApplicationStageService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 
+import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -76,5 +78,13 @@ public class ApplicationStageController {
                 .findEntityByEmail(authentication.getName());
 
         return applicationStageService.findApplicationsForEmployer(utilisateur, offreId);
+    }
+
+
+    @GetMapping("/employeur/offres/{offreId}/candidatures")
+    public ResponseEntity<List<EtudiantDTO>> voirCandidatsAUneOffre(
+            @PathVariable Long offreId
+    ){
+        return ResponseEntity.ok(applicationStageService.findEtudiantsByOffreDeStage(offreId));
     }
 }

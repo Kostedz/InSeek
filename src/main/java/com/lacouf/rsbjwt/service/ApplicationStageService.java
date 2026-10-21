@@ -104,6 +104,13 @@ public class ApplicationStageService {
                 .toList();
     }
 
+    public List<EtudiantDTO> findEtudiantsByOffreDeStage(Long idOffreDeStage){
+        return applicationStageRepository.findEtudiantsByOffreDeStage(idOffreDeStage)
+                .stream()
+                .map(EtudiantDTO::of)
+                .toList();
+    }
+
     public ApplicationStageDTO toDto(ApplicationStage applicationStage){
         CV cv = documentRepository.findByUtilisateur(applicationStage.getEtudiant());
         return  new ApplicationStageDTO(applicationStage.getId(),

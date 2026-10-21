@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.repository;
 
 import com.lacouf.rsbjwt.model.ApplicationStage;
+import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.StatutValidation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
@@ -38,4 +39,11 @@ public interface ApplicationStageRepository extends JpaRepository<ApplicationSta
             WHERE application.etudiant.id = :etudiantId
             """)
     List<Long> findOfferIdsByEtudiantId(@Param("etudiantId") Long etudiantId);
+
+    @Query("""
+            SELECT DISTINCT a.etudiant
+            FROM ApplicationStage a
+            WHERE a.offreDeStage.id = :idOffreDeStage
+            """)
+    List<Etudiant> findEtudiantsByOffreDeStage(@Param("idOffreDeStage") Long idOffreDeStage);
 }
