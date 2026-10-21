@@ -4,6 +4,7 @@ import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import PdfPreview from "../PdfPreview.jsx";
+import StudentInterviews from "../etudiant/StudentConvocation.jsx";
 
 function normalizeStatus(value) {
     const status = String(value ?? "").trim().toUpperCase();
@@ -310,6 +311,9 @@ export default function EtudiantAccueil({user}) {
                         <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("studentOffers.description")}</p>
                     </div>
                 </div>
+
+                <StudentInterviews user={user} />
+
 
                 {(cvState === "blocked" || cvState === "no-cv") && (
                     <div className="mt-8 rounded-2xl border border-lavender bg-lavender/35 p-6" role="alert">
