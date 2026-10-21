@@ -17,6 +17,8 @@ public record EntrevueDTO(
         ModeEntrevue mode,
         String locationOrLink,
         String message,
+        String position,
+        String companyName,
         StatutConvocationEntrevue interviewInvitationStatus,
         LocalDateTime invitationResponseDate,
         String messageWhenRejected
@@ -31,6 +33,8 @@ public record EntrevueDTO(
                 interview.getModeInterview(),
                 interview.getLocationOrLink(),
                 interview.getMessage(),
+                interview.getInternshipOffer().getNomEntreprise(),
+                interview.getInternshipOffer().getPosition(),
                 interview.getInterviewInvitationStatus(),
                 interview.getInvitationResponseDate(),
                 interview.getMessageWhenRejected()
