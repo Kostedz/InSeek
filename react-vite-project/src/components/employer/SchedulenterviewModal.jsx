@@ -6,14 +6,22 @@ import { translateMessage } from "../../utils/i18nMessage.js";
 const DEFAULT_FORM_STATE = {
     date: "",
     heure: "",
-    /* duree: "30", */
     mode: "VIDEO_CALL",
     lieuOuLien: "",
     message: "",
 };
 
-export default function ScheduleInterviewModal({ offerId, candidat, onClose, onSuccess }) {
+const getTodayIso = () => {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${today.getFullYear()}-${month}-${day}`;
+};
+
+export default function ScheduleInterviewModal({ offerId, candidat, initialData, onClose, onSuccess }) {
     const { t } = useTranslation();
+    const [isEdit, setIsEdit] = useState(Boolean(candidat?.isEdit));
+    const [submittedData, setSubmittedData] = useState(null);
 
     const storageKey = `interview_draft_${offerId}_${candidat?.id}`;
 
@@ -26,10 +34,9 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                 if (parsed.mode === "VISIOCONFERENCE") parsed.mode = "VIDEO_CALL";
                 return parsed;
             } catch (e) {
-                // Ignorer les erreurs de parsing
             }
         }
-        return DEFAULT_FORM_STATE;
+        return initialData ?? DEFAULT_FORM_STATE;
     });
 
     const [errors, setErrors] = useState({});
@@ -95,14 +102,13 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
         try {
             const payload = {
                 dateHeure: `${formData.date}T${formData.heure}:00`,
-                /* dureeMinutes: parseInt(formData.duree, 10), */
                 mode: formData.mode,
                 lieuOuLien: formData.lieuOuLien.trim(),
                 messageOptionnel: formData.message.trim(),
             };
 
-            const response = await api.employer.offers.planifierEntrevue(offerId, candidat?.id, payload);
-
+            const call = isEdit ? api.employer.offers.modifierEntrevue : api.employer.offers.planifierEntrevue;
+            const response = await call(offerId, candidat.id, payload);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.messageKey || errorData.message || "employerOffers.interviews.errors.submitFailed");
@@ -110,12 +116,12 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
 
             sessionStorage.removeItem(storageKey);
 
+            setSubmittedData(formData);
             setFormData(DEFAULT_FORM_STATE);
             setErrors({});
-
             setIsSuccess(true);
 
-            if (onSuccess) onSuccess();
+            if (onSuccess) onSuccess(formData);
         } catch (err) {
             setServerError({ key: err.message || "employerOffers.interviews.errors.submitFailed" });
         } finally {
@@ -123,9 +129,10 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
         }
     };
 
-    const getTodayIso = () => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
+    const handleEditAfterSuccess = () => {
+        setFormData(submittedData ?? DEFAULT_FORM_STATE);
+        setIsEdit(true);
+        setIsSuccess(false);
     };
 
     return (
@@ -139,7 +146,9 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
             <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-[0_24px_80px_rgba(48,35,55,0.3)] sm:p-8">
                 <div className="flex items-center justify-between border-b border-line pb-4">
                     <h2 className="text-xl font-black text-ink">
-                        {t("employerOffers.interviews.title", "Planifier une entrevue")}
+                        {isEdit
+                            ? t("employerOffers.interviews.editTitle", "Modifier l'entrevue")
+                            : t("employerOffers.interviews.title", "Planifier une entrevue")}
                     </h2>
                     <button
                         type="button"
@@ -156,14 +165,16 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                 </p>
 
                 {isSuccess ? (
-                    <div className="mt-6 text-center py-6">
+                    <div className="mt-6 text-center py-6" role="status" aria-live="polite">
                         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-4">
-                            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
                         <h3 className="text-lg font-black text-ink">
-                            {t("employerOffers.interviews.success.title", "Entrevue planifiée avec succès !")}
+                            {isEdit
+                                ? t("employerOffers.interviews.success.updatedTitle", "Entrevue modifiée avec succès !")
+                                : t("employerOffers.interviews.success.title", "Entrevue planifiée avec succès !")}
                         </h3>
                         <p className="mt-2 text-sm text-ink-soft">
                             {t("employerOffers.interviews.success.description", "L'invitation a été envoyée au candidat.")}
@@ -171,10 +182,10 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                         <div className="mt-6 flex justify-center gap-3">
                             <button
                                 type="button"
-                                onClick={() => setIsSuccess(false)}
+                                onClick={handleEditAfterSuccess}
                                 className="rounded-xl border border-line px-5 py-2.5 text-sm font-bold text-ink hover:bg-canvas"
                             >
-                                {t("employerOffers.interviews.planAnother", "Planifier une autre heure")}
+                                {t("employerOffers.interviews.edit", "Modifier l'entrevue")}
                             </button>
                             <button
                                 type="button"
@@ -193,7 +204,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                        <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="block text-sm font-bold text-ink mb-1">
@@ -236,7 +247,6 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender"
                                 >
                                     <option value="VIDEO_CALL">{t("employerOffers.interviews.modes.video", "Visioconférence")}</option>
-                                    {/*<option value="PHONE_CALL">{t("employerOffers.interviews.modes.phone", "Appel téléphonique")}</option>*/}
                                     <option value="IN_PERSON">{t("employerOffers.interviews.modes.inPerson", "En personne")}</option>
                                 </select>
                             </div>
@@ -250,7 +260,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                                     name="lieuOuLien"
                                     value={formData.lieuOuLien}
                                     onChange={handleChange}
-                                    placeholder="Ex: https://teams.microsoft.com/... ou 123 rue St-Catherine"
+                                    placeholder={t("employerOffers.interviews.placeholders.locationOrLink", "Ex. : https://teams.microsoft.com/… ou 123 rue Saint-Catherine")}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender"
                                 />
                                 {errors.lieuOuLien && <p className="mt-1 text-xs text-error">{errors.lieuOuLien}</p>}
@@ -265,7 +275,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                                     rows="3"
                                     value={formData.message}
                                     onChange={handleChange}
-                                    placeholder="Instructions particulières..."
+                                    placeholder={t("employerOffers.interviews.placeholders.message", "Instructions particulières...")}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender resize-none"
                                 ></textarea>
                             </div>
@@ -283,7 +293,11 @@ export default function ScheduleInterviewModal({ offerId, candidat, onClose, onS
                                     disabled={submitting}
                                     className="rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-ink-soft disabled:opacity-50"
                                 >
-                                    {submitting ? t("employerOffers.interviews.submitting", "Planification...") : t("employerOffers.interviews.submit", "Confirmer l'entrevue")}
+                                    {submitting
+                                        ? t("employerOffers.interviews.submitting", "Planification...")
+                                        : isEdit
+                                            ? t("employerOffers.interviews.saveChanges", "Enregistrer les modifications")
+                                            : t("employerOffers.interviews.submit", "Confirmer l'entrevue")}
                                 </button>
                             </div>
                         </form>

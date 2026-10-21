@@ -1,5 +1,14 @@
 import fetcher from "./fetcher.js";
 
+const interviewBody = (offerId, candidatId, payload) => JSON.stringify({
+    offerId: Number(offerId),
+    studentId: Number(candidatId),
+    DateAndTime: payload.dateHeure,
+    mode: payload.mode,
+    locationOrLink: payload.lieuOuLien,
+    message: payload.messageOptionnel || "",
+});
+
 export const api = {
     auth: {
         register: (payload) =>
@@ -50,6 +59,10 @@ export const api = {
             headers: {Accept: "application/json"},
         }),
 
+        getConvocations: () => fetcher("/interviews/student", {
+            headers: {Accept: "application/json"},
+        }),
+
         uploadCv: (file, documentType = "CV") => {
         const formData = new FormData();
             formData.append("file", file);
@@ -65,6 +78,18 @@ export const api = {
                 body: formData,
             });
         },
+
+        respondToConvocation: (interviewId, responseDTO) => {
+            return fetcher(`/interviews/${interviewId}/respond`, {
+                method: "PATCH",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify(responseDTO),
+            });
+        },
+
 
         applyToOffer: (offerId) =>
             fetcher(`/api/applications/${encodeURIComponent(offerId)}`, {
@@ -114,15 +139,15 @@ export const api = {
                     Accept: "application/json",
                     "Content-Type": "application/json;charset=UTF-8",
                 },
-                body: JSON.stringify({
-                    offerId: Number(offerId),
-                    studentId: Number(candidatId),
-                    DateAndTime: payload.dateHeure,
-                    dateAndTime: payload.dateHeure,
-                    mode: payload.mode,
-                    locationOrLink: payload.lieuOuLien,
-                    message: payload.messageOptionnel || "",
-                }),
+                body: interviewBody(offerId, candidatId, payload),
+            }),
+           modifierEntrevue: (offerId, candidatId, payload) => fetcher("/interviews/update", {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: interviewBody(offerId, candidatId, payload),
             }),
         },
         applications: {

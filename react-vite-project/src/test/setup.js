@@ -8,3 +8,7 @@ afterEach(() => {
     cleanup();
     localStorage.clear();
 });
+
+Element.prototype.scrollTo = () => {};
+Element.prototype.scrollIntoView = () => {};
+window.scrollTo = () => {};

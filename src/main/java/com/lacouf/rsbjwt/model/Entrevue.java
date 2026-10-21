@@ -23,7 +23,6 @@ public class Entrevue {
     @JoinColumn(nullable = false)
     private Etudiant student;
 
-
     @ManyToOne
     @JoinColumn(nullable = false)
     private OffreDeStage internshipOffer;
@@ -40,6 +39,15 @@ public class Entrevue {
 
     @Column(length = 1000)
     private String message;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatutConvocationEntrevue interviewInvitationStatus = StatutConvocationEntrevue.PENDING;
+
+    private LocalDateTime invitationResponseDate;
+
+    @Column(length = 1000)
+    private String messageWhenRejected;
 
     @Builder
     public Entrevue(OffreDeStage internshipOffer, ModeEntrevue modeInterview, Employeur employer, Etudiant student, LocalDateTime dateInterview, String locationOrLink,  String message) {

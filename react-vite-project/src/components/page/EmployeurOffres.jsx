@@ -88,6 +88,11 @@ function normalizeApplication(application, index = 0) {
             ?? application?.idEtudiant
             ?? student.id
             ?? null,
+        interviewScheduled: Boolean(
+            application?.interviewScheduled
+            ?? application?.entrevuePlanifiee
+            ?? application?.hasInterview
+        ),
         firstName,
         lastName,
         name: String(fullName || "").trim(),
@@ -321,7 +326,7 @@ function ApplicationDocument({icon, label, fileName, documentId, t}) {
     );
 }
 
-function ApplicationDetails({application, language, onBack, onClose, onScheduleInterview}) {
+function ApplicationDetails({application, language,isInterviewScheduled, onBack, onClose, onScheduleInterview}) {
     const {t} = useTranslation();
     const hasContactDetails = application.email || application.phone || application.address;
 
@@ -406,16 +411,16 @@ function ApplicationDetails({application, language, onBack, onClose, onScheduleI
                     <div className="mt-6 pt-5 border-t border-line flex justify-end">
                         <button
                             type="button"
-                            onClick={() =>{
-                                console.log("Full application object:", application);
-                                onScheduleInterview({
-                                    application,
-                                    id: application.studentId,
-                                });
-                            }}
+                            onClick={() => onScheduleInterview({
+                                ...application,
+                                id: application.studentId,
+                                isEdit: Boolean(isInterviewScheduled),
+                            })}
                             className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white hover:bg-ink-soft transition-colors"
                         >
-                            {t("employerOffers.interviews.title", "Planifier une entrevue")}
+                            {isInterviewScheduled
+                                ? t("employerOffers.interviews.edit", "Modifier l'entrevue")
+                                : t("employerOffers.interviews.title", "Planifier une entrevue")}
                         </button>
                     </div>
                 </div>
@@ -424,7 +429,7 @@ function ApplicationDetails({application, language, onBack, onClose, onScheduleI
     );
 }
 
-function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview}) {
+function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews}) {
     const {t} = useTranslation();
     const [selectedApplication, setSelectedApplication] = useState(null);
 
@@ -449,6 +454,11 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
             <ApplicationDetails
                 application={selectedApplication}
                 language={language}
+                isInterviewScheduled={
+                Boolean(selectedApplication.interviewScheduled)
+                || Boolean(scheduledInterviews[`${offer.id}_${selectedApplication.studentId}`])
+                }
+
                 onBack={() => setSelectedApplication(null)}
                 onClose={onClose}
                 onScheduleInterview={onScheduleInterview}
@@ -618,6 +628,7 @@ export default function EmployeurOffres({
     const [localDrafts, setLocalDrafts] = useState({});
     const [interviewCandidate, setInterviewCandidate] = useState(null);
     const [interviewOfferId, setInterviewOfferId] = useState(null);
+    const [scheduledInterviews, setScheduledInterviews] = useState({});
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
@@ -1379,7 +1390,9 @@ export default function EmployeurOffres({
                             applications={applicationsByOffer[String(applicationsOffer.id)] ?? getApplicationsForOffer(applicationsOffer)}
                             language={i18n.resolvedLanguage}
                             isLoading={isLoadingApplications}
+                            scheduledInterviews={scheduledInterviews}
                             error={applicationsError}
+
                             onClose={() => {
                                 setIsApplicationsOpen(false);
                                 setApplicationsOffer(null);
@@ -1397,8 +1410,14 @@ export default function EmployeurOffres({
                         <ScheduleInterviewModal
                             offerId={interviewOfferId}
                             candidat={interviewCandidate}
+                            initialData={scheduledInterviews[`${interviewOfferId}_${interviewCandidate?.id}`]}
                             onClose={() => setInterviewCandidate(null)}
-                            onSuccess={() => {}}
+                            onSuccess={(submittedData) => {
+                                setScheduledInterviews((current) => ({
+                                    ...current,
+                                    [`${interviewOfferId}_${interviewCandidate?.id}`]: submittedData,
+                                }));
+                            }}
                         />
                     )}
                 </div>

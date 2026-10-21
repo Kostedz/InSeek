@@ -17,6 +17,8 @@ import {
     truncateDescription,
 } from "./studentOfferUtils.js";
 
+import StudentConvocation from "../etudiant/StudentConvocation.jsx";
+
 function normalizeStudentValue(value) {
     if (value && typeof value === "object") {
         return [value.id, value.studentId, value.etudiantId, value.email, value.studentEmail, value.etudiantEmail]
@@ -459,6 +461,7 @@ export default function EtudiantAccueil({user}) {
                     </div>
                 </div>
                 <StudentMenu/>
+                <StudentConvocation user={user} className="mt-8"/>
 
                 {(cvState === "blocked" || cvState === "no-cv") && (
                     <div className="mt-8 rounded-2xl border border-lavender bg-lavender/35 p-6" role="alert">

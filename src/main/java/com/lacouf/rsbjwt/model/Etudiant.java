@@ -23,7 +23,7 @@ public class Etudiant extends Utilisateur {
     @Enumerated(EnumType.STRING)
     private StatutRechercheEtudiant statutRecherche = StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP;
 
-    private LocalDateTime dateEnterview;
+    private LocalDateTime dateInterview;
     
     @Builder
     public Etudiant(Long id, String nom, String prenom, Disciplines discipline, String email, String password) {
