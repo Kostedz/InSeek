@@ -461,9 +461,12 @@ export default function EtudiantAccueil({user}) {
                     </div>
                 </div>
                 <StudentMenu/>
-                <StudentConvocation user={user} className="mt-8"/>
+                <StudentConvocation user={user} t={t} language={language}/>
+
+
 
                 {(cvState === "blocked" || cvState === "no-cv") && (
+
                     <div className="mt-8 rounded-2xl border border-lavender bg-lavender/35 p-6" role="alert">
                         <h2 className="text-lg font-black text-ink">{t("studentOffers.cvRequiredTitle")}</h2>
                         <p className="mt-2 text-sm leading-6 text-ink-soft">
