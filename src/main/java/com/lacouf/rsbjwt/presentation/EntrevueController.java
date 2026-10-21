@@ -60,7 +60,7 @@ public class EntrevueController {
         }
     }
 
-    @PatchMapping("/{id}/respond")
+    @PatchMapping("/{interviewId}/respond")
     public ResponseEntity<?> respondToInterview( @PathVariable Long interviewId, @RequestBody RepondreConvocationDTO responseDTO, HttpServletRequest request) {
         try {
             EntrevueDTO updated = interviewService.respondToInterviewInvitation(interviewId, responseDTO, request);
