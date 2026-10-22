@@ -794,7 +794,7 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
 
 export function buildOfferSubmissionFormData({file, fields, offerId}) {
     const formData = new FormData();
-    formData.append("file", file);
+    if (file) formData.append("file", file);
     formData.append("formContent", JSON.stringify({
         type: "OffreDeStage",
         offerId: offerId ?? null,
@@ -878,7 +878,7 @@ export default function EmployeurOffres({
     const selectedApplications = selectedOffer
         ? applicationsByOffer[String(selectedOffer.id)] ?? getApplicationsForOffer(selectedOffer)
         : [];
-    const isOfferReadOnly = !canManageOffers || ["REJETE", "EN_ATTENTE"].includes(selectedOffer?.statut);
+    const isOfferReadOnly = !canManageOffers;
     const pendingCount = offerList.filter((offer) => offer.statut === "EN_ATTENTE").length;
     const publishedCount = offerList.filter((offer) => offer.statut === "VALIDE").length;
     const minimumStageDate = getTodayIso();
@@ -941,10 +941,15 @@ export default function EmployeurOffres({
 
     useEffect(() => {
         setOfferList(initialOffers);
-        setSelectedId(null);
-        setIsNewOffer(false);
-        setIsFileCleared(false);
-        setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
+        if (isNewOffer) return;
+
+        const selectedOfferStillExists = selectedId !== null
+            && initialOffers.some((offer) => offer.id === selectedId);
+        if (!selectedOfferStillExists) {
+            setSelectedId(initialOffers[0]?.id ?? null);
+            setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
+            setIsFileCleared(false);
+        }
     }, [initialOffers, employerCompanyName]);
 
     useEffect(() => {
@@ -1186,15 +1191,14 @@ export default function EmployeurOffres({
             return;
         }
         if (isOfferReadOnly) {
-            setFormError(selectedOffer?.statut === "EN_ATTENTE"
-                ? "employerOffers.errors.pendingReadOnly"
-                : "employerOffers.errors.rejectedReadOnly");
+            setFormError("employerOffers.viewerReadOnlyMessage");
             return;
         }
-        if (!selectedFile) {
+        const hasExistingFile = !isNewOffer && Boolean(selectedOffer?.fileName) && !isFileCleared;
+        if (!selectedFile && !hasExistingFile) {
             setFileError("employerOffers.errors.fileRequired");
         }
-        if (!validateForm() || !selectedFile) return;
+        if (!validateForm() || (!selectedFile && !hasExistingFile)) return;
 
         setIsSubmitting(true);
         const formData = buildOfferSubmissionFormData({
@@ -1212,10 +1216,6 @@ export default function EmployeurOffres({
                 if (!response.ok) return {response};
 
                 const offer = await response.json();
-                setRemoteOffers((current) => mode === "update"
-                    ? (current ?? []).map((item) => item.id === offer.id ? offer : item)
-                    : [offer, ...(current ?? [])]);
-
                 return {response, offer};
             });
 
@@ -1250,6 +1250,7 @@ export default function EmployeurOffres({
             setIsNewOffer(false);
             setIsFileCleared(false);
             setSelectedFile(null);
+            setFormValues(formValuesFromOffer(submittedOffer, employerCompanyName));
             saveDrafts((current) => {
                 const nextDrafts = {...current};
                 delete nextDrafts[submittedDraftKey];
