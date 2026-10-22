@@ -495,7 +495,7 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                             <p className="mt-1 break-all text-sm text-ink-soft">{application.email || t("employerOffers.applications.notSpecified")}</p>
                         </div>
 
-                        <div className="ml-auto">
+                        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                             {isPending && (
                                 <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
                                     {t("employerOffers.applications.status.pending", "En attente")}
@@ -509,6 +509,13 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                             {isRejected && (
                                 <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
                                     {t("employerOffers.applications.status.rejected", "Refusée")}
+                                </span>
+                            )}
+                            {isInterviewScheduled && (
+                                <span
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-lavender bg-lavender/35 px-3 py-1 text-xs font-bold text-ink">
+                                    <Icon name="calendar" className="h-3.5 w-3.5"/>
+                                    {t("employerOffers.interviews.alreadyScheduled", "Entrevue déjà planifiée")}
                                 </span>
                             )}
                         </div>
@@ -555,48 +562,59 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                         </div>
                     </section>
 
-                    <div className="mt-6 pt-5 border-t border-line flex flex-wrap items-center justify-between gap-3">
-                        <button
-                            type="button"
-                            disabled={!isPending}
-                            title={!isPending ? t("employerOffers.interviews.disabledAfterDecision", "Une décision a déjà été prise pour cette candidature.") : undefined}
-                            onClick={() => {
-                                if (!isPending) return;
-                                onScheduleInterview({
-                                    ...application,
-                                    id: application.studentId,
-                                    isEdit: Boolean(isInterviewScheduled),
-                                });
-                            }}
-                            className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink hover:bg-canvas transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-                        >
-                            {isInterviewScheduled
-                                ? t("employerOffers.interviews.edit", "Modifier l'entrevue")
-                                : t("employerOffers.interviews.title", "Planifier une entrevue")}
-                        </button>
+                    <div className="mt-8 rounded-2xl border border-line bg-canvas p-4 sm:p-5">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">
+                                    {t("employerOffers.applications.actionsTitle")}
+                                </p>
+                                <p className="mt-1 text-sm leading-6 text-ink-soft">
+                                    {isInterviewScheduled
+                                        ? t("employerOffers.interviews.alreadyScheduledDescription", "Une entrevue est déjà planifiée pour cet étudiant.")
+                                        : isPending
+                                            ? t("employerOffers.applications.actionsDescription")
+                                            : t("employerOffers.applications.readOnlyNotice", "Décision déjà enregistrée.")}
+                                </p>
+                            </div>
+                        </div>
 
-                        {isPending ? (
-                            <div className="flex items-center gap-3">
+                        <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            {isPending && (
                                 <button
                                     type="button"
                                     onClick={() => handleOpenDecisionModal("REJECTED")}
-                                    className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 transition-colors"
+                                    className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {t("employerOffers.applications.reject", "Refuser")}
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleOpenDecisionModal("ACCEPTED")}
-                                    className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors"
-                                >
-                                    {t("employerOffers.applications.accept", "Accepter")}
-                                </button>
-                            </div>
-                        ) : (
-                            <p className="text-xs font-semibold italic text-ink-soft">
-                                {t("employerOffers.applications.readOnlyNotice", "Décision déjà enregistrée.")}
-                            </p>
-                        )}
+                            )}
+                            <button
+                                type="button"
+                                disabled={!isPending || isInterviewScheduled}
+                                title={isInterviewScheduled
+                                    ? t("employerOffers.interviews.alreadyScheduledDescription", "Une entrevue est déjà planifiée pour cet étudiant.")
+                                    : !isPending
+                                        ? t("employerOffers.interviews.disabledAfterDecision", "Une décision a déjà été prise pour cette candidature.")
+                                        : undefined}
+                                onClick={() => {
+                                    if (!isPending || isInterviewScheduled) return;
+                                    onScheduleInterview({
+                                        ...application,
+                                        id: application.studentId,
+                                    });
+                                }}
+                                className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-60 ${
+                                    isInterviewScheduled || !isPending
+                                        ? "bg-line text-ink-soft"
+                                        : "bg-ink text-white hover:bg-ink-soft"
+                                }`}
+                            >
+                                <Icon name="calendar" className="h-4 w-4"/>
+                                {isInterviewScheduled
+                                    ? t("employerOffers.interviews.alreadyScheduled", "Entrevue déjà planifiée")
+                                    : t("employerOffers.interviews.title", "Planifier une entrevue")}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -758,8 +776,11 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
                         </div>
                     ) : (
                         <div className="mt-6 space-y-3">
-                            {applications.map((application) => (
-                                <button key={application.id} type="button"
+                            {applications.map((application) => {
+                                const applicationHasInterview = Boolean(application.interviewScheduled)
+                                    || Boolean(scheduledInterviews[`${offer.id}_${application.studentId}`]);
+
+                                return <button key={application.id} type="button"
                                         onClick={() => setSelectedApplication(application)}
                                         className="group flex w-full items-center gap-3 rounded-2xl border border-line bg-canvas p-4 text-left transition-colors hover:border-lavender hover:bg-lavender/15 focus:outline-none focus:ring-4 focus:ring-pink/40">
                                     <span
@@ -779,11 +800,20 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
                                         className="hidden shrink-0 items-center gap-1.5 text-xs font-semibold text-ink-soft sm:flex"><Icon
                                         name="calendar"
                                         className="h-3.5 w-3.5"/>{formatDate(application.submittedAt, language) || t("employerOffers.applications.notSpecified")}</span>
-                                    <ApplicationStatusBadge status={getApplicationStatus(application)}/>
+                                    <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                        <ApplicationStatusBadge status={getApplicationStatus(application)}/>
+                                        {applicationHasInterview && (
+                                            <span
+                                                className="inline-flex items-center gap-1.5 rounded-full border border-lavender bg-lavender/35 px-3 py-1 text-xs font-bold text-ink">
+                                                <Icon name="calendar" className="h-3.5 w-3.5"/>
+                                                {t("employerOffers.interviews.alreadyScheduled", "Entrevue déjà planifiée")}
+                                            </span>
+                                        )}
+                                    </span>
                                     <Icon name="chevron"
                                           className="h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5"/>
-                                </button>
-                            ))}
+                                </button>;
+                            })}
                         </div>
                     )}
                 </div>
@@ -945,9 +975,9 @@ export default function EmployeurOffres({
 
         const selectedOfferStillExists = selectedId !== null
             && initialOffers.some((offer) => offer.id === selectedId);
-        if (!selectedOfferStillExists) {
-            setSelectedId(initialOffers[0]?.id ?? null);
-            setFormValues(formValuesFromOffer(initialOffers[0], employerCompanyName));
+        if (selectedId !== null && !selectedOfferStillExists) {
+            setSelectedId(null);
+            setFormValues(formValuesFromOffer(null, employerCompanyName));
             setIsFileCleared(false);
         }
     }, [initialOffers, employerCompanyName]);
@@ -1368,10 +1398,14 @@ export default function EmployeurOffres({
                                     <p className="mt-1 text-xs leading-5 text-ink-soft">{t("employerOffers.emptyDescription")}</p>
                                 </div>
                             )}
-                            {offerList.map((offer) => (
-                                <div
+                            {offerList.map((offer) => {
+                                const applicationCount = applicationsByOffer[String(offer.id)]?.length
+                                    ?? getApplicationCount(offer);
+                                const hasApplications = applicationCount > 0;
+
+                                return <div
                                     key={offer.id}
-                                    className={`w-full rounded-2xl border p-4 text-left transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${selectedId === offer.id && !isNewOffer ? "border-ink bg-lavender/30" : "border-line bg-canvas hover:border-lavender hover:bg-lavender/15"}`}
+                                    className={`flex h-full w-full flex-col rounded-2xl border p-4 text-left transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${selectedId === offer.id && !isNewOffer ? "border-ink bg-lavender/30" : "border-line bg-canvas hover:border-lavender hover:bg-lavender/15"}`}
                                 >
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0 flex-1">
@@ -1382,7 +1416,7 @@ export default function EmployeurOffres({
                                             <span
                                                 className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-bold text-ink-soft">
                                                 <Icon name="users" className="h-3.5 w-3.5"/>
-                                                {applicationsByOffer[String(offer.id)]?.length ?? getApplicationCount(offer)}
+                                                {applicationCount}
                                             </span>
                                             <StatusBadge status={offer.statut}/>
                                         </div>
@@ -1392,21 +1426,33 @@ export default function EmployeurOffres({
                                         <span>{formatDate(offer.updatedAt, i18n.resolvedLanguage)}</span>
                                     </div>
                                     <div
-                                        className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
+                                        className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-4">
                                         {canManageOffers && <button type="button" onClick={() => selectOffer(offer)}
                                                                     className="inline-flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-2 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40">
                                             <Icon name="file" className="h-3.5 w-3.5 shrink-0"/>
                                             {t("employerOffers.actions.update")}
                                         </button>}
-                                        {offer.statut === "VALIDE" && <button type="button"
-                                                                              onClick={() => loadApplications(offer)}
-                                                                              className="ml-auto inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
-                                            <Icon name="users" className="h-3.5 w-3.5 shrink-0"/>
-                                            {t("employerOffers.actions.applications")}
-                                        </button>}
+                                        {offer.statut === "VALIDE" && <div className="ml-auto flex items-center gap-2">
+                                            {hasApplications ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => loadApplications(offer)}
+                                                    className="inline-flex w-fit flex-none items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40"
+                                                >
+                                                    <Icon name="users" className="h-3.5 w-3.5 shrink-0"/>
+                                                    {t("employerOffers.actions.applications")}
+                                                </button>
+                                            ) : (
+                                                <span
+                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-line px-3 py-2.5 text-xs font-bold text-ink-soft">
+                                                    <Icon name="users" className="h-3.5 w-3.5 shrink-0"/>
+                                                    {t("employerOffers.actions.noApplications")}
+                                                </span>
+                                            )}
+                                        </div>}
                                     </div>
-                                </div>
-                            ))}
+                                </div>;
+                            })}
                         </div>
                     </aside>
 
