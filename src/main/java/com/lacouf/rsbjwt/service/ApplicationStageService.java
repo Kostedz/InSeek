@@ -53,6 +53,14 @@ public class ApplicationStageService {
             );
         }
 
+        if (etudiant.getDiscipline() != null
+                && offreDeStage.getTargetDiscipline() != null
+                && etudiant.getDiscipline() != offreDeStage.getTargetDiscipline()) {
+            throw new BadRequestException(
+                    "Cette offre de stage ne correspond pas à votre discipline."
+            );
+        }
+
         if (applicationStageRepository
                 .existsByEtudiantIdAndOffreDeStageId(
                         etudiant.getId(), offreDeStage.getId())) {

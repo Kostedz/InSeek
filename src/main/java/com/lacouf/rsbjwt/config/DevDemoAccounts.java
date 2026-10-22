@@ -10,31 +10,31 @@ public final class DevDemoAccounts {
 
     private static final Map<Role, Account> ACCOUNTS = Map.of(
             Role.ETUDIANT, new Account(
-                    "demo.etudiant@inseek.local",
+                    "camille.gagnon@inseek.local",
                     "DemoEtudiant!2026",
-                    "Étudiant",
-                    "Demo",
+                    "Gagnon",
+                    "Camille",
                     "INFORMATIQUE"
             ),
             Role.PROFESSEUR, new Account(
                     "demo.professeur@inseek.local",
                     "DemoProfesseur!2026",
-                    "Professeur",
-                    "Demo",
+                    "Nguyen",
+                    "Sophie",
                     "INFORMATIQUE"
             ),
             Role.EMPLOYEUR, new Account(
                     "demo.employeur@inseek.local",
                     "DemoEmployeur!2026",
-                    "Employeur",
-                    "Demo",
-                    "Entreprise démo"
+                    "Bouchard",
+                    "Alexandre",
+                    "Nexora Technologies"
             ),
             Role.GESTIONNAIRE, new Account(
                     "demo.gestionnaire@inseek.local",
                     "DemoGestionnaire!2026",
-                    "Gestionnaire",
-                    "Demo",
+                    "Fortin",
+                    "Marc-André",
                     ""
             )
     );
