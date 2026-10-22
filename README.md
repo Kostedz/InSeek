@@ -1,7 +1,8 @@
 Point d'actions:
-À partir du prochain sprint, tout code terminé sera revu dans un délai maximum de 24 heures ouvrables après que la tâche a été déclarée « prête pour review », et au moins 90 % des tâches respecteront ce délai d'ici la fin de ce sprint.
+1. Les plans de démo sont complétés, relus et testés par un ami 24h avant Jeudi.
 
-À l’avenir, communiquer en amont les changements ou décisions visant à uniformiser les façons de faire, afin d’éviter que du travail déjà réalisé doive être repris ou annulé.
+2. À partir du prochain sprint, tout code terminé sera revu de manière exhaustif dans un délai maximum de 24 heures ouvrables après que la tâche a été déclarée « prête pour review », et au moins 90 % des tâches respecteront ce délai d'ici la fin de ce sprint.
+
 
 # Defénition de Done:
 
