@@ -32,7 +32,6 @@ public class OffreDeStage extends Document {
     @ManyToOne
     @JoinColumn(name = "employeur_id")
     private Utilisateur employeur;
-    //private Etudiant edtudiant // Au cas ou on veut envoyer une offre a un etuuant specifique
 
     @Builder
     public OffreDeStage(Long id, String fileName, Disciplines targetDiscipline,
@@ -107,9 +106,17 @@ public class OffreDeStage extends Document {
         if (fields.getContactPhone() != null && !fields.getContactPhone().isBlank()) {
             this.contactPhone = fields.getContactPhone();
         }
+        this.setTargetDiscipline(fields.getTargetDiscipline());
 
         this.setStatut(StatutValidation.EN_ATTENTE);
         this.version++;
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateFile(MultipartFile file) throws IOException {
+        this.setFileName(file.getOriginalFilename());
+        this.setData(file.getBytes());
+        this.setContentType(file.getContentType());
+        this.setSize(file.getSize());
     }
 }

@@ -1,0 +1,78 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 3144 >>
+stream
+1 1 1 rg 0 0 595 842 re f
+0.45 0.36 0.61 rg 0 742 595 100 re f
+0.89 0.66 0.76 rg BT /F2 9 Tf 44 806 Td (CURRICULUM VITAE) Tj ET
+1 1 1 rg BT /F2 27 Tf 44 776 Td (Camille Gagnon) Tj ET
+1 1 1 rg BT /F1 10 Tf 44 755 Td (Etudiante en informatique | Recherche un stage de 3 mois) Tj ET
+1 1 1 rg BT /F1 9 Tf 398 805 Td (camille.gagnon@inseek.local) Tj ET
+1 1 1 rg BT /F1 9 Tf 398 789 Td (Montreal, Quebec) Tj ET
+1 1 1 rg BT /F1 9 Tf 398 773 Td (514-555-0142) Tj ET
+1 1 1 rg BT /F1 9 Tf 398 757 Td (linkedin.com/in/camille-gagnon) Tj ET
+0.45 0.36 0.61 rg BT /F2 10 Tf 44 708 Td (PROFIL) Tj ET
+0.84 0.8 0.87 RG 1 w 44 701 m 551 701 l S
+0.43 0.38 0.45 rg BT /F1 10 Tf 44 682 Td (Etudiante en informatique passionnee par le developpement web et la qualite logicielle. J'aime) Tj ET
+0.43 0.38 0.45 rg BT /F1 10 Tf 44 668 Td (transformer un besoin concret en solution simple, testable et accessible.) Tj ET
+0.45 0.36 0.61 rg BT /F2 10 Tf 44 626 Td (FORMATION) Tj ET
+0.84 0.8 0.87 RG 1 w 44 619 m 285 619 l S
+0.19 0.14 0.22 rg BT /F2 12 Tf 44 600 Td (DEC en informatique) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 583 Td (Cegep de Rosemont, Montreal | 2024 - 2027) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 562 Td (Programmation orientee objet, bases de) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 550 Td (donnees, developpement web et assurance) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 538 Td (qualite.) Tj ET
+0.45 0.36 0.61 rg BT /F2 10 Tf 315 626 Td (COMPETENCES) Tj ET
+0.84 0.8 0.87 RG 1 w 315 619 m 551 619 l S
+0.43 0.38 0.45 rg BT /F1 9 Tf 315 600 Td (Java | Spring Boot | React |) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 315 586 Td (JavaScript | PostgreSQL | Git |) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 315 572 Td (Tests automatises | API REST) Tj ET
+0.45 0.36 0.61 rg BT /F2 10 Tf 315 535 Td (LANGUES) Tj ET
+0.84 0.8 0.87 RG 1 w 315 528 m 551 528 l S
+0.43 0.38 0.45 rg BT /F1 9 Tf 315 508 Td (Francais - langue maternelle) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 315 492 Td (Anglais - professionnel) Tj ET
+0.45 0.36 0.61 rg BT /F2 10 Tf 44 465 Td (PROJETS) Tj ET
+0.84 0.8 0.87 RG 1 w 44 458 m 551 458 l S
+0.19 0.14 0.22 rg BT /F2 12 Tf 44 439 Td (InSeek - plateforme de stages) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 422 Td (Projet d'equipe | 2026) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 402 Td (Developpement de composants React et integration d'une API Spring Boot. Conception de modeles PostgreSQL) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 389 Td (et creation de tests unitaires.) Tj ET
+0.45 0.36 0.61 rg BT /F2 10 Tf 44 344 Td (EXPERIENCE) Tj ET
+0.84 0.8 0.87 RG 1 w 44 337 m 551 337 l S
+0.19 0.14 0.22 rg BT /F2 12 Tf 44 318 Td (Technicienne informatique junior) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 301 Td (Centre communautaire du Plateau | Montreal | 2025 - aujourd'hui) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 281 Td (Support de premier niveau aupres d'une cinquantaine d'utilisateurs. Documentation des procedures et suivi) Tj ET
+0.43 0.38 0.45 rg BT /F1 9 Tf 44 268 Td (des demandes.) Tj ET
+0.84 0.8 0.87 RG 1 w 44 88 m 551 88 l S
+0.43 0.38 0.45 rg BT /F1 8 Tf 44 68 Td (References disponibles sur demande. Document prepare pour la demonstration InSeek.) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000003446 00000 n 
+0000003516 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+3591
+%%EOF

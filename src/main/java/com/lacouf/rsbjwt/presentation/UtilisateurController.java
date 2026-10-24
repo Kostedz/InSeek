@@ -72,4 +72,18 @@ public class UtilisateurController {
 		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(
 			utilisateurService.getMe(request.getHeader("Authorization")));
 	}
+
+    @PatchMapping("/me/discipline")
+    public ResponseEntity<UtilisateurDTO> updateMyDiscipline(
+            @RequestBody DisciplineUpdateDTO updateDTO,
+            HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(utilisateurService.updateMyDiscipline(
+                    request.getHeader("Authorization"), updateDTO));
+        } catch (BadRequestException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (NotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

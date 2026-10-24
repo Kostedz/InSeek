@@ -177,6 +177,16 @@ function Header({user}) {
 
                             {isUserMenuOpen && (
                                 <div id="user-menu" role="menu" className="absolute right-0 top-full z-50 mt-2 flex w-60 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-[1.5rem] border border-ink-soft bg-ink p-3 text-white shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
+                                    {canAccessRole("ETUDIANT") && (
+                                        <NavLink
+                                            to="/etudiant/profil"
+                                            role="menuitem"
+                                            onClick={closeMenus}
+                                            className="w-full rounded-xl border border-white/15 px-3 py-2 text-center text-sm font-bold text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-pink"
+                                        >
+                                            {t("navigation.profile")}
+                                        </NavLink>
+                                    )}
                                     <NavLink
                                         to="/logout"
                                         role="menuitem"
@@ -192,6 +202,15 @@ function Header({user}) {
                             <div className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-center text-sm font-bold text-white">
                                 <span>{displayName || t("navigation.account")}</span>
                             </div>
+                                {canAccessRole("ETUDIANT") && (
+                                    <NavLink
+                                        to="/etudiant/profil"
+                                        onClick={closeMenus}
+                                        className="w-full justify-center rounded-full border border-white/15 px-4 py-2 text-center text-sm font-bold text-white transition-colors hover:bg-white/10"
+                                    >
+                                        {t("navigation.profile")}
+                                    </NavLink>
+                                )}
                             <NavLink
                                 to="/logout"
                                 onClick={closeMenus}

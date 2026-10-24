@@ -236,12 +236,12 @@ public class DocumentService {
     public OffreDeStageDTO saveEmployerOffer(MultipartFile file, String result,
                                              HttpServletRequest request, Long offerId)
             throws BadRequestException, IOException, NotFoundException {
-        validateFile(file);
         Utilisateur employer = getAuthenticatedUser(request);
         OfferFields fields = OfferFields.from(objectMapper.readTree(result));
 
         OffreDeStage offer;
         if (offerId == null) {
+            validateFile(file);
             offer = OffreDeStage.create(file, fields, employer);
 
             logger.info("Employer {} is submitting a new offer: {}", employer.getEmail(), offer);
@@ -258,11 +258,13 @@ public class DocumentService {
                     || !existingOffer.getUtilisateur().getEmail().equals(employer.getEmail())) {
                 throw new NotFoundException("Offre non trouvée");
             }
-            if (existingOffer.getStatut() != StatutValidation.VALIDE) {
-                throw new BadRequestException("Cette offre ne peut pas être modifiée dans son état actuel");
+            if (file != null && !file.isEmpty()) {
+                validateFile(file);
             }
-
             existingOffer.updateFields(fields);
+            if (file != null && !file.isEmpty()) {
+                existingOffer.updateFile(file);
+            }
             offer = existingOffer;
         }
 

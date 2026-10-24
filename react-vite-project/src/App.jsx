@@ -19,17 +19,19 @@ import {useTranslation} from "react-i18next";
 import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
 import GestionnaireStudents from "./components/page/GestionnaireStudents.jsx";
 import GestionnaireDashboard from "./components/page/GestionnaireDashboard.jsx";
+import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
+import StudentHomePage from "./components/page/StudentHomePage.jsx";
 
 function App() {
-  const [user, setUser] = useState({})
-  const [authChecked, setAuthChecked] = useState(() => !localStorage.getItem('token'))
-  const [error, setError] = useState(null)
+    const [user, setUser] = useState({})
+    const [authChecked, setAuthChecked] = useState(() => !localStorage.getItem('token'))
+    const [error, setError] = useState(null)
     const [offerDrafts, setOfferDrafts] = useState({})
-  const navigate = useNavigate();
-  const { t } = useTranslation();
+    const navigate = useNavigate();
+    const {t} = useTranslation();
     const userRole = String(user?.role ?? "").replace(/^ROLE_/, "").toUpperCase();
 
-  let token = localStorage.getItem('token')
+    let token = localStorage.getItem('token')
 
     useEffect(() => {
         Object.keys(localStorage)
@@ -37,88 +39,133 @@ function App() {
             .forEach((key) => localStorage.removeItem(key));
     }, []);
 
-  useEffect(() => {
-      if (token) {
-        setAuthChecked(false);
+    useEffect(() => {
+            if (token) {
+                setAuthChecked(false);
 
-        try {
-          fetcher('user/me', {})
-            .then(async (res) => {
-                if (!res.ok) {
-                  switch (res.status) {
-                    case 401:
-                        localStorage.removeItem("token");
-                        localStorage.removeItem("devAccess");
-                      setUser(null);
-                      throw {status: 401, ...createTranslationMessage("errors.unauthorized")};
-                    case 403:
-                      throw {status: 403, ...createTranslationMessage("errors.forbidden")};
-                    case 404:
-                      throw {status: 404, ...createTranslationMessage("errors.notFound")};
-                    default:
-                      throw {status: res.status, ...createTranslationMessage("errors.requestFailedGeneric")};
-                  }
+                try {
+                    fetcher('user/me', {})
+                        .then(async (res) => {
+                                if (!res.ok) {
+                                    switch (res.status) {
+                                        case 401:
+                                            localStorage.removeItem("token");
+                                            localStorage.removeItem("devAccess");
+                                            setUser(null);
+                                            throw {status: 401, ...createTranslationMessage("errors.unauthorized")};
+                                        case 403:
+                                            throw {status: 403, ...createTranslationMessage("errors.forbidden")};
+                                        case 404:
+                                            throw {status: 404, ...createTranslationMessage("errors.notFound")};
+                                        default:
+                                            throw {status: res.status, ...createTranslationMessage("errors.requestFailedGeneric")};
+                                    }
+                                }
+                                const data = await res.json();
+                                let newUser = {
+                                    ...data,
+                                    isLoggedIn: true,
+                                    isDevAccess: localStorage.getItem("devAccess") === "true",
+                                }
+                                setUser(newUser)
+                            }
+                        ).catch(async (err) => {
+                        setError(err?.key ? err : createTranslationMessage("errors.requestFailedGeneric"))
+                        navigate('/error')
+                    }).finally(() => {
+                        setAuthChecked(true)
+                    })
+
+                } catch (err) {
+                    if (!error) {
+                        setError(err?.key ? err : createTranslationMessage("errors.requestFailedGeneric"))
+                        navigate('/error')
+                    }
+                    setAuthChecked(true)
                 }
-                const data = await res.json();
-                let newUser = {
-                    ...data,
-                    isLoggedIn: true,
-                    isDevAccess: localStorage.getItem("devAccess") === "true",
-                }
-                setUser(newUser)
-              }
-            ).catch(async (err) => {
-            setError(err?.key ? err : createTranslationMessage("errors.requestFailedGeneric"))
-              navigate('/error')
-            }).finally(() => {
-              setAuthChecked(true)
-          })
+            } else {
+                setAuthChecked(true)
+            }
+        }, [token]
+    );
 
-        } catch (err) {
-          if (!error) {
-            setError(err?.key ? err : createTranslationMessage("errors.requestFailedGeneric"))
-            navigate('/error')
-          }
-          setAuthChecked(true)
-        }
-      } else {
-        setAuthChecked(true)
-      }
-      }, [token]
-  );
+    return (
+        <div>
+            <Routes>
+                <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
+                    <Route index element={user?.isLoggedIn && userRole === "ETUDIANT"
+                        ? <StudentHomePage user={user}/>
+                        : <MainContainer user={user}/>
+                    }/>
+                    <Route path='about' element={<About/>}/>
+                    <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
+                    <Route path='logout' element={<Logout setUser={setUser}/>}/>
+                    <Route path='etudiant' element={
+                                                <ProtectedRoute user={user} authChecked={authChecked}
+                                                                allowedRoles={["ETUDIANT"]}>
+                                                   <EtudiantTeleverseCV user={user}/>
+                                               </ProtectedRoute>
+                                           }/>
 
-  return (
-    <div>
-      <Routes>
-          <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
-              <Route index element={user?.isLoggedIn && userRole === "ETUDIANT"
-                  ? <EtudiantAccueil user={user}/>
-                  : <MainContainer user={user}/>
-              }/>
-          <Route path='about' element={<About/>}/>
-              <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
-          <Route path='logout' element={<Logout setUser={setUser}/>}/>
-              <Route path='etudiant' element={
-                                          <ProtectedRoute user={user} authChecked={authChecked}
-                                                          allowedRoles={["ETUDIANT"]}>
-                                              <EtudiantTeleverseCV user={user}/>
-                                         </ProtectedRoute>
-              }/>
-
-              <Route path='etudiant/offres' element={
-                                                 <ProtectedRoute user={user} authChecked={authChecked}
-                                                                 allowedRoles={["ETUDIANT"]}>
-                                                    <EtudiantAccueil user={user}/>
-                                                </ProtectedRoute>
-                                            }/>
-
-              <Route path='etudiant/candidatures' element={
+                    <Route path='etudiant/profil' element={
                                                        <ProtectedRoute user={user} authChecked={authChecked}
                                                                        allowedRoles={["ETUDIANT"]}>
-                                                          <EtudiantCandidatures/>
+                                                          <EtudiantProfil user={user} setUser={setUser}/>
                                                       </ProtectedRoute>
                                                   }/>
 
+                    <Route path='etudiant/offres' element={
+                                                       <ProtectedRoute user={user} authChecked={authChecked}
+                                                                       allowedRoles={["ETUDIANT"]}>
+                                                          <StudentHomePage user={user}/>
+                                                      </ProtectedRoute>
+                                                  }/>
+
+                    <Route path='etudiant/candidatures' element={
+                                                             <ProtectedRoute user={user} authChecked={authChecked}
+                                                                             allowedRoles={["ETUDIANT"]}>
+                                                                <StudentHomePage user={user}/>
+                                                            </ProtectedRoute>
+                                                        }/>
+
+                    <Route path='etudiant/convocations' element={
+                                                             <ProtectedRoute user={user} authChecked={authChecked}
+                                                                             allowedRoles={["ETUDIANT"]}>
+                                                                <StudentHomePage user={user}/>
+                                                            </ProtectedRoute>
+                                                        }/>
+
+                    <Route path='employeur' element={
+                                                 <ProtectedRoute user={user} authChecked={authChecked}
+                                                                 allowedRoles={["EMPLOYEUR"]}>
+                                                    <EmployeurOffres
+                                                        user={user}
+                                                        canManageOffers={Boolean(user?.isLoggedIn)}
+                                                        companyName={user?.nomCompagnie ?? ""}
+                                                        isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
+                                                        drafts={offerDrafts}
+                                                        setDrafts={setOfferDrafts}
+                                                    />
+                                                </ProtectedRoute>
+                                            }/>
+                    <Route path='gestionnaire' element={
+                                                    <ProtectedRoute user={user} authChecked={authChecked}
+                                                                    allowedRoles={["GESTIONNAIRE"]}>
+                                                       <GestionnaireValidation/>
+                                                   </ProtectedRoute>
+                                               }/>
+                    <Route path='gestionnaire/cv' element={
+                                                       <ProtectedRoute user={user} authChecked={authChecked}
+                                                                       allowedRoles={["GESTIONNAIRE"]}>
+                                                          <GestionnaireCvValidation/>
+                                                      </ProtectedRoute>
+                                                  }/>
+                    <Route path='register'
+                           element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
+                    <Route path='error' element={<ErrorPage error={error}/>}/>
+                    <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
+                </Route>
+            </Routes>
               <Route path='employeur' element={
                                            <ProtectedRoute user={user} authChecked={authChecked}
                                                            allowedRoles={["EMPLOYEUR"]}>

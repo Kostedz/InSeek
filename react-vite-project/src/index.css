@@ -41,6 +41,10 @@
         font: inherit;
     }
 
+    button:not(:disabled) {
+        cursor: pointer;
+    }
+
     ::selection {
         background: var(--color-pink);
         color: var(--color-ink);

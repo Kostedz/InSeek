@@ -4,7 +4,6 @@ import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import PdfPreview from "../PdfPreview.jsx";
-import StudentMenu from "./StudentMenu.jsx";
 import {
     formatDate,
     formatDateRange,
@@ -17,7 +16,6 @@ import {
     truncateDescription,
 } from "./studentOfferUtils.js";
 
-import StudentConvocation from "../etudiant/StudentConvocation.jsx";
 
 function normalizeStudentValue(value) {
     if (value && typeof value === "object") {
@@ -213,15 +211,6 @@ function ApplicationModal({offer, cv, t, onClose, onSubmitted}) {
     );
 }
 
-function ArrowIcon({className = "h-5 w-5"}) {
-    return (
-        <svg aria-hidden="true" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M13 6l6 6-6 6"/>
-        </svg>
-    );
-}
-
 function OfferDetails({offer, language, t, onClose, studentCv, alreadyApplied, onApplicationSubmitted}) {
     const [applicationOpen, setApplicationOpen] = useState(false);
 
@@ -349,7 +338,7 @@ function OfferDetails({offer, language, t, onClose, studentCv, alreadyApplied, o
     );
 }
 
-export default function EtudiantAccueil({user}) {
+export default function EtudiantAccueil({user, onCountsChange}) {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const [cvState, setCvState] = useState("loading");
@@ -433,6 +422,13 @@ export default function EtudiantAccueil({user}) {
         };
     }, [user]);
 
+    useEffect(() => {
+        onCountsChange?.({
+            offersCount: cvState === "loading" ? undefined : offers.length,
+            applicationsCount: cvState === "loading" ? undefined : appliedOfferIds.length,
+        });
+    }, [onCountsChange, cvState, offers.length, appliedOfferIds.length]);
+
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
     const filteredOffers = offers.filter((offer) => {
         const searchableText = [offer.title, offer.company, offer.description, offer.address]
@@ -444,28 +440,9 @@ export default function EtudiantAccueil({user}) {
         return matchesSearch && matchesSalary;
     });
 
-    if (cvState === "loading") return <Loading/>;
-
     return (
-        <section className="flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-            <div className="mx-auto w-full max-w-6xl">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <span
-                            className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">{t("studentOffers.studentArea")}</span>
-                        <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("studentOffers.title")}</h1>
-                        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("studentOffers.description")}</p>
-                    </div>
-                </div>
-                <StudentMenu
-                    offersCount={offers.length}
-                    applicationsCount={appliedOfferIds.length}
-                />
-
-                {(cvState === "ready" ) && (
-                    <StudentConvocation user={user} t={t} language={language}/>
-                )}
-
+        <>
+            {cvState === "loading" && <Loading/>}
 
                 {(cvState === "blocked" || cvState === "no-cv") && (
 
@@ -560,15 +537,15 @@ export default function EtudiantAccueil({user}) {
                                             className="shrink-0">{formatSalary(offer.salary, language, t, "studentOffers.details.unpaid")}</span>
                                     </div>
                                     <span
-                                        className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-bold text-ink-soft transition-colors group-hover:text-ink sm:text-sm"><span
-                                        className="inline md:hidden lg:inline">{t("studentOffers.viewDetails")}</span><ArrowIcon/></span>
+                                        className="inline-flex shrink-0 items-center whitespace-nowrap text-xs font-bold text-ink-soft transition-colors group-hover:text-ink sm:text-sm">
+                                        <span
+                                            className="inline md:hidden lg:inline">{t("studentOffers.viewDetails")}</span>
+                                    </span>
                                 </div>
                             </button>
                         ))}
                     </div>
                 )}
-            </div>
-
             {selectedOffer && (
                 <OfferDetails
                     offer={selectedOffer}
@@ -587,6 +564,6 @@ export default function EtudiantAccueil({user}) {
                     onClose={() => setSelectedOffer(null)}
                 />
             )}
-        </section>
+        </>
     );
 }

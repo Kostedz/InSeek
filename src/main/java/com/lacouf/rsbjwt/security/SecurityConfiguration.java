@@ -76,6 +76,7 @@ public class SecurityConfiguration {
 
 
                         .requestMatchers(GET, USER_PATH).hasAnyAuthority(Role.EMPRUNTEUR.name(), Role.PREPOSE.name(), Role.GESTIONNAIRE.name(), Role.ETUDIANT.name(), Role.EMPLOYEUR.name(), Role.PROFESSEUR.name())
+                        .requestMatchers(PATCH, "/user/me/discipline").hasAuthority(Role.ETUDIANT.name())
                         .requestMatchers(ETUDIANT_PATH).hasAuthority(Role.ETUDIANT.name())
                         .requestMatchers(POST, "/documents/upload").hasAnyAuthority(documentUploadRoles)
                         .requestMatchers(GET, "/employeur/offres").permitAll()

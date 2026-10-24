@@ -51,6 +51,15 @@ export const api = {
     },
 
     student: {
+        updateDiscipline: (discipline) => fetcher("/user/me/discipline", {
+            method: "PATCH",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify({discipline}),
+        }),
+
         getCv: () => fetcher("/documents/student/cv", {
             headers: {Accept: "application/json"},
         }),

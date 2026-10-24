@@ -134,7 +134,7 @@ public class DocumentController {
     @PutMapping(value = "/employeur/offres/{offerId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<OffreDeStageDTO> updateEmployerOffer(
             @PathVariable Long offerId,
-            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             @RequestPart("formContent") String formContent,
             HttpServletRequest request) {
         try {
@@ -142,7 +142,9 @@ public class DocumentController {
                 throw new BadRequestException("Invalid JWT token");
             }
 
-            documentService.validateFile(file);
+            if (file != null && !file.isEmpty()) {
+                documentService.validateFile(file);
+            }
 
             return ResponseEntity.ok(documentService.saveEmployerOffer(file, formContent, request, offerId));
         } catch (BadRequestException e) {
@@ -153,15 +155,4 @@ public class DocumentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-//    @GetMapping("/etudiant/offres")
-//    public ResponseEntity<List<OffreDeStageDTO>> listStudentOffers(HttpServletRequest request) {
-//        try {
-//            return ResponseEntity.ok(documentService.findOffersForStudent(request));
-//        } catch (BadRequestException e) {
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-//        } catch (NotFoundException e) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-//        }
-//    }
 }
