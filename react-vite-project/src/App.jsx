@@ -17,6 +17,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
 import {useTranslation} from "react-i18next";
 import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
+import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
 
 function App() {
   const [user, setUser] = useState({})
@@ -102,6 +103,13 @@ function App() {
                                               <EtudiantTeleverseCV user={user}/>
                                          </ProtectedRoute>
               }/>
+
+              <Route path='etudiant/profil' element={
+                                                 <ProtectedRoute user={user} authChecked={authChecked}
+                                                                 allowedRoles={["ETUDIANT"]}>
+                                                    <EtudiantProfil user={user} setUser={setUser}/>
+                                                </ProtectedRoute>
+                                            }/>
 
               <Route path='etudiant/offres' element={
                                                  <ProtectedRoute user={user} authChecked={authChecked}

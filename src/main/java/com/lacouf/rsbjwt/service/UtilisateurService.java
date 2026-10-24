@@ -63,6 +63,28 @@ public class UtilisateurService {
         return toDTO(user);
     }
 
+    @Transactional
+    public UtilisateurDTO updateMyDiscipline(String authorization, DisciplineUpdateDTO updateDTO)
+            throws BadRequestException, NotFoundException {
+        if (updateDTO == null || updateDTO.discipline() == null) {
+            throw new BadRequestException("La discipline est obligatoire.");
+        }
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new BadRequestException("Token JWT invalide.");
+        }
+
+        String email = jwtTokenProvider.getEmailFromJWT(authorization.substring(7));
+        Utilisateur utilisateur = findEntityByEmail(email);
+
+        if (!(utilisateur instanceof Etudiant etudiant)) {
+            throw new BadRequestException("Seul un étudiant peut modifier sa discipline.");
+        }
+
+        etudiant.setDiscipline(updateDTO.discipline());
+        return toDTO(utilisateurRepository.save(etudiant));
+    }
+
     public UtilisateurDTO findByEmail(String email) throws NotFoundException, BadRequestException {
         if (email == null || email.isBlank()) {
             throw new BadRequestException("L'email est obligatoire");
