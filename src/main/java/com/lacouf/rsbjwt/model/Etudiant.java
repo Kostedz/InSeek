@@ -5,6 +5,8 @@ import com.lacouf.rsbjwt.model.auth.Role;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,7 +26,11 @@ public class Etudiant extends Utilisateur {
     private StatutRechercheEtudiant statutRecherche = StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP;
 
     private LocalDateTime dateInterview;
-    
+
+    @ManyToOne
+    @JoinColumn(name = "professeur_id")
+    private Professeur professeur;
+
     @Builder
     public Etudiant(Long id, String nom, String prenom, Disciplines discipline, String email, String password) {
         super(id, nom, prenom, Credentials.builder().email(email).password(password).role(Role.ETUDIANT).build());
