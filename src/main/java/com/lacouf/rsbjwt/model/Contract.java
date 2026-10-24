@@ -21,15 +21,15 @@ public class Contract {
     private Etudiant student;
 
     @OneToOne()
-    private Employeur employee;
+    private Employeur employer;
 
     @OneToOne()
     private OffreDeStage internshipOffer;
 
     private Gestionnaire admin;
 
-    //@OneToOne
-    //private Professeur teacher;
+    @OneToOne
+    private Professeur teacher;
 
     private String supervisorName;
 
