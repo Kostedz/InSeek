@@ -66,9 +66,10 @@ function getApplicationStatus(application) {
         application?.status
         ?? application?.statut
         ?? application?.statutCandidature
+        ?? application?.statutValidation
         ?? "PENDING"
     ).toUpperCase();
-    if (["ACCEPTED", "ACCEPTEE", "ACCEPTÉE", "VALIDE", "APPROVED"].includes(status)) return "ACCEPTED";
+    if (["ACCEPTED", "ACCEPTE", "ACCEPTEE", "ACCEPTÉE", "VALIDE", "APPROVED"].includes(status)) return "ACCEPTED";
     if (["REJECTED", "REJETE", "REJETÉ", "REFUSEE", "REFUSÉE"].includes(status)) return "REJECTED";
     return "PENDING";
 }

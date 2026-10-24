@@ -2,7 +2,6 @@ import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
-import StudentMenu from "./StudentMenu.jsx";
 import StudentApplicationDetails, {
     ApplicationStatusBadge,
 } from "./StudentApplicationDetails.jsx";
@@ -36,7 +35,7 @@ async function loadAvailableOffersCount(applications) {
     }
 }
 
-export default function EtudiantCandidatures() {
+export default function EtudiantCandidatures({onCountsChange}) {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const [applications, setApplications] = useState([]);
@@ -81,28 +80,24 @@ export default function EtudiantCandidatures() {
         };
     }, []);
 
-    if (loading) return <Loading/>;
+    useEffect(() => {
+        onCountsChange?.({
+            offersCount,
+            applicationsCount: loading ? undefined : applications.length,
+        });
+    }, [onCountsChange, offersCount, loading, applications.length]);
 
     return (
-        <section className="flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-            <div className="mx-auto w-full max-w-6xl">
-                <header>
-                    <span
-                        className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
-                        {t("studentApplications.studentArea")}
-                    </span>
-                    <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("studentApplications.title")}</h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("studentApplications.description")}</p>
-                </header>
-                <StudentMenu offersCount={offersCount} applicationsCount={applications.length}/>
+        <>
+            {loading && <Loading/>}
 
-                {error && (
+            {error && !loading && (
                     <div className="mt-8 rounded-2xl border border-error bg-blush/30 p-6" role="alert">
                         <p className="text-sm font-semibold text-error">{t("studentApplications.loadError")}</p>
                     </div>
                 )}
 
-                {!error && applications.length === 0 && (
+            {!error && !loading && applications.length === 0 && (
                     <div
                         className="mt-8 rounded-2xl border border-line bg-surface p-10 text-center shadow-[0_18px_50px_rgba(48,35,55,0.06)]">
                         <h2 className="text-xl font-black text-ink">{t("studentApplications.emptyTitle")}</h2>
@@ -110,7 +105,7 @@ export default function EtudiantCandidatures() {
                     </div>
                 )}
 
-                {!error && applications.length > 0 && (
+            {!error && !loading && applications.length > 0 && (
                     <div className="mt-8 grid gap-5 md:grid-cols-2">
                         {applications.map((application) => {
                             const {offer} = application;
@@ -138,15 +133,15 @@ export default function EtudiantCandidatures() {
                                         className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4 text-xs font-semibold text-ink-soft">
                                         <span>{t("studentApplications.appliedOn")} {formatDate(application.appliedAt, language) || t("studentApplications.notSpecified")}</span>
                                         <span
-                                            className="font-bold text-ink group-hover:underline">{t("studentApplications.viewDetails")}</span>
+                                            className="inline-flex shrink-0 items-center whitespace-nowrap text-xs font-bold text-ink-soft transition-colors group-hover:text-ink sm:text-sm">
+                                            {t("studentApplications.viewDetails")}
+                                        </span>
                                     </div>
                                 </button>
                             );
                         })}
                     </div>
                 )}
-            </div>
-
             {selectedApplication && (
                 <StudentApplicationDetails
                     application={selectedApplication}
@@ -155,6 +150,6 @@ export default function EtudiantCandidatures() {
                     onClose={() => setSelectedApplication(null)}
                 />
             )}
-        </section>
+        </>
     );
 }

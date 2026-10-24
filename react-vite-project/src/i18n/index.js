@@ -34,6 +34,7 @@ const resources = {
                 register: "Créer un compte",
                 offers: "Offres",
                 applications: "Mes candidatures",
+                interviews: "Convocations",
                 roles: {
                     professeur: "Professeur",
                     etudiant: "Étudiant",
@@ -277,7 +278,7 @@ const resources = {
                 close: "Fermer le récapitulatif",
                 currentStatus: "Statut actuel",
                 appliedOn: "Postulée le",
-                viewDetails: "Voir le récapitulatif",
+                viewDetails: "Voir les détails",
                 offerSummary: "Résumé de l’offre",
                 internshipPeriod: "Période du stage",
                 dateRange: "Du {{start}} au {{end}}",
@@ -294,7 +295,7 @@ const resources = {
                 cvUnavailable: "Le CV transmis n’est plus disponible.",
                 untitled: "Offre de stage sans titre",
                 status: {
-                    SOUMISE: "Soumise",
+                    SOUMISE: "Candidature envoyée",
                     EN_COURS_D_EXAMEN: "En cours d’examen",
                     ACCEPTEE: "Acceptée",
                     REFUSEE: "Refusée",
@@ -808,6 +809,7 @@ const resources = {
                 register: "Create account",
                 offers: "Offers",
                 applications: "My applications",
+                interviews: "Interview invitations",
                 roles: {
                     professeur: "Professor",
                     etudiant: "Student",
@@ -1051,7 +1053,7 @@ const resources = {
                 close: "Close application summary",
                 currentStatus: "Current status",
                 appliedOn: "Applied on",
-                viewDetails: "View summary",
+                viewDetails: "View details",
                 offerSummary: "Offer summary",
                 internshipPeriod: "Internship period",
                 dateRange: "From {{start}} to {{end}}",
@@ -1068,7 +1070,7 @@ const resources = {
                 cvUnavailable: "The submitted résumé is no longer available.",
                 untitled: "Untitled internship offer",
                 status: {
-                    SOUMISE: "Submitted",
+                    SOUMISE: "Application sent",
                     EN_COURS_D_EXAMEN: "Under review",
                     ACCEPTEE: "Accepted",
                     REFUSEE: "Rejected",
