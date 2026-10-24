@@ -28,8 +28,9 @@ export default function StudentMenu({offersCount, applicationsCount, interviewsC
     const offersActive = pathname === "/" || pathname === "/etudiant/offres";
     const applicationsActive = pathname === "/etudiant/candidatures";
     const interviewsActive = pathname === "/etudiant/convocations";
+    const contractActive = pathname === "/etudiant/contrat";
     const displayedInterviewsCount = interviewsCount ?? loadedInterviewsCount;
-    const activeTab = interviewsActive ? "interviews" : applicationsActive ? "applications" : "offers";
+    const activeTab = contractActive ? "contract" : interviewsActive ? "interviews" : applicationsActive ? "applications" : "offers";
 
     useLayoutEffect(() => {
         let animationTimer;
@@ -156,6 +157,19 @@ export default function StudentMenu({offersCount, applicationsCount, interviewsC
                 <span className="flex items-center justify-center gap-2">
                     {t("navigation.interviews")}
                     {countBadge(displayedInterviewsCount)}
+                </span>
+            </Link>
+            <Link
+                to="/etudiant/contrat"
+                ref={(node) => {
+                    tabRefs.current.contract = node;
+                }}
+                className={itemClass(contractActive)}
+            >
+                <span className="flex items-center justify-center gap-2">
+                    {t("navigation.contract", "Contrat")}
+                    <span className={`h-2 w-2 rounded-full ${contractActive ? "bg-pink" : "bg-gold"}`}
+                          aria-hidden="true"/>
                 </span>
             </Link>
         </nav>

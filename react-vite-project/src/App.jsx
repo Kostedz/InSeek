@@ -126,6 +126,20 @@ function App() {
                                                             </ProtectedRoute>
                                                         }/>
 
+                    <Route path='etudiant/convocations' element={
+                                                             <ProtectedRoute user={user} authChecked={authChecked}
+                                                                             allowedRoles={["ETUDIANT"]}>
+                                                                <StudentHomePage user={user}/>
+                                                            </ProtectedRoute>
+                                                        }/>
+
+                    <Route path='etudiant/contrat' element={
+                                                        <ProtectedRoute user={user} authChecked={authChecked}
+                                                                        allowedRoles={["ETUDIANT"]}>
+                                                           <StudentHomePage user={user}/>
+                                                       </ProtectedRoute>
+                                                   }/>
+
               <Route path='employeur' element={
                                            <ProtectedRoute user={user} authChecked={authChecked}
                                                            allowedRoles={["EMPLOYEUR"]}>

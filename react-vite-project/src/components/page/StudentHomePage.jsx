@@ -5,10 +5,12 @@ import EtudiantAccueil from "./EtudiantAccueil.jsx";
 import EtudiantCandidatures from "./EtudiantCandidatures.jsx";
 import EtudiantConvocations from "./EtudiantConvocations.jsx";
 import StudentMenu from "./StudentMenu.jsx";
+import ContractSignaturePage from "./ContractSignaturePage.jsx";
 
 function getActiveTab(pathname) {
     if (pathname === "/etudiant/candidatures") return "applications";
     if (pathname === "/etudiant/convocations") return "interviews";
+    if (pathname === "/etudiant/contrat") return "contract";
     return "offers";
 }
 
@@ -38,6 +40,10 @@ export default function StudentHomePage({user}) {
         interviews: {
             title: t("studentInterviews.title"),
             description: t("studentInterviews.allDescription"),
+        },
+        contract: {
+            title: t("studentContract.title", "Mon contrat de stage"),
+            description: t("studentContract.description", "Consultez les modalités de votre stage et signez votre entente électroniquement."),
         },
     }[activeTab];
 
@@ -73,6 +79,9 @@ export default function StudentHomePage({user}) {
                     )}
                     {activeTab === "interviews" && (
                         <EtudiantConvocations user={user} onCountsChange={updateCounts}/>
+                    )}
+                    {activeTab === "contract" && (
+                        <ContractSignaturePage user={user}/>
                     )}
                 </div>
             </div>

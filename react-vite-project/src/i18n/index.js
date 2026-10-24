@@ -35,6 +35,7 @@ const resources = {
                 offers: "Offres",
                 applications: "Mes candidatures",
                 interviews: "Convocations",
+                contract: "Contrat",
                 roles: {
                     professeur: "Professeur",
                     etudiant: "Étudiant",
@@ -301,6 +302,10 @@ const resources = {
                     REFUSEE: "Refusée",
                 },
             },
+            studentContract: {
+                title: "Mon contrat de stage",
+                description: "Consultez les modalités de votre stage et signez votre entente électroniquement.",
+            },
             pdfPreview: {
                 title: "Aperçu du PDF",
                 loading: "Chargement deF l’aperçu…",
@@ -314,7 +319,7 @@ const resources = {
                 title: "Publiez vos offres de stage",
                 description: "Centralisez vos offres, suivez leur validation et consultez les commentaires du gestionnaire.",
                 closeModal: "Fermer le formulaire",
-                accountBlockedTitle: "Publication bloquée — compte non validé",
+                accountBlockedTitle: "Publication bloquée, compte non validé",
                 accountBlockedDescription: "Validez votre adresse courriel à partir du lien reçu lors de votre inscription. La publication sera disponible dès la validation.",
                 workspace: "Votre espace",
                 myOffersTitle: "Mes offres de stage",
@@ -810,6 +815,7 @@ const resources = {
                 offers: "Offers",
                 applications: "My applications",
                 interviews: "Interview invitations",
+                contract: "Contract",
                 roles: {
                     professeur: "Professor",
                     etudiant: "Student",
@@ -1076,6 +1082,10 @@ const resources = {
                     REFUSEE: "Rejected",
                 },
             },
+            studentContract: {
+                title: "My internship contract",
+                description: "Review your internship terms and sign your agreement electronically.",
+            },
             pdfPreview: {
                 title: "PDF preview",
                 loading: "Loading preview…",
@@ -1089,7 +1099,7 @@ const resources = {
                 title: "Publish your internship offers",
                 description: "Centralize your offers, track their validation, and review manager comments.",
                 closeModal: "Close form",
-                accountBlockedTitle: "Publication blocked — account not validated",
+                accountBlockedTitle: "Publication blocked, account not validated",
                 accountBlockedDescription: "Verify your email address using the link you received when you registered. Publication will be available once validation is complete.",
                 workspace: "Your space",
                 myOffersTitle: "My internship offers",
