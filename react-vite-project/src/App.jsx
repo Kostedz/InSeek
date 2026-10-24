@@ -17,6 +17,8 @@ import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
 import {useTranslation} from "react-i18next";
 import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
+import GestionnaireStudents from "./components/page/GestionnaireStudents.jsx";
+import GestionnaireDashboard from "./components/page/GestionnaireDashboard.jsx";
 
 function App() {
   const [user, setUser] = useState({})
@@ -131,17 +133,25 @@ function App() {
                                           </ProtectedRoute>
                                       }/>
               <Route path='gestionnaire' element={
-                                              <ProtectedRoute user={user} authChecked={authChecked}
-                                                              allowedRoles={["GESTIONNAIRE"]}>
-                                                 <GestionnaireValidation/>
-                                             </ProtectedRoute>
-                                         }/>
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireDashboard/>
+                  </ProtectedRoute>
+              }/>
+              <Route path='gestionnaire/offres' element={
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireValidation/>
+                  </ProtectedRoute>
+              }/>
               <Route path='gestionnaire/cv' element={
-                                              <ProtectedRoute user={user} authChecked={authChecked}
-                                                              allowedRoles={["GESTIONNAIRE"]}>
-                                                 <GestionnaireCvValidation/>
-                                             </ProtectedRoute>
-                                         }/>
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireCvValidation/>
+                  </ProtectedRoute>
+              }/>
+              <Route path='gestionnaire/etudiants' element={
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireStudents/>
+                  </ProtectedRoute>
+              }/>
               <Route path='register' element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
           <Route path='error' element={<ErrorPage error={error}/>}/>
           <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>

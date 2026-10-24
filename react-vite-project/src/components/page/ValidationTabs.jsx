@@ -1,20 +1,11 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {useTranslation} from "react-i18next";
-import api from "../../utils/api.js";
+import { useTranslation } from "react-i18next";
+import { countPendingDocuments } from "../../utils/gestionnaireCounts.js";
 
-async function countPendingDocuments(type) {
-    const response = await api.gestionnaire.getPendingDocuments(type);
-    if (!response.ok) return null;
-
-    const payload = await response.json();
-    const documents = Array.isArray(payload) ? payload : payload.items ?? payload.content ?? [];
-    return documents.length;
-}
-
-export default function ValidationTabs({activeTab, offersCount, cvsCount}) {
-    const {t} = useTranslation();
-    const [loadedCounts, setLoadedCounts] = useState({offers: null, cvs: null});
+export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
+    const { t } = useTranslation();
+    const [loadedCounts, setLoadedCounts] = useState({ offers: null, cvs: null });
 
     useEffect(() => {
         let isMounted = true;
@@ -27,60 +18,56 @@ export default function ValidationTabs({activeTab, offersCount, cvsCount}) {
             requests.push(countPendingDocuments("CV").then((count) => ["cvs", count]));
         }
 
-        if (!requests.length) return () => {
-            isMounted = false;
-        };
+        if (!requests.length) return () => { isMounted = false; };
 
         Promise.all(requests).then((results) => {
             if (!isMounted) return;
-
             setLoadedCounts((current) => ({
                 ...current,
                 ...Object.fromEntries(results.filter(([, count]) => count !== null)),
             }));
-        }).catch(() => {
-            // The active page still provides its own up-to-date count.
-        });
+        }).catch(() => {});
 
-        return () => {
-            isMounted = false;
-        };
+        return () => { isMounted = false; };
     }, [offersCount, cvsCount]);
 
     const displayedOffersCount = offersCount ?? loadedCounts.offers;
     const displayedCvsCount = cvsCount ?? loadedCounts.cvs;
 
-    const countBadge = (count) => count === null || count === undefined ? null : (
-        <span
-            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
+    const countBadge = (count) => count === null || count === undefined || count === 0 ? null : (
+        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
             {count}
         </span>
     );
 
+    const tabs = [
+        { id: "dashboard", label: t("managerDashboard.tabs.home", "Accueil"), path: "/gestionnaire" },
+        { id: "offers", label: t("managerValidation.tabs.offers", "Offres de stage"), path: "/gestionnaire/offres", count: displayedOffersCount },
+        { id: "cvs", label: t("managerValidation.tabs.cvs", "CV des étudiants"), path: "/gestionnaire/cv", count: displayedCvsCount },
+        { id: "students", label: t("managerStudents.tabLabel", "Étudiants"), path: "/gestionnaire/etudiants" },
+        { id: "contracts", label: t("managerContracts.tabLabel", "Contrats"), path: "/gestionnaire/contrats" },
+    ];
+
     return (
-        <div className="mt-6 flex gap-2 rounded-2xl border border-line bg-surface p-1.5 shadow-sm">
-            <Link
-                to="/gestionnaire"
-                className={`flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-bold transition-all ${
-                    activeTab === "offers"
-                        ? "bg-ink text-white shadow-sm"
-                        : "text-ink-soft hover:bg-lavender/30 hover:text-ink"
-                }`}
-            >
-                <span
-                    className="flex items-center justify-center gap-2">{t("managerValidation.tabs.offers")} {countBadge(displayedOffersCount)}</span>
-            </Link>
-            <Link
-                to="/gestionnaire/cv"
-                className={`flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-bold transition-all ${
-                    activeTab === "cvs"
-                        ? "bg-ink text-white shadow-sm"
-                        : "text-ink-soft hover:bg-lavender/30 hover:text-ink"
-                }`}
-            >
-                <span
-                    className="flex items-center justify-center gap-2">{t("managerValidation.tabs.cvs")} {countBadge(displayedCvsCount)}</span>
-            </Link>
+        <div className="mt-6 flex flex-wrap gap-2 rounded-2xl border border-line bg-surface p-1.5 shadow-sm overflow-x-auto">
+            {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                    <Link
+                        key={tab.id}
+                        to={tab.path}
+                        className={`flex-1 min-w-[120px] rounded-xl px-3 py-2.5 text-center text-xs sm:text-sm font-bold transition-all ${
+                            isActive
+                                ? "bg-ink text-white shadow-sm"
+                                : "text-ink-soft hover:bg-lavender/30 hover:text-ink"
+                        }`}
+                    >
+                        <span className="flex items-center justify-center gap-1.5">
+                            {tab.label} {countBadge(tab.count)}
+                        </span>
+                    </Link>
+                );
+            })}
         </div>
     );
 }
