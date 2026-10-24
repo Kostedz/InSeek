@@ -9,12 +9,16 @@ import ErrorPage from "./components/ErrorPage.jsx";
 import Logout from "./components/auth/Logout.jsx";
 import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx";
 import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
+import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
+import StudentHomePage from "./components/page/StudentHomePage.jsx";
 import EmployeurOffres from "./components/page/EmployeurOffres.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
 import {useTranslation} from "react-i18next";
 import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
+import GestionnaireDashboard from "./components/page/GestionnaireDashboard.jsx";
+import GestionnaireStudents from "./components/page/GestionnaireStudents.jsx";
 
 function App() {
     const [user, setUser] = useState({})
