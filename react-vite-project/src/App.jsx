@@ -15,8 +15,6 @@ import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
 import {useTranslation} from "react-i18next";
 import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
-import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
-import StudentHomePage from "./components/page/StudentHomePage.jsx";
 
 function App() {
     const [user, setUser] = useState({})
@@ -124,44 +122,44 @@ function App() {
                                                             </ProtectedRoute>
                                                         }/>
 
-                    <Route path='etudiant/convocations' element={
-                                                             <ProtectedRoute user={user} authChecked={authChecked}
-                                                                             allowedRoles={["ETUDIANT"]}>
-                                                                <StudentHomePage user={user}/>
-                                                            </ProtectedRoute>
-                                                        }/>
-
-                    <Route path='employeur' element={
-                                                 <ProtectedRoute user={user} authChecked={authChecked}
-                                                                 allowedRoles={["EMPLOYEUR"]}>
-                                                    <EmployeurOffres
-                                                        user={user}
-                                                        canManageOffers={Boolean(user?.isLoggedIn)}
-                                                        companyName={user?.nomCompagnie ?? ""}
-                                                        isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
-                                                        drafts={offerDrafts}
-                                                        setDrafts={setOfferDrafts}
-                                                    />
-                                                </ProtectedRoute>
-                                            }/>
-                    <Route path='gestionnaire' element={
-                                                    <ProtectedRoute user={user} authChecked={authChecked}
-                                                                    allowedRoles={["GESTIONNAIRE"]}>
-                                                       <GestionnaireValidation/>
-                                                   </ProtectedRoute>
-                                               }/>
-                    <Route path='gestionnaire/cv' element={
-                                                       <ProtectedRoute user={user} authChecked={authChecked}
-                                                                       allowedRoles={["GESTIONNAIRE"]}>
-                                                          <GestionnaireCvValidation/>
-                                                      </ProtectedRoute>
-                                                  }/>
-                    <Route path='register'
-                           element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
-                    <Route path='error' element={<ErrorPage error={error}/>}/>
-                    <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
-                </Route>
-            </Routes>
+              <Route path='employeur' element={
+                                           <ProtectedRoute user={user} authChecked={authChecked}
+                                                           allowedRoles={["EMPLOYEUR"]}>
+                                              <EmployeurOffres
+                                                  user={user}
+                                                  canManageOffers={Boolean(user?.isLoggedIn)}
+                                                  companyName={user?.nomCompagnie ?? ""}
+                                                  isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
+                                                  drafts={offerDrafts}
+                                                  setDrafts={setOfferDrafts}
+                                              />
+                                          </ProtectedRoute>
+                                      }/>
+              <Route path='gestionnaire' element={
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireDashboard/>
+                  </ProtectedRoute>
+              }/>
+              <Route path='gestionnaire/offres' element={
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireValidation/>
+                  </ProtectedRoute>
+              }/>
+              <Route path='gestionnaire/cv' element={
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireCvValidation/>
+                  </ProtectedRoute>
+              }/>
+              <Route path='gestionnaire/etudiants' element={
+                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                      <GestionnaireStudents/>
+                  </ProtectedRoute>
+              }/>
+              <Route path='register' element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
+          <Route path='error' element={<ErrorPage error={error}/>}/>
+          <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
+        </Route>
+      </Routes>
 
         </div>
     );
