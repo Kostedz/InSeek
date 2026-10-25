@@ -17,7 +17,7 @@ public record ContratDTO(
         String employerFullName,
         String offerTitle,
         String supervisorName,
-        String assignedTeachedName,
+        String assignedTeacherName,
         LocalDate internshipStartingDate,
         LocalDate internshipEndingDate,
         double weeklyHours,
@@ -44,7 +44,7 @@ public record ContratDTO(
                 .employerFullName(employerFullName)
                 .offerTitle(contract.getInternshipOffer().getPosition())
                 .supervisorName(contract.getSupervisorName())
-                .assignedTeachedName(teacherName)
+                .assignedTeacherName(teacherName)
                 .internshipStartingDate(contract.getStartingDate())
                 .internshipEndingDate(contract.getEndingDate())
                 .weeklyHours(contract.getWeeklyHours())
