@@ -134,9 +134,6 @@ function Header({user}) {
                         {canAccessRole("ETUDIANT") && <li><NavLink to="/etudiant" end className={navLinkClass}
                                                                    onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink>
                         </li>}
-                        {canAccessRole("EMPLOYEUR") && <li><NavLink to="/employeur" className={navLinkClass}
-                                                                    onClick={closeMenus}>{t("navigation.publishOffer")}</NavLink>
-                        </li>}
                         {canAccessRole("GESTIONNAIRE") && <li><NavLink to="/gestionnaire" className={navLinkClass}
                                                                        onClick={closeMenus}>{t("navigation.validation")}</NavLink>
                         </li>}

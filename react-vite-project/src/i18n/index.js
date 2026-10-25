@@ -22,6 +22,11 @@ const resources = {
                 manager: "Gestionnaire",
                 uploadCv: "Téléverser mon CV",
                 publishOffer: "Publier une offre",
+                employerContracts: "Contrats",
+                employerHome: "Accueil",
+                employerMenuAriaLabel: "Navigation de l’espace employeur",
+                employerOffersTab: "Publier une offre",
+                employerContractsTab: "Contrats",
                 validation: "Validation",
                 closeMenu: "Fermer le menu",
                 openMenu: "Ouvrir le menu",
@@ -555,6 +560,11 @@ const resources = {
                     },
                 },
             },
+            employerHome: {
+                eyebrow: "Espace employeur",
+                title: "Accueil",
+                description: "Gérez vos offres de stage et suivez les contrats envoyés aux étudiants.",
+            },
             roles: {
                 borrower: {
                     label: "Espace emprunteur",
@@ -802,6 +812,11 @@ const resources = {
                 manager: "Manager",
                 uploadCv: "Upload my résumé",
                 publishOffer: "Post an internship offer",
+                employerContracts: "Contracts",
+                employerHome: "Home",
+                employerMenuAriaLabel: "Employer workspace navigation",
+                employerOffersTab: "Post an offer",
+                employerContractsTab: "Contracts",
                 validation: "Validation",
                 closeMenu: "Close menu",
                 openMenu: "Open menu",
@@ -1334,6 +1349,11 @@ const resources = {
                         description: "The student has been notified.",
                     },
                 },
+            },
+            employerHome: {
+                eyebrow: "Employer area",
+                title: "Home",
+                description: "Manage internship offers and track contracts sent to students.",
             },
             roles: {
                 borrower: {

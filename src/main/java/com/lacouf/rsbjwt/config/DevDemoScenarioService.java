@@ -215,7 +215,8 @@ public class DevDemoScenarioService {
                         .employeur(employer)
                         .build();
             }
-
+            offer.setUtilisateur(employer);
+            offer.setEmployeur(employer);
             offer.setTargetDiscipline(demoOffer.discipline());
             offer.setNomEntreprise(employer.getNomCompagnie());
             offer.setPosition(demoOffer.position());

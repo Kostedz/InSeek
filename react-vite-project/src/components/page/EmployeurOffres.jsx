@@ -859,6 +859,7 @@ export default function EmployeurOffres({
                                             companyName = "",
                                             drafts: externalDrafts,
                                             setDrafts: setExternalDrafts,
+                                            workspaceTabs,
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
@@ -1340,6 +1341,8 @@ export default function EmployeurOffres({
                     <h1 className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-ink sm:text-3xl">{t("employerOffers.title")}</h1>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">{t("employerOffers.description")}</p>
                 </div>
+
+                {workspaceTabs}
 
                 {!isAccountEmailValidated && (
                     <div

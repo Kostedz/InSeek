@@ -18,7 +18,7 @@ export async function getRedirectPathByRole(role) {
                 return "/etudiant";
             }
         case "EMPLOYEUR":
-            return "/employeur";
+            return "/";
         case "PROFESSEUR":
         default:
             return "/";

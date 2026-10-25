@@ -1,6 +1,72 @@
 import {useState} from "react";
 import {useTranslation} from "react-i18next";
 
+const DEMO_CONTRACTS_KEY = "inseek.demo.contracts";
+const DEMO_STUDENT_EMAIL = "camille.gagnon@inseek.local";
+const DEMO_EMPLOYER_EMAIL = "demo.employeur@inseek.local";
+export const DEMO_CONTRACTS_UPDATED_EVENT = "inseek:demo-contracts-updated";
+
+function notifyDemoContractsUpdated() {
+    window.dispatchEvent(new Event(DEMO_CONTRACTS_UPDATED_EVENT));
+}
+
+export function isDemoStudent(user) {
+    return String(user?.email ?? "").toLowerCase() === DEMO_STUDENT_EMAIL;
+}
+
+export function isDemoEmployer(user) {
+    return String(user?.email ?? "").toLowerCase() === DEMO_EMPLOYER_EMAIL;
+}
+
+export function createDemoContract() {
+    return {
+        contractId: "demo-camille-nexora-1",
+        contractStatus: "PENDING_SIGNATURE",
+        studentSigned: false,
+        employerSigned: false,
+        student: {prenom: "Camille", nom: "Gagnon"},
+        employee: {prenom: "Alexandre", nom: "Bouchard", nomCompagnie: "Nexora Technologies"},
+        internshipOffer: {
+            nomEntreprise: "Nexora Technologies",
+            position: "Stagiaire développeur logiciel",
+            descriptionPosition: "Travaillez sur des services backend, des tests automatisés et des intégrations API avec une équipe de développement agile.",
+        },
+        startingDate: "2026-11-02",
+        endingDate: "2027-02-01",
+        weeklyHours: 35,
+        hourlySalary: 22,
+        internshipLocation: "Montréal, Québec",
+    };
+}
+
+export function getDemoContracts() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(DEMO_CONTRACTS_KEY) ?? "[]");
+        return Array.isArray(stored) ? stored : [];
+    } catch {
+        return [];
+    }
+}
+
+export function resetDemoContracts() {
+    localStorage.setItem(DEMO_CONTRACTS_KEY, JSON.stringify([createDemoContract()]));
+    notifyDemoContractsUpdated();
+}
+
+export function saveDemoContract(contract) {
+    const contracts = getDemoContracts();
+    const id = String(contract?.contractId ?? contract?.id ?? "");
+    const existingIndex = contracts.findIndex((item) => String(item?.contractId ?? item?.id ?? "") === id);
+    const next = [...contracts];
+
+    if (existingIndex < 0) next.push(contract);
+    else next[existingIndex] = {...next[existingIndex], ...contract};
+
+    localStorage.setItem(DEMO_CONTRACTS_KEY, JSON.stringify(next));
+    notifyDemoContractsUpdated();
+    return next;
+}
+
 const CONTRACT_COPY = {
     fr: {
         status: "Signature requise",
@@ -53,6 +119,9 @@ const CONTRACT_COPY = {
         secureText: "Votre signature est associée à votre compte et à l’heure de confirmation.",
         signingOrderLabel: "Ordre de signature",
         signingOrder: "Vous → employeur → gestionnaire de stage",
+        employerSigningOrder: "Étudiant → vous → gestionnaire de stage",
+        waitingForStudentTitle: "En attente de la signature de l’étudiant",
+        waitingForStudentDescription: "Vous pourrez signer cette entente après que l’étudiant l’aura signée.",
     },
     en: {
         status: "Signature required",
@@ -105,6 +174,9 @@ const CONTRACT_COPY = {
         secureText: "Your signature is linked to your account and the time of confirmation.",
         signingOrderLabel: "Signing order",
         signingOrder: "You → employer → internship manager",
+        employerSigningOrder: "Student → you → internship manager",
+        waitingForStudentTitle: "Waiting for the student’s signature",
+        waitingForStudentDescription: "You can sign this agreement after the student has signed it.",
     },
 };
 
@@ -122,7 +194,17 @@ function CheckIcon() {
     );
 }
 
-export default function ContractSignaturePage({user, contract}) {
+function hasRecordedSignature(value) {
+    if (value === true) return true;
+    if (!value) return false;
+    if (typeof value === "object") {
+        if (value.signedAt || value.date) return true;
+        return hasRecordedSignature(value.signed ?? value.isSigned ?? value.status);
+    }
+    return ["TRUE", "SIGNED", "COMPLETE", "COMPLETED"].includes(String(value).trim().toUpperCase());
+}
+
+export default function ContractSignaturePage({user, contract, signer = "student", onSigned}) {
     const {i18n} = useTranslation();
     const copy = CONTRACT_COPY[i18n.resolvedLanguage === "en" ? "en" : "fr"];
     const [hasSignature, setHasSignature] = useState(false);
@@ -133,20 +215,46 @@ export default function ContractSignaturePage({user, contract}) {
     const employee = contract?.employee ?? {};
     const internshipOffer = contract?.internshipOffer ?? {};
     const admin = contract?.admin ?? {};
-    const firstName = student.prenom ?? user?.firstName ?? user?.prenom;
-    const lastName = student.nom ?? user?.lastName ?? user?.nom;
-    const studentName = [firstName, lastName].filter(Boolean).join(" ");
-    const employerName = employee.nomCompagnie ?? internshipOffer.nomEntreprise;
-    const position = internshipOffer.position;
-    const positionDescription = internshipOffer.descriptionPosition;
-    const startDate = contract?.startingDate;
-    const endDate = contract?.endingDate;
-    const weeklyHours = contract?.weeklyHours;
-    const hourlySalary = contract?.hourlySalary;
-    const location = contract?.internshipLocation;
-    const contractNumber = contract?.contractId;
+    const signerIsEmployer = signer === "employer";
+    const firstName = student.prenom ?? student.firstName ?? (signerIsEmployer ? undefined : user?.firstName ?? user?.prenom);
+    const lastName = student.nom ?? student.lastName ?? (signerIsEmployer ? undefined : user?.lastName ?? user?.nom);
+    const signerFirstName = signerIsEmployer
+        ? user?.firstName ?? user?.prenom ?? employee.prenom
+        : firstName;
+    const signerLastName = signerIsEmployer
+        ? user?.lastName ?? user?.nom ?? employee.nom
+        : lastName;
+    const signerName = [signerFirstName, signerLastName].filter(Boolean).join(" ");
+    const employerName = employee.nomCompagnie ?? employee.companyName ?? internshipOffer.nomEntreprise ?? internshipOffer.companyName;
+    const position = internshipOffer.position ?? internshipOffer.title ?? contract?.position;
+    const positionDescription = internshipOffer.descriptionPosition ?? internshipOffer.description ?? contract?.description;
+    const startDate = contract?.startingDate ?? contract?.startDate;
+    const endDate = contract?.endingDate ?? contract?.endDate;
+    const weeklyHours = contract?.weeklyHours ?? contract?.hoursPerWeek;
+    const hourlySalary = contract?.hourlySalary ?? contract?.salary;
+    const location = contract?.internshipLocation ?? contract?.location;
+    const contractNumber = contract?.contractId ?? contract?.id;
     const backendStatus = String(contract?.contractStatus ?? "").toUpperCase();
-    const isSigned = backendStatus === "SIGNED" || isLocallySigned;
+    const employerSignatureRecorded = hasRecordedSignature(
+        contract?.employerSigned
+        ?? contract?.isEmployerSigned
+        ?? contract?.signedByEmployer
+        ?? contract?.employerSignature
+        ?? contract?.signatureEmployeur
+        ?? contract?.signatures?.employer
+    ) || ["EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "FULLY_SIGNED", "COMPLETED"].includes(backendStatus);
+    const studentSignatureRecorded = hasRecordedSignature(
+        contract?.studentSigned
+        ?? contract?.isStudentSigned
+        ?? contract?.signedByStudent
+        ?? contract?.studentSignature
+        ?? contract?.signatureEtudiant
+        ?? contract?.signatures?.student
+    ) || ["STUDENT_SIGNED", "SIGNED_BY_STUDENT", "PENDING_EMPLOYER_SIGNATURE", "EMPLOYER_SIGNATURE_REQUIRED", "EMPLOYER_SIGNING", "EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "FULLY_SIGNED", "COMPLETED"].includes(backendStatus);
+    const isSigned = (signerIsEmployer
+        ? employerSignatureRecorded
+        : studentSignatureRecorded || backendStatus === "SIGNED") || isLocallySigned;
+    const isWaitingForStudent = signerIsEmployer && !studentSignatureRecorded && !employerSignatureRecorded && !isLocallySigned;
 
     const formatDate = (value) => {
         if (!value) return "";
@@ -187,6 +295,7 @@ export default function ContractSignaturePage({user, contract}) {
         window.setTimeout(() => {
             setIsLocallySigned(true);
             setIsSigning(false);
+            onSigned?.(contract);
         }, 650);
     };
 
@@ -272,7 +381,12 @@ export default function ContractSignaturePage({user, contract}) {
                 </article>
 
                 <aside className="lg:sticky lg:top-6">
-                    {isSigned ? (
+                    {isWaitingForStudent ? (
+                        <div className="rounded-2xl border border-gold/60 bg-gold/15 p-5" role="status">
+                            <h2 className="text-lg font-black tracking-tight text-ink">{copy.waitingForStudentTitle}</h2>
+                            <p className="mt-1 text-xs leading-5 text-ink-soft">{copy.waitingForStudentDescription}</p>
+                        </div>
+                    ) : isSigned ? (
                         <div className="relative rounded-2xl border border-green-200 bg-green-50 p-5">
                             <span
                                 className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-green-700">
@@ -312,7 +426,7 @@ export default function ContractSignaturePage({user, contract}) {
                                 {hasSignature && (
                                     <span className="absolute bottom-7 left-5 text-3xl italic text-ink"
                                           style={{fontFamily: "'Brush Script MT', 'Segoe Script', 'URW Chancery L', cursive"}}>
-                                        {studentName}
+                                        {signerName}
                                     </span>
                                 )}
                                 <span
@@ -342,7 +456,7 @@ export default function ContractSignaturePage({user, contract}) {
                     {!isSigned && (
                         <div className="mt-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-xs">
                             <p className="font-black uppercase tracking-[0.1em] text-ink-soft">{copy.signingOrderLabel}</p>
-                            <p className="mt-1 font-bold text-ink">{copy.signingOrder}</p>
+                            <p className="mt-1 font-bold text-ink">{signerIsEmployer ? copy.employerSigningOrder : copy.signingOrder}</p>
                         </div>
                     )}
                 </aside>

@@ -11,7 +11,7 @@ import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx
 import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
 import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
 import StudentHomePage from "./components/page/StudentHomePage.jsx";
-import EmployeurOffres from "./components/page/EmployeurOffres.jsx";
+import EmployerHomePage from "./components/page/EmployerHomePage.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
@@ -93,7 +93,17 @@ function App() {
                 <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
                     <Route index element={user?.isLoggedIn && userRole === "ETUDIANT"
                         ? <StudentHomePage user={user}/>
-                        : <MainContainer user={user}/>
+                        : user?.isLoggedIn && userRole === "EMPLOYEUR"
+                            ? <EmployerHomePage
+                                user={user}
+                                canManageOffers={Boolean(user?.isLoggedIn)}
+                                companyName={user?.nomCompagnie ?? ""}
+                                isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
+                                contracts={user?.contracts}
+                                drafts={offerDrafts}
+                                setDrafts={setOfferDrafts}
+                            />
+                            : <MainContainer user={user}/>
                     }/>
                     <Route path='about' element={<About/>}/>
                     <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
@@ -143,16 +153,23 @@ function App() {
               <Route path='employeur' element={
                                            <ProtectedRoute user={user} authChecked={authChecked}
                                                            allowedRoles={["EMPLOYEUR"]}>
-                                              <EmployeurOffres
+                                               <EmployerHomePage
                                                   user={user}
                                                   canManageOffers={Boolean(user?.isLoggedIn)}
                                                   companyName={user?.nomCompagnie ?? ""}
                                                   isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
+                                                  contracts={user?.contracts}
                                                   drafts={offerDrafts}
                                                   setDrafts={setOfferDrafts}
                                               />
                                           </ProtectedRoute>
                                       }/>
+                    <Route path='employeur/contrats' element={
+                                                          <ProtectedRoute user={user} authChecked={authChecked}
+                                                                          allowedRoles={["EMPLOYEUR"]}>
+                                                             <EmployerHomePage user={user} contracts={user?.contracts}/>
+                                                         </ProtectedRoute>
+                                                     }/>
               <Route path='gestionnaire' element={
                   <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
                       <GestionnaireDashboard/>
