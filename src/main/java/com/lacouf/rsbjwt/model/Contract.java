@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@Entity
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,18 +18,19 @@ public class Contract {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long contractId;
 
-    @OneToOne()
+    @ManyToOne()
     private Etudiant student;
 
-    @OneToOne()
+    @ManyToOne()
     private Employeur employer;
 
-    @OneToOne()
+    @ManyToOne()
     private OffreDeStage internshipOffer;
 
+    @ManyToOne()
     private Gestionnaire admin;
 
-    @OneToOne
+    @ManyToOne
     private Professeur teacher;
 
     private String supervisorName;
@@ -44,6 +46,7 @@ public class Contract {
     private String internshipLocation;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private StatutContrat contractStatus = StatutContrat.PENDING_SIGNATURE;
 
     private LocalDateTime dateCreation = LocalDateTime.now();
