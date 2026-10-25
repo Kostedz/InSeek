@@ -148,24 +148,6 @@ function App() {
                                                     />
                                                 </ProtectedRoute>
                                             }/>
-                    <Route path='gestionnaire' element={
-                                                    <ProtectedRoute user={user} authChecked={authChecked}
-                                                                    allowedRoles={["GESTIONNAIRE"]}>
-                                                       <GestionnaireValidation/>
-                                                   </ProtectedRoute>
-                                               }/>
-                    <Route path='gestionnaire/cv' element={
-                                                       <ProtectedRoute user={user} authChecked={authChecked}
-                                                                       allowedRoles={["GESTIONNAIRE"]}>
-                                                          <GestionnaireCvValidation/>
-                                                      </ProtectedRoute>
-                                                  }/>
-                    <Route path='register'
-                           element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
-                    <Route path='error' element={<ErrorPage error={error}/>}/>
-                    <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
-                </Route>
-            </Routes>
               <Route path='employeur' element={
                                            <ProtectedRoute user={user} authChecked={authChecked}
                                                            allowedRoles={["EMPLOYEUR"]}>
