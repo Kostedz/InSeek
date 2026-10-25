@@ -9,7 +9,6 @@ import {
     formatDate,
     formatOfferTitle,
     normalizeApplication,
-    normalizeOffer,
 } from "./studentOfferUtils.js";
 
 function sortByApplicationDate(applications) {
@@ -17,29 +16,10 @@ function sortByApplicationDate(applications) {
         new Date(second.appliedAt ?? 0) - new Date(first.appliedAt ?? 0));
 }
 
-async function loadAvailableOffersCount(applications) {
-    try {
-        const response = await api.student.getOffers();
-        if (!response.ok) return null;
-
-        const offersData = await response.json();
-        const appliedOfferIds = new Set(
-            applications.map((application) => String(application.offer.id)),
-        );
-        return (Array.isArray(offersData) ? offersData : [])
-            .map(normalizeOffer)
-            .filter((offer) => offer.statut === "VALIDE" && !appliedOfferIds.has(String(offer.id)))
-            .length;
-    } catch {
-        return null;
-    }
-}
-
-export default function EtudiantCandidatures({onCountsChange}) {
+export default function EtudiantCandidatures() {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const [applications, setApplications] = useState([]);
-    const [offersCount, setOffersCount] = useState(null);
     const [cv, setCv] = useState(null);
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -65,9 +45,6 @@ export default function EtudiantCandidatures({onCountsChange}) {
                 setCv(cvData);
                 setLoading(false);
 
-                loadAvailableOffersCount(normalizedApplications).then((count) => {
-                    if (isMounted) setOffersCount(count);
-                });
             })
             .catch(() => {
                 if (!isMounted) return;
@@ -79,13 +56,6 @@ export default function EtudiantCandidatures({onCountsChange}) {
             isMounted = false;
         };
     }, []);
-
-    useEffect(() => {
-        onCountsChange?.({
-            offersCount,
-            applicationsCount: loading ? undefined : applications.length,
-        });
-    }, [onCountsChange, offersCount, loading, applications.length]);
 
     return (
         <>

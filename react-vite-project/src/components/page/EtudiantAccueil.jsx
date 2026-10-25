@@ -1,9 +1,9 @@
 import React, {useEffect, useState} from "react";
-import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 import Loading from "../Loading.jsx";
 import PdfPreview from "../PdfPreview.jsx";
+import {StudentCvRequiredMessage} from "./StudentCvAccess.jsx";
 import {
     formatDate,
     formatDateRange,
@@ -338,7 +338,7 @@ function OfferDetails({offer, language, t, onClose, studentCv, alreadyApplied, o
     );
 }
 
-export default function EtudiantAccueil({user, onCountsChange}) {
+export default function EtudiantAccueil({user, cvData}) {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const [cvState, setCvState] = useState("loading");
@@ -360,16 +360,20 @@ export default function EtudiantAccueil({user, onCountsChange}) {
 
         const loadOffers = async () => {
             try {
-                const cvResponse = await api.student.getCv();
+                let cv = cvData;
+                if (cv === undefined) {
+                    const cvResponse = await api.student.getCv();
 
-                if (!isMounted) return;
-                if (cvResponse.status === 204 || cvResponse.status === 404) {
-                    setCvState("no-cv");
-                    return;
+                    if (!isMounted) return;
+                    if (cvResponse.status === 204 || cvResponse.status === 404) {
+                        setCvState("no-cv");
+                        return;
+                    }
+                    if (!cvResponse.ok) throw new Error("student_cv_request_failed");
+
+                    cv = await cvResponse.json();
                 }
-                if (!cvResponse.ok) throw new Error("student_cv_request_failed");
-
-                const cv = await cvResponse.json();
+                if (!isMounted) return;
                 setStudentCv(cv);
                 const cvStatus = normalizeOfferStatus(cv?.statut ?? cv?.status);
                 if (cvStatus !== "VALIDE") {
@@ -420,14 +424,7 @@ export default function EtudiantAccueil({user, onCountsChange}) {
         return () => {
             isMounted = false;
         };
-    }, [user]);
-
-    useEffect(() => {
-        onCountsChange?.({
-            offersCount: cvState === "loading" ? undefined : offers.length,
-            applicationsCount: cvState === "loading" ? undefined : appliedOfferIds.length,
-        });
-    }, [onCountsChange, cvState, offers.length, appliedOfferIds.length]);
+    }, [user, cvData]);
 
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase();
     const filteredOffers = offers.filter((offer) => {
@@ -444,21 +441,7 @@ export default function EtudiantAccueil({user, onCountsChange}) {
         <>
             {cvState === "loading" && <Loading/>}
 
-                {(cvState === "blocked" || cvState === "no-cv") && (
-
-                    <div className="mt-8 rounded-2xl border border-lavender bg-lavender/35 p-6" role="alert">
-                        <h2 className="text-lg font-black text-ink">{t("studentOffers.cvRequiredTitle")}</h2>
-                        <p className="mt-2 text-sm leading-6 text-ink-soft">
-                            {t(cvState === "no-cv" ? "studentOffers.cvUploadRequired" : "studentOffers.cvRequired")}
-                        </p>
-                        {cvState === "no-cv" && (
-                            <Link to="/etudiant"
-                                  className="mt-5 inline-flex rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50">
-                                {t("studentOffers.uploadCv")}
-                            </Link>
-                        )}
-                    </div>
-                )}
+            {(cvState === "blocked" || cvState === "no-cv") && <StudentCvRequiredMessage cvState={cvState}/>}
 
                 {error && (
                     <div className="mt-8 rounded-2xl border border-error bg-blush/30 p-6" role="alert">

@@ -558,7 +558,7 @@ function InterviewDetails({
     );
 }
 
-export default function StudentInterviews({user, page = false, onPendingCountChange}) {
+export default function StudentInterviews({user, page = false}) {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
 
@@ -699,10 +699,6 @@ export default function StudentInterviews({user, page = false, onPendingCountCha
         .sort((a, b) => b.id - a.id);
 
     const nextInterview = pendingInterviews[0] ?? null;
-
-    useEffect(() => {
-        onPendingCountChange?.(pendingInterviews.length);
-    }, [onPendingCountChange, pendingInterviews.length]);
 
     const openInterview = (interview) => {
         setError(null);

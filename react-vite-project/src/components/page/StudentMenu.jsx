@@ -2,6 +2,7 @@ import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import {Link, useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
+import {normalizeOffer} from "./studentOfferUtils.js";
 
 function isPendingInterview(item) {
     const status = String(
@@ -16,10 +17,10 @@ function isPendingInterview(item) {
         && date.getTime() > Date.now();
 }
 
-export default function StudentMenu({offersCount, applicationsCount, interviewsCount, onCountsChange}) {
+export default function StudentMenu({user}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
-    const [loadedInterviewsCount, setLoadedInterviewsCount] = useState();
+    const [counts, setCounts] = useState({});
     const navRef = useRef(null);
     const tabRefs = useRef({});
     const hasMeasuredIndicator = useRef(false);
@@ -29,7 +30,7 @@ export default function StudentMenu({offersCount, applicationsCount, interviewsC
     const applicationsActive = pathname === "/etudiant/candidatures";
     const interviewsActive = pathname === "/etudiant/convocations";
     const contractActive = pathname === "/etudiant/contrat";
-    const displayedInterviewsCount = interviewsCount ?? loadedInterviewsCount;
+    const {offersCount, applicationsCount, interviewsCount} = counts;
     const activeTab = contractActive ? "contract" : interviewsActive ? "interviews" : applicationsActive ? "applications" : "offers";
 
     useLayoutEffect(() => {
@@ -74,29 +75,39 @@ export default function StudentMenu({offersCount, applicationsCount, interviewsC
     }, [activeTab]);
 
     useEffect(() => {
-        if (interviewsCount !== undefined || interviewsActive) return undefined;
-
         let active = true;
-        api.student.getConvocations()
-            .then(async (response) => {
-                if (!response.ok) throw new Error("interviews_load_failed");
-                const data = response.status === 204 ? [] : await response.json();
-                const interviews = Array.isArray(data) ? data : data.items ?? data.content ?? [];
-                if (active) {
-                    const pendingCount = interviews.filter(isPendingInterview).length;
-                    setLoadedInterviewsCount(pendingCount);
-                    onCountsChange?.({interviewsCount: pendingCount});
-                }
-            })
-            .catch(() => {
-                // Hide the optional badge when the notification count cannot be loaded.
-                setLoadedInterviewsCount(null);
-            });
+        Promise.all([
+            api.student.getOffers(),
+            api.student.getAppliedOfferIds(),
+            api.student.getConvocations(),
+        ]).then(async ([offersResponse, applicationsResponse, interviewsResponse]) => {
+            if (!offersResponse.ok || !applicationsResponse.ok || !interviewsResponse.ok) throw new Error("student_counts_load_failed");
+
+            const [offersData, applicationsData, interviewsData] = await Promise.all([
+                offersResponse.json(),
+                applicationsResponse.json(),
+                interviewsResponse.status === 204 ? Promise.resolve([]) : interviewsResponse.json(),
+            ]);
+            const appliedIds = new Set((Array.isArray(applicationsData) ? applicationsData : []).map(String));
+            const interviews = Array.isArray(interviewsData) ? interviewsData : interviewsData.items ?? interviewsData.content ?? [];
+
+            if (active) {
+                setCounts({
+                    offersCount: (Array.isArray(offersData) ? offersData : [])
+                        .map(normalizeOffer)
+                        .filter(({statut, id}) => statut === "VALIDE" && !appliedIds.has(String(id))).length,
+                    applicationsCount: appliedIds.size,
+                    interviewsCount: interviews.filter(isPendingInterview).length,
+                });
+            }
+        }).catch(() => {
+            if (active) setCounts({});
+        });
 
         return () => {
             active = false;
         };
-    }, [interviewsActive, interviewsCount, onCountsChange]);
+    }, [user?.id]);
 
     const countBadge = (count) => count === null || count === undefined ? null : (
         <span
@@ -156,7 +167,7 @@ export default function StudentMenu({offersCount, applicationsCount, interviewsC
             >
                 <span className="flex items-center justify-center gap-2">
                     {t("navigation.interviews")}
-                    {countBadge(displayedInterviewsCount)}
+                    {countBadge(interviewsCount)}
                 </span>
             </Link>
             <Link

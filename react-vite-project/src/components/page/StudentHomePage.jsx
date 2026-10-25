@@ -1,11 +1,11 @@
-import {useCallback, useState} from "react";
 import {useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import EtudiantAccueil from "./EtudiantAccueil.jsx";
 import EtudiantCandidatures from "./EtudiantCandidatures.jsx";
-import EtudiantConvocations from "./EtudiantConvocations.jsx";
+import StudentConvocation from "../etudiant/StudentConvocation.jsx";
 import StudentMenu from "./StudentMenu.jsx";
 import ContractSignaturePage from "./ContractSignaturePage.jsx";
+import StudentCvAccess from "./StudentCvAccess.jsx";
 
 function getActiveTab(pathname) {
     if (pathname === "/etudiant/candidatures") return "applications";
@@ -14,20 +14,10 @@ function getActiveTab(pathname) {
     return "offers";
 }
 
-export default function StudentHomePage({user}) {
+export default function StudentHomePage({user, contract}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
     const activeTab = getActiveTab(pathname);
-    const [counts, setCounts] = useState({});
-    const updateCounts = useCallback((nextCounts) => {
-        setCounts((currentCounts) => Object.entries(nextCounts).reduce(
-            (updatedCounts, [name, value]) => value === undefined || value === null
-                ? updatedCounts
-                : {...updatedCounts, [name]: value},
-            currentCounts,
-        ));
-    }, []);
-
     const pageCopy = {
         offers: {
             title: t("studentOffers.title"),
@@ -63,27 +53,28 @@ export default function StudentHomePage({user}) {
                     </p>
                 </header>
 
-                <StudentMenu
-                    offersCount={counts.offersCount}
-                    applicationsCount={counts.applicationsCount}
-                    interviewsCount={counts.interviewsCount}
-                    onCountsChange={updateCounts}
-                />
+                <StudentCvAccess user={user}>
+                    {({cv}) => (
+                        <>
+                            <StudentMenu user={user}/>
 
-                <div key={activeTab}>
-                    {activeTab === "offers" && (
-                        <EtudiantAccueil user={user} onCountsChange={updateCounts}/>
+                            <div key={activeTab}>
+                                {activeTab === "offers" && (
+                                    <EtudiantAccueil user={user} cvData={cv}/>
+                                )}
+                                {activeTab === "applications" && (
+                                    <EtudiantCandidatures/>
+                                )}
+                                {activeTab === "interviews" && (
+                                    <StudentConvocation user={user} page/>
+                                )}
+                                {activeTab === "contract" && (
+                                    <ContractSignaturePage user={user} contract={contract}/>
+                                )}
+                            </div>
+                        </>
                     )}
-                    {activeTab === "applications" && (
-                        <EtudiantCandidatures onCountsChange={updateCounts}/>
-                    )}
-                    {activeTab === "interviews" && (
-                        <EtudiantConvocations user={user} onCountsChange={updateCounts}/>
-                    )}
-                    {activeTab === "contract" && (
-                        <ContractSignaturePage user={user}/>
-                    )}
-                </div>
+                </StudentCvAccess>
             </div>
         </section>
     );
