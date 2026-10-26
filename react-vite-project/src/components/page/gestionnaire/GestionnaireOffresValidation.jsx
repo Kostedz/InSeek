@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { translateMessage } from "../../utils/i18nMessage.js";
-import api from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
-import PdfPreview from "../PdfPreview.jsx";
+import { translateMessage } from "../../../utils/i18nMessage.js";
+import api from "../../../utils/api.js";
+import ValidationTabs from "../../componentUtils/gestionnaire/ValidationTabs.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -154,7 +154,7 @@ function InfoItem({label, value}) {
     );
 }
 
-function GestionnaireValidation() {
+function GestionnaireOffresValidation() {
     const {t, i18n} = useTranslation();
     const [offers, setOffers] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
@@ -499,4 +499,4 @@ function GestionnaireValidation() {
     );
 }
 
-export default GestionnaireValidation;
+export default GestionnaireOffresValidation;

@@ -7,16 +7,16 @@ import LoginForm from "./components/auth/LoginForm.jsx";
 import fetcher from "./utils/fetcher.js";
 import ErrorPage from "./components/ErrorPage.jsx";
 import Logout from "./components/auth/Logout.jsx";
-import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx";
-import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
-import EmployeurOffres from "./components/page/EmployeurOffres.jsx";
+import GestionnaireOffresValidation from "./components/page/gestionnaire/GestionnaireOffresValidation.jsx";
+import EtudiantTeleverseCV from "./components/page/etudiant/EtudiantTeleverseCV.jsx";
+import EmployeurOffres from "./components/page/employeur/EmployeurOffres.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
 import {useTranslation} from "react-i18next";
-import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
-import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
-import StudentHomePage from "./components/page/StudentHomePage.jsx";
+import GestionnaireCvValidation from "./components/page/gestionnaire/GestionnaireCvValidation.jsx";
+import EtudiantProfil from "./components/page/etudiant/EtudiantProfil.jsx";
+import EtudiantHomePage from "./components/page/etudiant/EtudiantHomePage.jsx";
 
 function App() {
     const [user, setUser] = useState({})
@@ -90,7 +90,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
                     <Route index element={user?.isLoggedIn && userRole === "ETUDIANT"
-                        ? <StudentHomePage user={user}/>
+                        ? <EtudiantHomePage user={user}/>
                         : <MainContainer user={user}/>
                     }/>
                     <Route path='about' element={<About/>}/>
@@ -113,21 +113,21 @@ function App() {
                     <Route path='etudiant/offres' element={
                                                        <ProtectedRoute user={user} authChecked={authChecked}
                                                                        allowedRoles={["ETUDIANT"]}>
-                                                          <StudentHomePage user={user}/>
+                                                          <EtudiantHomePage user={user}/>
                                                       </ProtectedRoute>
                                                   }/>
 
                     <Route path='etudiant/candidatures' element={
                                                              <ProtectedRoute user={user} authChecked={authChecked}
                                                                              allowedRoles={["ETUDIANT"]}>
-                                                                <StudentHomePage user={user}/>
+                                                                <EtudiantHomePage user={user}/>
                                                             </ProtectedRoute>
                                                         }/>
 
                     <Route path='etudiant/convocations' element={
                                                              <ProtectedRoute user={user} authChecked={authChecked}
                                                                              allowedRoles={["ETUDIANT"]}>
-                                                                <StudentHomePage user={user}/>
+                                                                <EtudiantHomePage user={user}/>
                                                             </ProtectedRoute>
                                                         }/>
 
@@ -147,7 +147,7 @@ function App() {
                     <Route path='gestionnaire' element={
                                                     <ProtectedRoute user={user} authChecked={authChecked}
                                                                     allowedRoles={["GESTIONNAIRE"]}>
-                                                       <GestionnaireValidation/>
+                                                       <GestionnaireOffresValidation/>
                                                    </ProtectedRoute>
                                                }/>
                     <Route path='gestionnaire/cv' element={

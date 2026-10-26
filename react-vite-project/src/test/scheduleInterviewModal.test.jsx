@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import ScheduleInterviewModal from "../components/employer/SchedulenterviewModal.jsx";
+import ScheduleInterviewModal from "../components/componentUtils/employeur/ScheduleInterviewModal.jsx";
 import { api } from "../utils/api.js";
 
 vi.mock("react-i18next", () => {

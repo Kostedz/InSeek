@@ -1,8 +1,8 @@
 import React from "react";
 import {describe, expect, it, vi} from "vitest";
 import {api} from "../utils/api.js";
-import EmployeurOffres from "../components/page/EmployeurOffres.jsx";
-import GestionnaireValidation from "../components/page/GestionnaireValidation.jsx";
+import EmployeurOffres from "../components/page/employeur/EmployeurOffres.jsx";
+import GestionnaireOffresValidation from "../components/page/gestionnaire/GestionnaireOffresValidation.jsx";
 import {fireEvent, renderWithProviders, screen, userEvent, waitFor} from "./test-utils.jsx";
 
 vi.mock("../components/PdfPreview.jsx", () => ({default: () => null}));
@@ -132,7 +132,7 @@ describe("role workspaces", () => {
             }]), {status: 200}),
         );
 
-        renderWithProviders(<GestionnaireValidation/>);
+        renderWithProviders(<GestionnaireOffresValidation/>);
 
         expect(await screen.findByRole("heading", {name: "Validation des offres"})).toBeInTheDocument();
         expect((await screen.findAllByText("Stagiaire en développement web")).length).toBeGreaterThan(0);

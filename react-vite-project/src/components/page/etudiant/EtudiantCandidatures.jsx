@@ -1,16 +1,16 @@
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
-import api from "../../utils/api.js";
-import Loading from "../Loading.jsx";
-import StudentApplicationDetails, {
+import api from "../../../utils/api.js";
+import Loading from "../../Loading.jsx";
+import EtudiantApplicationDetails, {
     ApplicationStatusBadge,
-} from "./StudentApplicationDetails.jsx";
+} from "../../componentUtils/etudiant/EtudiantApplicationDetails.jsx";
 import {
     formatDate,
     formatOfferTitle,
     normalizeApplication,
     normalizeOffer,
-} from "./studentOfferUtils.js";
+} from "../../componentUtils/offresUtils.js";
 
 function sortByApplicationDate(applications) {
     return applications.sort((first, second) =>
@@ -143,7 +143,7 @@ export default function EtudiantCandidatures({onCountsChange}) {
                     </div>
                 )}
             {selectedApplication && (
-                <StudentApplicationDetails
+                <EtudiantApplicationDetails
                     application={selectedApplication}
                     cv={cv}
                     language={language}

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {useTranslation} from "react-i18next";
-import { api } from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
-import PdfPreview from "../PdfPreview.jsx";
+import { api } from "../../../utils/api.js";
+import ValidationTabs from "../../componentUtils/gestionnaire/ValidationTabs.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
