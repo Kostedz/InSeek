@@ -5,156 +5,24 @@ import api from "../../../utils/api.js";
 import ValidationTabs from "../../componentUtils/gestionnaire/ValidationTabs.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 
-const AUTO_REFRESH_INTERVAL_MS = 60_000;
+import { InfoItem } from "../../componentUtils/gestionnaire/ValidationComponents.jsx";
+import StatusBadge from "../../componentUtils/gestionnaire/offresValidation/OffresStatusBadge.jsx";
+import {
+    formatDateRange,
+    formatDiscipline,
+    formatHourlyPay,
+    isPending,
+} from "../../componentUtils/gestionnaire/validationUtils.js";
+import {SAMPLE_OFFERS} from "../../componentUtils/gestionnaire/validationConstants.js";
+import {normalizeOffer} from "../../componentUtils/offresUtils.js";
 
-const SAMPLE_OFFERS = [
-    {
-        id: "sample-1",
-        statut: "EN_ATTENTE",
-        email: "marie.gagnon@novalab.ca",
-        contactName: "Marie Gagnon",
-        contactPhone: "+1 514 555-0182",
-        nomEntreprise: "NovaLab",
-        position: "Stagiaire en développement web",
-        targetDiscipline: "INFORMATIQUE",
-        adresseEntreprise: "Montréal, Québec",
-        salaire: 22.5,
-        descriptionPosition: "Contribuer au développement et à l’amélioration de fonctionnalités web pour les projets de l’équipe.",
-        dateDebutStage: "2026-05-04",
-        dateFinStage: "2026-08-21",
-    },
-    {
-        id: "sample-2",
-        statut: "EN_ATTENTE",
-        email: "alexandre.roy@ateliernord.com",
-        contactName: "Alexandre Roy",
-        contactPhone: "+1 418 555-0114",
-        nomEntreprise: "Atelier Nord",
-        position: "Stagiaire en design graphique",
-        targetDiscipline: "DESIGN_GRAPHIQUE",
-        adresseEntreprise: "Québec, Québec",
-        salaire: 20,
-        descriptionPosition: "Créer des visuels pour les campagnes et les outils de communication de l’équipe.",
-        dateDebutStage: "2026-01-12",
-        dateFinStage: "2026-04-24",
-    },
-];
+const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
 function createSampleOffers() {
     return SAMPLE_OFFERS.map((offer) => ({...offer}));
 }
 
-function normalizeOffer(offer, t) {
-    return {
-        ...offer,
-        id: offer.id ?? offer.documentId,
-        fileName: offer.fileName ?? offer.filename ?? "",
-        statut: String(offer.statut ?? offer.status ?? "EN_ATTENTE").toUpperCase(),
-        nomEntreprise: offer.nomEntreprise ?? offer.companyName ?? offer.company ?? "",
-        position: offer.position ?? offer.jobTitle ?? offer.title ?? "",
-        email: offer.email ?? offer.contactEmail ?? "",
-        contactName: offer.contactName ?? offer.contactPerson ?? "",
-        contactPhone: offer.contactPhone ?? offer.phone ?? "",
-        targetDiscipline: offer.targetDiscipline ?? offer.discipline ?? "",
-        dateDebutStage: offer.dateDebutStage ?? offer.startDate,
-        dateFinStage: offer.dateFinStage ?? offer.endDate,
-        adresseEntreprise: offer.adresseEntreprise ?? offer.companyAddress ?? offer.location ?? "",
-        salaire: offer.salaire ?? offer.salary ?? offer.hourlyPay ?? "",
-        descriptionPosition: offer.descriptionPosition ?? offer.description ?? "",
-    };
-}
-
-function formatDate(value, language) {
-    if (!value) return null;
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-
-    return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-    }).format(new Date(value));
-}
-
-function formatDateRange(start, end, language, t) {
-    const formattedStart = formatDate(start, language);
-    const formattedEnd = formatDate(end, language);
-
-    if (!formattedStart && !formattedEnd) return "";
-    if (!formattedStart) return formattedEnd;
-    if (!formattedEnd) return formattedStart;
-
-    return t("managerValidation.dateRange", {start: formattedStart, end: formattedEnd});
-}
-
-function formatDiscipline(value, t) {
-    if (!value) return "";
-    const normalized = String(value).trim().toUpperCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[.\s-]+/g, "_");
-    const aliases = {
-        "TECH_INFIRMIERE": "INFIRMIERE",
-        "GENIE_CIVIL": "GENIE_CIVIL",
-        "DESIGN_GRAPHIQUE": "DESIGN_GRAPHIQUE",
-    };
-    const disciplineKey = aliases[normalized] ?? normalized;
-    return t(`employerOffers.disciplines.${disciplineKey}`, {defaultValue: value});
-}
-
-function formatHourlyPay(value, language, t) {
-    if (value === null || value === undefined || String(value).trim() === "") {
-        return t("managerValidation.unpaid");
-    }
-
-    const amount = Number(value);
-    if (!Number.isFinite(amount)) return String(value);
-
-    return `${new Intl.NumberFormat(language === "en" ? "en-CA" : "fr-CA", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(amount)} $/h`;
-}
-
-function isPending(offer) {
-    return offer.statut === "EN_ATTENTE";
-}
-
-function StatusBadge({status}) {
-    const {t} = useTranslation();
-    const styles = {
-        EN_ATTENTE: "border-gold bg-gold/45 text-ink",
-        VALIDE: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
-        REJETE: "border-[#eab0bf] bg-[#fff0f3] text-error",
-    };
-    const labelKeys = {
-        EN_ATTENTE: "pending",
-        VALIDE: "approved",
-        REJETE: "rejected",
-    };
-    const statusKey = status === "VALIDÉ" ? "VALIDE" : status;
-
-    return (
-        <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${styles[statusKey] ?? styles.EN_ATTENTE}`}>
-            {labelKeys[statusKey] ? t(`managerValidation.status.${labelKeys[statusKey]}`) : status}
-        </span>
-    );
-}
-
-function InfoItem({label, value}) {
-    const {t} = useTranslation();
-
-    if (value === null || value === undefined || String(value).trim() === "") return null;
-
-    return (
-        <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">{label}</p>
-            <p className="mt-1 text-sm text-ink">{value}</p>
-        </div>
-    );
-}
-
-function GestionnaireOffresValidation() {
+export default function GestionnaireOffresValidation() {
     const {t, i18n} = useTranslation();
     const [offers, setOffers] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
@@ -498,5 +366,3 @@ function GestionnaireOffresValidation() {
         </section>
     );
 }
-
-export default GestionnaireOffresValidation;
