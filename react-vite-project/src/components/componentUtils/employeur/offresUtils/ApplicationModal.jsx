@@ -7,16 +7,7 @@ import Loading from "../../../Loading.jsx";
 import {getApplicationStatus} from "./offresGetterUtils.js";
 import {formatDate} from "./employeurOffresUtils.js";
 import {ApplicationStatusBadge} from "./ApplicationOffresComponents.jsx";
-
-function initials(name) {
-    return String(name ?? "")
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase();
-}
+import {initials} from "./employeurOffresUtils.js";
 
 export default function ApplicationModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews, onRefresh, onDecision}) {
     const {t} = useTranslation();

@@ -5,6 +5,8 @@ import api from "../../../../utils/api.js";
 import {translateMessage} from "../../../../utils/i18nMessage.js";
 
 import {ApplicationDocument} from "./ApplicationOffresComponents.jsx";
+import Icon from "./Icon.jsx";
+import {initials} from "./employeurOffresUtils.js";
 
 export default function ApplicationDetails({ application, language, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh, onDecision }) {
     const { t } = useTranslation();

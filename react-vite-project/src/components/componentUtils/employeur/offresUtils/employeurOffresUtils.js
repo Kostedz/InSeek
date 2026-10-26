@@ -2,6 +2,16 @@ import {getApplicationStatus} from "./offresGetterUtils.js";
 import {EMPTY_FORM} from "./offresConstants.js";
 import {createTranslationMessage} from "../../../../utils/i18nMessage.js";
 
+export function initials(name) {
+    return String(name ?? "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase();
+}
+
 export function sanitizeSalary(value) {
     const sanitized = String(value ?? "")
         .replace(",", ".")
