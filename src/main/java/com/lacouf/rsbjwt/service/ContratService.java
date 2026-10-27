@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -32,19 +33,28 @@ public class ContratService {
 
     @Transactional(readOnly = true)
     public List<EtudiantEligibleContratDTO> getEtudiantsEligibles() {
-        return utilisateurRepository
-                .findEtudiantsByStatutRecherche(StatutRechercheEtudiant.INTERNSHIP_FOUND)
-                .stream()
-                .map(this::toEtudiantEligibleDTO)
-                .toList();
+        List<Etudiant> etudiants = utilisateurRepository
+                .findEtudiantsByStatutRecherche(StatutRechercheEtudiant.INTERNSHIP_FOUND);
+
+        List<EtudiantEligibleContratDTO> result = new ArrayList<>();
+
+        for (Etudiant student : etudiants) {
+            List<OffreDeStage> offresAcceptees = findAcceptedOffersForStudent(student.getId());
+
+            for (OffreDeStage offer : offresAcceptees) {
+                result.add(toEtudiantEligibleDTO(student, offer));
+            }
+        }
+
+        return result;
     }
 
     @Transactional(readOnly = true)
-    public PreRemplirContratDTO getDonneesPreRemplies(Long studentId) throws NotFoundException, BadRequestException {
+    public PreRemplirContratDTO getDonneesPreRemplies(Long studentId, Long offerId) throws NotFoundException, BadRequestException {
         Etudiant student = findStudent(studentId);
         checkStudentHasFoundInternship(student);
 
-        OffreDeStage offer = requireAcceptedOffer(studentId);
+        OffreDeStage offer = requireAcceptedOffer(studentId,offerId);
         Employeur employer = findEmployerFromOffer(offer);
         Professeur teacher = findAssignedTeacher(student.getDiscipline());
 
@@ -61,7 +71,7 @@ public class ContratService {
         Etudiant student = findStudent(createContratDTO.studentId());
         checkStudentHasFoundInternship(student);
 
-        OffreDeStage internshipOffer = requireAcceptedOffer(student.getId());
+        OffreDeStage internshipOffer = requireAcceptedOffer(student.getId(),createContratDTO.offerId());
         checkNoContractExists(student, internshipOffer);
 
         Employeur employer = requireEmployerFromOffer(internshipOffer);
@@ -90,15 +100,13 @@ public class ContratService {
 
 
 //methodes pour eligibleContratDTO
-    private EtudiantEligibleContratDTO toEtudiantEligibleDTO(Etudiant student) {
-        OffreDeStage internshipOffer = findAcceptedOfferForStudent(student.getId());
-        boolean hasContract = hasContractForOffer(student, internshipOffer);
-
+    private EtudiantEligibleContratDTO toEtudiantEligibleDTO(Etudiant student,OffreDeStage offer) {
         return EtudiantEligibleContratDTO.of(
                 student,
-                hasContract,
-                internshipOffer != null ? internshipOffer.getPosition() : null,
-                internshipOffer != null ? internshipOffer.getNomEntreprise() : null
+                hasContractForOffer(student,offer),
+                offer.getId(),
+                offer.getPosition(),
+                offer.getNomEntreprise()
         );
     }
 
@@ -261,20 +269,19 @@ public class ContratService {
         return etudiant;
     }
 
-    private OffreDeStage findAcceptedOfferForStudent(Long studentId) {
+    private List<OffreDeStage> findAcceptedOffersForStudent(Long studentId) {
         return applicationStageRepository.findByEtudiantId(studentId).stream()
                 .filter(app -> app.getStatutValidation() == StatutValidation.ACCEPTE)
                 .map(ApplicationStage::getOffreDeStage)
-                .findFirst()
-                .orElse(null);
+                .toList();
     }
 
-    private OffreDeStage requireAcceptedOffer(Long studentId) throws NotFoundException {
-        OffreDeStage internshipOffer = findAcceptedOfferForStudent(studentId);
-        if (internshipOffer == null) {
-            throw new NotFoundException("Aucune offre acceptée n'a été trouvée pour cet étudiant.");
-        }
-        return internshipOffer;
+    private OffreDeStage requireAcceptedOffer(Long studentId, Long offerId) throws NotFoundException {
+        return findAcceptedOffersForStudent(studentId).stream()
+                .filter(offer -> offer.getId().equals(offerId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(
+                        "Cette offre n'est pas une offre acceptée pour cet étudiant."));
     }
 
     private Employeur findEmployerFromOffer(OffreDeStage offer) {

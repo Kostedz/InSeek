@@ -24,13 +24,13 @@ public class ContratController {
 
     @GetMapping("/contracts/prefilled/{studentId}")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
-    public ResponseEntity<PreRemplirContratDTO> preFilledContracts(@PathVariable  Long studentId) throws NotFoundException, BadRequestException {
-        return ResponseEntity.ok(contratService.getDonneesPreRemplies(studentId));
+    public ResponseEntity<PreRemplirContratDTO> preFilledContracts(@PathVariable  Long studentId, Long offerId) throws NotFoundException, BadRequestException {
+        return ResponseEntity.ok(contratService.getDonneesPreRemplies(studentId, offerId));
     }
 
     @PostMapping("/contracts")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
-    public ResponseEntity<ContratDTO> addContract(@RequestBody CreateContratDTO createContratDTO, HttpServletRequest request) throws ConflictException, NotFoundException, BadRequestException {
+    public ResponseEntity<ContratDTO> createContract(@RequestBody CreateContratDTO createContratDTO, HttpServletRequest request) throws ConflictException, NotFoundException, BadRequestException {
         ContratDTO saved = contratService.creerContrat(createContratDTO,request);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
