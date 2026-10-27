@@ -23,7 +23,7 @@ import java.util.List;
 public class ContratController {
     private final ContratService contratService;
 
-    @GetMapping("/contracts/prefilled/{studentId}")
+    @GetMapping("/prefilled/{studentId}")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
     public ResponseEntity<PreRemplirContratDTO> preFilledContracts(@PathVariable  Long studentId, Long offerId) throws NotFoundException, BadRequestException {
         return ResponseEntity.ok(contratService.getDonneesPreRemplies(studentId, offerId));

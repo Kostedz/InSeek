@@ -10,6 +10,21 @@ export default function GestionnaireContracts() {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedContract, setSelectedContract] = useState(null);
+    const STATUS_DEFAULTS = { PENDING_SIGNATURE: "En attente de signature" };
+    const statusLabel = (status) =>
+        status ? t(`managerContracts.status.${status}`, STATUS_DEFAULTS[status] ?? status) : "—";
+
+    const normalizeContract = (c) => ({
+        ...c,
+        studentName: c.studentFullName ?? c.studentName ?? c.nomEtudiant ?? "",
+        discipline: c.fieldOfStudy ?? c.discipline ?? "",
+        employerName: c.employerFullName ?? c.employerName ?? "",
+        startDate: c.internshipStartingDate ?? c.startDate,
+        endDate: c.internshipEndingDate ?? c.endDate,
+        location: c.internshipLocation ?? c.location,
+        remuneration: c.hourlySalary ?? c.remuneration,
+        status: c.contractStatus ?? c.status,
+    });
 
     const loadContracts = async () => {
         setLoading(true);
@@ -19,7 +34,7 @@ export default function GestionnaireContracts() {
             if (!res.ok) throw new Error("load_failed");
             const data = await res.json();
             const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
-            setContracts(list);
+            setContracts(list.map(normalizeContract));
         } catch {
             setError({ key: "managerContracts.errors.loadFailed" });
         } finally {
@@ -99,7 +114,7 @@ export default function GestionnaireContracts() {
                                         <div className="flex items-start justify-between gap-2">
                                             <h3 className="font-black text-ink">{contract.studentName || contract.nomEtudiant || "Étudiant"}</h3>
                                             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
-                                                {contract.status || "CRÉÉ"}
+                                               {statusLabel(contract.status)}
                                             </span>
                                         </div>
                                         <p className="mt-1 text-xs font-semibold text-ink-soft">{contract.companyName || contract.nomEntreprise || "Entreprise"}</p>

@@ -5,6 +5,7 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
@@ -23,6 +24,7 @@ public class ApplicationStageService {
     private final ApplicationStageRepository applicationStageRepository;
     private final DocumentRepository documentRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final EntrevueRepository entrevueRepository;
 
 
     @Transactional
@@ -101,6 +103,10 @@ public class ApplicationStageService {
         application.setCommentaireRefus(null);
         application.setDateDecision(LocalDateTime.now());
 
+        Etudiant etudiant = application.getEtudiant();
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.INTERNSHIP_FOUND);
+        utilisateurRepository.save(etudiant);
+
         return toDto(applicationStageRepository.save(application));
     }
 
@@ -152,7 +158,8 @@ public class ApplicationStageService {
                             application.getStatutValidation(),
                             cv == null ? null : cv.getId(),
                             cv == null ? null : cv.getFileName(),
-                            application.getCommentaireRefus()
+                            application.getCommentaireRefus(),
+                            hasInterview(application)
                     );
                 })
                 .toList();
@@ -195,7 +202,14 @@ public class ApplicationStageService {
                 applicationStage.getStatutValidation(),
                 cv == null ? null : cv.getId(),
                 cv == null ? null : cv.getFileName(),
-                applicationStage.getCommentaireRefus());
+                applicationStage.getCommentaireRefus(),
+                hasInterview(applicationStage));
+    }
+
+    private boolean hasInterview(ApplicationStage application) {
+        return entrevueRepository.existsByStudentIdAndInternshipOfferId(
+                application.getEtudiant().getId(),
+                application.getOffreDeStage().getId());
     }
 
     private ApplicationStage findApplicationOfEmployer(Utilisateur utilisateur, Long applicationId)

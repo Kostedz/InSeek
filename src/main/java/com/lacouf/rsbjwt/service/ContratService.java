@@ -285,12 +285,12 @@ public class ContratService {
     }
 
     private Employeur findEmployerFromOffer(OffreDeStage offer) {
-        Utilisateur owner = offer.getEmployeur();
-
-        if (owner instanceof Employeur employer) {
-            return employer;
+        Utilisateur owner = offer.getUtilisateur();
+        if (owner == null) {
+            return null;
         }
-        return null;
+        Object real = org.hibernate.Hibernate.unproxy(owner);
+        return real instanceof Employeur employer ? employer : null;
     }
 
     private Professeur findAssignedTeacher(Disciplines fieldOfStudy) {

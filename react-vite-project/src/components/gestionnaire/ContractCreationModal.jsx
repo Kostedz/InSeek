@@ -60,7 +60,7 @@ export default function ContractCreationModal({ student, onClose, onSuccess }) {
 
         async function loadPreFillData() {
             try {
-                const response = await api.geststage.getContractData(student?.id);
+                const response = await api.gestionnaire.getContractData(student?.id, student?.offerId);
                 if (!response.ok) throw new Error("contracts.errors.failedToLoadPreFill");
                 const data = await response.json();
 
@@ -68,18 +68,18 @@ export default function ContractCreationModal({ student, onClose, onSuccess }) {
                 setFormData((prev) => ({
                     ...prev,
                     studentName: data.studentName || [student?.firstName, student?.lastName].filter(Boolean).join(" "),
-                    discipline: data.discipline || "",
+                    discipline: data.fieldOfStudy || "",
                     companyName: data.companyName || "",
                     employerName: data.employerName || "",
                     offerTitle: data.offerTitle || "",
                     supervisorName: data.supervisorName || "",
                     assignedTeacherName: data.assignedTeacherName || "",
-                    startDate: toDateInput(data.startDate),
-                    endDate: toDateInput(data.endDate),
+                    startDate: toDateInput(data.internshipStartDate),
+                    endDate: toDateInput(data.internshipEndDate),
                     schedule: data.schedule || "09:00 - 17:00",
                     weeklyHours: data.weeklyHours ? String(data.weeklyHours) : "35",
-                    remuneration: data.remuneration ?? data.remunuration ?? "",
-                    location: data.location || data.companyAddress || "",
+                    remuneration: data.hourlySalary ?? "",
+                    location: data.location || "",
                 }));
             } catch (err) {
                 if (isMounted) {
@@ -165,15 +165,15 @@ export default function ContractCreationModal({ student, onClose, onSuccess }) {
         try {
             const payload = {
                 studentId: student.id,
-                dateDebut: formData.startDate,
-                dateFin: formData.endDate,
-                horaire: formData.schedule.trim(),
-                heuresParSemaine: Number(formData.weeklyHours),
-                remuneration: formData.remuneration === "" ? 0 : Number(formData.remuneration),
-                lieu: formData.location.trim(),
+                offerId: student.offerId,
+                internshipStartingDate: formData.startDate,
+                internshipEndingDate: formData.endDate,
+                weeklyHours: Number(formData.weeklyHours),
+                hourlySalary: formData.remuneration === "" ? 0 : Number(formData.remuneration),
+                internshipLocation: formData.location.trim(),
             };
 
-            const response = await api.geststage.createContract(payload);
+            const response = await api.gestionnaire.createContract(payload);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

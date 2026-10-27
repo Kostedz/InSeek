@@ -585,7 +585,7 @@ const resources = {
                     withContract: "Avec contrat",
                 },
                 status: {
-                    hasContract: "Contrat actif",
+                    hasContract: "En attente de signature",
                     noContract: "Stage trouvé",
                 },
                 discipline: "Discipline",
@@ -607,6 +607,9 @@ const resources = {
                 company: "Entreprise",
                 employer: "Employeur",
                 modalities: "Modalités du stage",
+                status: {
+                    PENDING_SIGNATURE: "En attente de signature",
+                },
                 table: {
                     student: "Étudiant",
                     company: "Entreprise",
@@ -1416,7 +1419,7 @@ const resources = {
                 },
             },
             managerStudents: {
-                title: "Students who found an internship",
+                title: "Students who have found an internship",
                 description: "View eligible students and create their internship contracts.",
                 tabLabel: "Students",
                 searchPlaceholder: "Search by name or email...",
@@ -1426,18 +1429,18 @@ const resources = {
                     withContract: "With contract",
                 },
                 status: {
-                    hasContract: "Active contract",
+                    hasContract: "Pending signature",
                     noContract: "Internship found",
                 },
                 discipline: "Discipline",
                 createContractButton: "Create contract",
                 contractAlreadyCreated: "Contract already created",
                 empty: "No eligible students found.",
-                errors: { loadFailed: "Failed to load student list." },
+                errors: { loadFailed: "Failed to load the student list." },
             },
             managerContracts: {
                 title: "Created internship contracts",
-                description: "Browse all recorded internship agreements.",
+                description: "View all recorded internship agreements.",
                 tabLabel: "Contracts",
                 searchPlaceholder: "Search by student or company...",
                 viewDetails: "View details",
@@ -1447,7 +1450,10 @@ const resources = {
                 discipline: "Discipline",
                 company: "Company",
                 employer: "Employer",
-                modalities: "Internship modalities",
+                modalities: "Internship terms",
+                status: {
+                    PENDING_SIGNATURE: "Pending signature",
+                },
                 table: {
                     student: "Student",
                     company: "Company",
@@ -1455,7 +1461,7 @@ const resources = {
                     status: "Status",
                     actions: "Actions",
                 },
-                errors: { loadFailed: "Failed to load contract list." },
+                errors: { loadFailed: "Failed to load the contract list." },
             },
             roles: {
                 borrower: {

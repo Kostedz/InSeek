@@ -204,8 +204,8 @@ export const api = {
                 headers: { Accept: "application/json" },
             }),
 
-        getContractData: (studentId) =>
-            fetcher(`/contracts/contracts/prefilled/${encodeURIComponent(studentId)}`, {
+        getContractData: (studentId, offerId) =>
+            fetcher(`/contracts/prefilled/${encodeURIComponent(studentId)}?offerId=${encodeURIComponent(offerId)}`, {
                 headers: { Accept: "application/json" },
             }),
 
