@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 public record CreateContratDTO(
         Long studentId,
+        Long offerId,
         LocalDate internshipStartingDate,
         LocalDate internshipEndingDate,
         double weeklyHours,
