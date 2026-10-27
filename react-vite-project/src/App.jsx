@@ -96,6 +96,8 @@ function App() {
                 <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
                     <Route index element={user?.isLoggedIn && userRole === "ETUDIANT"
                         ? <StudentHomePage user={user}/>
+                        : user?.isLoggedIn && userRole === "GESTIONNAIRE"
+                            ? <GestionnaireDashboard/>
                         : <MainContainer user={user}/>
                     }/>
                     <Route path='about' element={<About/>}/>
@@ -162,11 +164,6 @@ function App() {
                                               />
                                           </ProtectedRoute>
                                       }/>
-              <Route path='gestionnaire' element={
-                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                      <GestionnaireDashboard/>
-                  </ProtectedRoute>
-              }/>
               <Route path='gestionnaire/offres' element={
                   <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
                       <GestionnaireValidation/>

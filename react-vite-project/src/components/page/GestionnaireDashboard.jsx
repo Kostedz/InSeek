@@ -82,8 +82,6 @@ export default function GestionnaireDashboard() {
                     </p>
                 </div>
 
-                <ValidationTabs activeTab="dashboard" offersCount={stats.pendingOffers} cvsCount={stats.pendingCvs} />
-
                 {loading ? (
                     <div className="mt-8 py-12 text-center text-ink-soft font-medium">
                         {t("managerValidation.loading", "Chargement…")}
