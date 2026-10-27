@@ -10,10 +10,11 @@ public record EtudiantEligibleContratDTO(
         String email,
         Disciplines fieldOfStudy,
         boolean hasContract,
+        Long offerId,
         String offerTitle,
         String companyName
 ) {
-    public static EtudiantEligibleContratDTO of(Etudiant etudiant, boolean hasContract, String offerTitle, String companyName){
+    public static EtudiantEligibleContratDTO of(Etudiant etudiant, boolean hasContract, Long offerId,String offerTitle, String companyName){
         return new EtudiantEligibleContratDTO(
                 etudiant.getId(),
                 etudiant.getPrenom(),
@@ -21,6 +22,7 @@ public record EtudiantEligibleContratDTO(
                 etudiant.getEmail(),
                 etudiant.getDiscipline(),
                 hasContract,
+                offerId,
                 offerTitle,
                 companyName
         );
