@@ -21,6 +21,7 @@ import GestionnaireStudents from "./components/page/GestionnaireStudents.jsx";
 import GestionnaireDashboard from "./components/page/GestionnaireDashboard.jsx";
 import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
 import StudentHomePage from "./components/page/StudentHomePage.jsx";
+import GestionnaireContracts from "./components/page/GestionnaireContracts.jsx";
 
 function App() {
     const [user, setUser] = useState({})
@@ -181,6 +182,11 @@ function App() {
                       <GestionnaireStudents/>
                   </ProtectedRoute>
               }/>
+                <Route path='gestionnaire/contrats' element={
+                    <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                        <GestionnaireContracts/>
+                    </ProtectedRoute>
+                }/>
               <Route path='register' element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
           <Route path='error' element={<ErrorPage error={error}/>}/>
           <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
