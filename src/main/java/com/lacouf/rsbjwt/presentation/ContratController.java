@@ -6,6 +6,7 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.service.ContratService;
 import com.lacouf.rsbjwt.service.dto.ContratDTO;
 import com.lacouf.rsbjwt.service.dto.CreateContratDTO;
+import com.lacouf.rsbjwt.service.dto.EtudiantEligibleContratDTO;
 import com.lacouf.rsbjwt.service.dto.PreRemplirContratDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +46,11 @@ public class ContratController {
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
     public ResponseEntity<ContratDTO> getContractsById(@PathVariable Long id) throws NotFoundException {
         return ResponseEntity.ok(contratService.getContrat(id));
+    }
+
+    @GetMapping("/eligible-students")
+    @PreAuthorize("hasAuthority('GESTIONNAIRE')")
+    public ResponseEntity<List<EtudiantEligibleContratDTO>> getEligibleStudents() {
+        return ResponseEntity.ok(contratService.getEtudiantsEligibles());
     }
 }
