@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import api from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
 import { countPendingDocuments } from "../../utils/gestionnaireCounts.js";
 
 export default function GestionnaireDashboard() {
