@@ -31,6 +31,29 @@ public class ContratService {
     private final ApplicationStageRepository applicationStageRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Transactional
+    public ContratDTO signContract(Long contractId, HttpServletRequest request) throws NotFoundException, BadRequestException {
+        Contract contract = contratRepository.findById(contractId)
+                .orElseThrow(() -> new NotFoundException("Contrat non trouvé "));
+
+        Utilisateur user = getAuthUser(request);
+
+        validateUserRelatedToContract(user, contract);
+        updateContractStatusBasedOnUser(user, contract);
+
+        contratRepository.save(contract);
+        return ContratDTO.of(contract);
+    }
+
+    private Utilisateur getAuthUser(HttpServletRequest request) throws BadRequestException {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BadRequestException("Jeton d'authentification manquant.");
+        }
+        String email = jwtTokenProvider.getEmailFromJWT(authHeader.substring(7));
+        return utilisateurRepository.findByEmail(email);
+    }
+
     @Transactional(readOnly = true)
     public List<EtudiantEligibleContratDTO> getEtudiantsEligibles() {
         List<Etudiant> etudiants = utilisateurRepository
@@ -240,6 +263,41 @@ public class ContratService {
         }
     }
 
+    private void validateUserRelatedToContract(Utilisateur user, Contract contract) throws BadRequestException {
+        if (user instanceof Etudiant student) {
+            if (!student.getId().equals(contract.getStudent().getId())) {
+                throw new BadRequestException("L'utilisateur connecté n'est pas l'étudiant associé à ce contrat.");
+            }
+        } else if (user instanceof Gestionnaire admin) {
+            if (!admin.getId().equals(contract.getAdmin().getId())) {
+                throw new BadRequestException("L'utilisateur connecté n'est pas le gestionnaire associé à ce contrat.");
+            }
+        } else {
+            throw new BadRequestException("L'utilisateur connecté n'est pas rattaché à ce contrat.");
+        }
+    }
+
+    private void updateContractStatusBasedOnUser(Utilisateur user, Contract contract) throws BadRequestException {
+       switch (user.getClass().getSimpleName()) {
+            case "Etudiant":
+                if (contract.getContractStatus() != StatutContrat.PENDING_SIGNATURE) {
+                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
+                } else {
+                    contract.setContractStatus(StatutContrat.SIGNED_BY_STUDENT);
+                }
+                break;
+            case "Gestionnaire":
+                if (contract.getContractStatus() != StatutContrat.SIGNED_BY_EMPLOYER) {
+                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
+                } else {
+                    contract.setContractStatus(StatutContrat.SIGNED_BY_GESTIONNAIRE);
+                }
+                break;
+            default:
+                throw new BadRequestException("Utilisateur non reconnu.");
+        }
+    }
+
     private void checkStudentHasFoundInternship(Etudiant student) throws BadRequestException {
         if (student.getStatutRecherche() != StatutRechercheEtudiant.INTERNSHIP_FOUND) {
             throw new BadRequestException("L'étudiant n'a pas le statut STAGE TROUVÉ.");
@@ -248,12 +306,7 @@ public class ContratService {
 
 
     private Gestionnaire getConnectedGestionnaire(HttpServletRequest request) throws NotFoundException, BadRequestException {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new BadRequestException("Jeton d'authentification manquant.");
-        }
-        String email = jwtTokenProvider.getEmailFromJWT(authHeader.substring(7));
-        Utilisateur user = utilisateurRepository.findByEmail(email);
+        Utilisateur user = getAuthUser(request);
         if (!(user instanceof Gestionnaire gestionnaire)) {
             throw new NotFoundException("Gestionnaire non trouvé.");
         }
