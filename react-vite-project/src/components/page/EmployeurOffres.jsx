@@ -109,11 +109,10 @@ function normalizeApplication(application, index = 0) {
             ?? application?.idEtudiant
             ?? student.id
             ?? null,
-        interviewScheduled: Boolean(
-            application?.interviewScheduled
-            ?? application?.entrevuePlanifiee
-            ?? application?.hasInterview
-        ),
+        interviewScheduled: String(application?.etatEntrevue ?? "").toUpperCase() !== "PASSEE"
+            && application?.interviewInvitationStatus !== "EXPIRED"
+            && Boolean(application?.interviewScheduled ?? application?.entrevuePlanifiee ?? application?.hasInterview
+                ?? String(application?.etatEntrevue ?? "").toUpperCase() === "PLANIFIEE"),
         firstName,
         lastName,
         name: String(fullName || "").trim(),

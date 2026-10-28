@@ -40,9 +40,30 @@ public class EntrevueService {
         Etudiant student = findStudent(interviewDTO.studentId());
         OffreDeStage internshipOffer = findInternshipOffer(interviewDTO.offerId());
 
-        validateNoExistingInterview(student, internshipOffer);
+        Entrevue interview = interviewRepository
+                .findByStudentIdAndInternshipOfferId(student.getId(), internshipOffer.getId())
+                .orElse(null);
 
-        Entrevue interview = createInterview(employer, student, internshipOffer, interviewDTO);
+        if (interview != null) {
+            if (interview.getInterviewInvitationStatus() != StatutConvocationEntrevue.EXPIRED
+                    && !(interview.getInterviewInvitationStatus() == StatutConvocationEntrevue.PENDING
+                    && interview.getDateInterview().isBefore(LocalDateTime.now()))) {
+                throw new BadRequestException("Une entrevue a déjà été plannifiée pour cet étudiant et cette offre de stage.");
+            }
+            if (!interview.getEmployer().getId().equals(employer.getId())) {
+                throw new BadRequestException("Vous ne pouvez pas remplacer cette entrevue.");
+            }
+            interview.setDateInterview(interviewDTO.DateAndTime());
+            interview.setModeInterview(interviewDTO.mode());
+            interview.setLocationOrLink(interviewDTO.locationOrLink());
+            interview.setMessage(interviewDTO.message());
+            interview.setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
+            interview.setInvitationResponseDate(null);
+            interview.setMessageWhenRejected(null);
+            interview = interviewRepository.save(interview);
+        } else {
+            interview = createInterview(employer, student, internshipOffer, interviewDTO);
+        }
 
        updateStudent(student, interviewDTO);
 
@@ -54,9 +75,14 @@ public class EntrevueService {
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void checkPastInterviews(){
-        List<Entrevue> pastInterviews = interviewRepository.findByDateInterviewBefore(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        List<Entrevue> pastInterviews = interviewRepository.findByDateInterviewBefore(now);
         for (Entrevue interview : pastInterviews) {
             Etudiant student = interview.getStudent();
+            if (interview.getInterviewInvitationStatus() == StatutConvocationEntrevue.PENDING) {
+                interview.setInterviewInvitationStatus(StatutConvocationEntrevue.EXPIRED);
+                interviewRepository.save(interview);
+            }
             if(interview.getInterviewInvitationStatus() == StatutConvocationEntrevue.ACCEPTED && student.getStatutRecherche() == StatutRechercheEtudiant.INVITED_TO_INTERVIEW){
                 student.setStatutRecherche(StatutRechercheEtudiant.WAITING_FOR_RESPONSE);
                 userRepository.save(student);
@@ -156,12 +182,6 @@ public class EntrevueService {
     private void validateFutureDate(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
         if (InterviewDTO.DateAndTime().isBefore(java.time.LocalDateTime.now())) {
             throw new BadRequestException("La date et l'heure de l'entrevue doivent être dans le futur.");
-        }
-    }
-
-    private void validateNoExistingInterview(Etudiant student, OffreDeStage offer) throws BadRequestException {
-        if (interviewRepository.existsByStudentIdAndInternshipOfferId(student.getId(), offer.getId())) {
-            throw new BadRequestException("Une entrevue a déjà été plannifiée pour cet étudiant et cette offre de stage.");
         }
     }
 
