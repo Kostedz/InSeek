@@ -4,7 +4,7 @@ import {useTranslation} from "react-i18next";
 import EtudiantAccueil from "./EtudiantAccueil.jsx";
 import EtudiantCandidatures from "./EtudiantCandidatures.jsx";
 import EtudiantConvocations from "./EtudiantConvocations.jsx";
-import StudentMenu from "./StudentMenu.jsx";
+import EtudiantMenu from "./EtudiantMenu.jsx";
 
 function getActiveTab(pathname) {
     if (pathname === "/etudiant/candidatures") return "applications";
@@ -12,7 +12,7 @@ function getActiveTab(pathname) {
     return "offers";
 }
 
-export default function StudentHomePage({user}) {
+export default function EtudiantHomePage({user}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
     const activeTab = getActiveTab(pathname);
@@ -57,7 +57,7 @@ export default function StudentHomePage({user}) {
                     </p>
                 </header>
 
-                <StudentMenu
+                <EtudiantMenu
                     offersCount={counts.offersCount}
                     applicationsCount={counts.applicationsCount}
                     interviewsCount={counts.interviewsCount}

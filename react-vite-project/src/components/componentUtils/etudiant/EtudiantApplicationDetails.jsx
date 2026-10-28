@@ -1,13 +1,13 @@
 import {useEffect} from "react";
 import {useTranslation} from "react-i18next";
-import PdfPreview from "../PdfPreview.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
 import {
     formatDate,
     formatDateRange,
     formatDiscipline,
     formatOfferTitle,
     formatSalary,
-} from "./studentOfferUtils.js";
+} from "../offresUtils.js";
 
 const STATUS_STYLES = {
     SOUMISE: "border-lavender bg-lavender/35 text-ink",
@@ -25,7 +25,7 @@ export function ApplicationStatusBadge({status, t}) {
     );
 }
 
-export default function StudentApplicationDetails({application, cv, language, onClose}) {
+export default function EtudiantApplicationDetails({application, cv, language, onClose}) {
     const {t} = useTranslation();
     const {offer} = application;
 

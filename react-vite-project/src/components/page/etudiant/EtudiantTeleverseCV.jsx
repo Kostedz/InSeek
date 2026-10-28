@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
 import {useTranslation} from "react-i18next";
 import {Link} from "react-router-dom";
-import {api} from "../../utils/api.js";
-import {translateMessage} from "../../utils/i18nMessage.js";
-import PdfPreview from "../PdfPreview.jsx";
+import {api} from "../../../utils/api.js";
+import {translateMessage} from "../../../utils/i18nMessage.js";
+import PdfPreview from "../../PdfPreview.jsx";
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();

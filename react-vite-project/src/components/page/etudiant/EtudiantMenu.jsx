@@ -1,7 +1,7 @@
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import {Link, useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
-import api from "../../utils/api.js";
+import api from "../../../utils/api.js";
 
 function isPendingInterview(item) {
     const status = String(
@@ -16,7 +16,7 @@ function isPendingInterview(item) {
         && date.getTime() > Date.now();
 }
 
-export default function StudentMenu({offersCount, applicationsCount, interviewsCount, onCountsChange}) {
+export default function EtudiantMenu({offersCount, applicationsCount, interviewsCount, onCountsChange}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
     const [loadedInterviewsCount, setLoadedInterviewsCount] = useState();

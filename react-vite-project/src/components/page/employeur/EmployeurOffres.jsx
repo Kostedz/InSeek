@@ -822,32 +822,16 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
     );
 }
 
-export function buildOfferSubmissionFormData({file, fields, offerId}) {
-    const formData = new FormData();
-    if (file) formData.append("file", file);
-    formData.append("formContent", JSON.stringify({
-        type: "OffreDeStage",
-        offerId: offerId ?? null,
-        nomEntreprise: fields.nomEntreprise,
-        position: fields.position,
-        descriptionPosition: fields.descriptionPosition,
-        dateDebutStage: fields.dateDebutStage,
-        dateFinStage: fields.dateFinStage,
-        adresseEntreprise: fields.adresseEntreprise,
-        salaire: fields.salaire === "" ? null : Number(fields.salaire),
-        contactName: fields.contactName,
-        email: fields.email,
-        contactPhone: fields.contactPhone,
-        targetDiscipline: fields.targetDiscipline,
-    }));
-    return formData;
-}
-
-function errorForOfferStatus(status) {
-    if (status === 401) return createTranslationMessage("errors.unauthorized");
-    if (status === 403) return createTranslationMessage("errors.forbidden");
-    return createTranslationMessage("employerOffers.errors.loadFailed");
-}
+import { normalizeApplication, normalizeOffer }
+    from "../../componentUtils/employeur/offresUtils/offresNormalizeUtils.js";
+import { getTodayIso , getApplicationsForOffer, getApplicationCount }
+    from "../../componentUtils/employeur/offresUtils/offresGetterUtils.js";
+import Icon from "../../componentUtils/employeur/offresUtils/Icon.jsx";
+import ApplicationModal from "../../componentUtils/employeur/offresUtils/ApplicationModal.jsx";
+import { sanitizeSalary, applyDecisions, formatDate, formValuesFromOffer, buildOfferSubmissionFormData, errorForOfferStatus }
+    from "../../componentUtils/employeur/offresUtils/employeurOffresUtils.js";
+import { StatusBadge, Field, inputClass } from "../../componentUtils/employeur/offresUtils/OfferFormComponents.jsx";
+import { DISCIPLINES, MAX_FILE_SIZE, NEW_OFFER_DRAFT_KEY, EMPTY_FORM, EMPTY_OFFERS } from "../../componentUtils/employeur/offresUtils/offresConstants.js";
 
 export default function EmployeurOffres({
                                             offers,

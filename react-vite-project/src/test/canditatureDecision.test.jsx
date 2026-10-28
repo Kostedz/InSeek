@@ -4,7 +4,7 @@ import {cleanup, render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 
-import EmployeurOffres from "../components/page/EmployeurOffres.jsx";
+import EmployeurOffres from "../components/page/employeur/EmployeurOffres.jsx";
 
 const apiMock = vi.hoisted(() => ({
     employer: {
@@ -26,8 +26,8 @@ vi.mock("../utils/i18nMessage.js", () => ({
 vi.mock("../components/Loading.jsx", () => ({default: () => <div/>}));
 vi.mock("../components/ErrorPage.jsx", () => ({default: () => <div/>}));
 vi.mock("../components/PdfPreview.jsx", () => ({default: () => null}));
-vi.mock("../components/page/studentOfferUtils.js", () => ({formatOfferTitle: (value) => value}));
-vi.mock("../components/employer/SchedulenterviewModal.jsx", () => ({default: () => <div/>}));
+vi.mock("../components/page/employeurOffresUtils.js", () => ({formatOfferTitle: (value) => value}));
+vi.mock("../components/employer/ScheduleInterviewModal.jsx", () => ({default: () => <div/>}));
 
 const OFFERS = [{id: 1, statut: "VALIDE", position: "Développeur web", fileName: "offre.pdf"}];
 const APPLICATION = {id: 10, studentId: 5, name: "Demo Étudiant", email: "demo.etudiant@inseek.local", status: "PENDING"};

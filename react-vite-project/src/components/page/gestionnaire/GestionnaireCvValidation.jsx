@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import {useTranslation} from "react-i18next";
-import { api } from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
-import PdfPreview from "../PdfPreview.jsx";
+import { api } from "../../../utils/api.js";
+import ValidationTabs from "../../componentUtils/gestionnaire/ValidationTabs.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
+
+import { formatDate, formatDiscipline, formatFileSizeInMb, hasValue, isPending, normalizeCv, studentDisplayName }
+    from "../../componentUtils/gestionnaire/validationUtils.js";
+import StatusBadge from "../../componentUtils/gestionnaire/cvValidation/CvStatusBadge.jsx";
+import {InfoItem} from "../../componentUtils/gestionnaire/ValidationComponents.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -31,108 +36,7 @@ const EXAMPLE_CVS = [
     },
 ];
 
-function normalizeCv(cv) {
-    const firstName = cv.prenom ?? cv.firstName ?? cv.studentFirstName ?? "";
-    const lastName = cv.nom ?? cv.lastName ?? cv.studentLastName ?? "";
-
-    return {
-        ...cv,
-        id: cv.id ?? cv.documentId,
-        statut: String(cv.statut ?? cv.status ?? "EN_ATTENTE").toUpperCase(),
-        fileName: cv.fileName ?? cv.filename ?? "",
-        size: cv.size ?? cv.fileSize,
-        firstName,
-        lastName,
-        studentName: cv.studentName ?? ([firstName, lastName].filter(Boolean).join(" ") || cv.name || cv.etudiant || ""),
-        email: cv.email ?? cv.studentEmail ?? "",
-        discipline: cv.discipline ?? cv.targetDiscipline ?? cv.programme ?? "",
-        submittedAt: cv.submittedAt ?? cv.createdAt ?? cv.dateSoumission ?? "",
-        commentaireRejet: cv.commentaireRejet ?? cv.rejectionComment ?? "",
-    };
-}
-
-function hasValue(value) {
-    return value !== null && value !== undefined && String(value).trim() !== "";
-}
-
-function studentDisplayName(cv) {
-    return [cv.firstName, cv.lastName].filter(hasValue).join(" ") || cv.studentName;
-}
-
-function formatDiscipline(value, t) {
-    if (!hasValue(value)) return "";
-    const normalized = String(value).trim().toUpperCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[.\s-]+/g, "_");
-    const aliases = {
-        "TECH_INFIRMIERE": "INFIRMIERE",
-        "GENIE_CIVIL": "GENIE_CIVIL",
-        "DESIGN_GRAPHIQUE": "DESIGN_GRAPHIQUE",
-    };
-    const disciplineKey = aliases[normalized] ?? normalized;
-    return t(`employerOffers.disciplines.${disciplineKey}`, {defaultValue: value});
-}
-
-function formatDate(value, language) {
-    if (!value) return "";
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-
-    return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(date);
-}
-
-function formatFileSizeInMb(size, locale) {
-    const bytes = Number(size);
-    if (!Number.isFinite(bytes) || bytes < 0) return "";
-
-    return new Intl.NumberFormat(locale, {maximumFractionDigits: 2}).format(bytes / (1024 * 1024));
-}
-
-function isPending(cv) {
-    return cv.statut === "EN_ATTENTE";
-}
-
-function StatusBadge({ status }) {
-    const {t} = useTranslation();
-    const colors = {
-        EN_ATTENTE: "border-gold bg-gold/45 text-ink",
-        VALIDE: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
-        REJETE: "border-[#eab0bf] bg-[#fff0f3] text-error",
-    };
-
-    const labels = {
-        EN_ATTENTE: "studentCv.status.pending",
-        VALIDE: "studentCv.status.approved",
-        REJETE: "studentCv.status.rejected",
-    };
-
-    return (
-        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${colors[status] ?? colors.EN_ATTENTE}`}>
-            {t(labels[status] ?? "studentCv.status.none")}
-        </span>
-    );
-}
-
-function InfoItem({ label, value }) {
-    if (!hasValue(value)) return null;
-
-    return (
-        <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-ink-soft">{label}</p>
-            <p className="mt-1 text-sm text-ink">{value}</p>
-        </div>
-    );
-}
-
-function GestionnaireCvValidation() {
+export default function GestionnaireCvValidation() {
     const {t, i18n} = useTranslation();
     const [cvs, setCvs] = useState(EXAMPLE_CVS.map(normalizeCv));
     const [selectedId, setSelectedId] = useState(EXAMPLE_CVS[0].id);
@@ -487,5 +391,3 @@ function GestionnaireCvValidation() {
         </section>
     );
 }
-
-export default GestionnaireCvValidation;

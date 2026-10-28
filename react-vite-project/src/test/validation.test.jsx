@@ -1,8 +1,8 @@
 import React from "react";
 import {describe, expect, it, vi} from "vitest";
 import {api} from "../utils/api.js";
-import GestionnaireValidation from "../components/page/GestionnaireValidation.jsx";
-import GestionnaireCvValidation from "../components/page/GestionnaireCvValidation.jsx";
+import GestionnaireOffresValidation from "../components/page/gestionnaire/GestionnaireOffresValidation.jsx";
+import GestionnaireCvValidation from "../components/page/gestionnaire/GestionnaireCvValidation.jsx";
 import {renderWithProviders, screen, userEvent, waitFor} from "./test-utils.jsx";
 
 vi.mock("../components/PdfPreview.jsx", () => ({default: () => null}));
@@ -27,7 +27,7 @@ describe("manager validation workflows", () => {
             new Response(JSON.stringify({...pendingOffer, statut: "VALIDE"}), {status: 200}),
         );
 
-        renderWithProviders(<GestionnaireValidation/>);
+        renderWithProviders(<GestionnaireOffresValidation/>);
 
         expect((await screen.findAllByText("Stagiaire en développement web")).length).toBeGreaterThan(0);
         await userEvent.setup().click(screen.getByRole("button", {name: "Valider"}));
@@ -46,7 +46,7 @@ describe("manager validation workflows", () => {
         );
         const user = userEvent.setup();
 
-        renderWithProviders(<GestionnaireValidation/>);
+        renderWithProviders(<GestionnaireOffresValidation/>);
 
         await screen.findAllByText("Stagiaire en développement web");
         await user.click(screen.getByRole("button", {name: "Refuser"}));

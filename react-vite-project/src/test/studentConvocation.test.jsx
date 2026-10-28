@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { fireEvent, renderWithProviders, screen, waitFor, within } from "./test-utils.jsx";
 import api from "../utils/api.js";
-import StudentInterviews from "../components/etudiant/StudentConvocation.jsx";
+import StudentInterviews from "../components/componentUtils/etudiant/EtudiantConvocation.jsx";
 
 describe("StudentInterviews", () => {
     afterEach(() => {

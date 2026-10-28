@@ -121,3 +121,13 @@ export function truncateDescription(value, length = 155) {
     if (description.length <= length) return description;
     return `${description.slice(0, length).trimEnd()}…`;
 }
+
+export function normalizeStudentValue(value) {
+    if (value && typeof value === "object") {
+        return [value.id, value.studentId, value.etudiantId, value.email, value.studentEmail, value.etudiantEmail]
+            .filter(hasValue)
+            .map((candidate) => String(candidate).trim().toLowerCase());
+    }
+
+    return hasValue(value) ? [String(value).trim().toLowerCase()] : [];
+}

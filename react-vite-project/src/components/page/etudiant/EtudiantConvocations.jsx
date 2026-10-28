@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
-import api from "../../utils/api.js";
-import StudentConvocation from "../etudiant/StudentConvocation.jsx";
-import {normalizeOffer} from "./studentOfferUtils.js";
+import api from "../../../utils/api.js";
+import StudentConvocation from "../../componentUtils/etudiant/EtudiantConvocation.jsx";
+import {normalizeOffer} from "../../componentUtils/offresUtils.js";
 
 export default function EtudiantConvocations({user, onCountsChange}) {
     const [pendingCount, setPendingCount] = useState();

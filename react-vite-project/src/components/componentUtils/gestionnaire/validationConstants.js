@@ -1,0 +1,58 @@
+export const EXAMPLE_CVS = [
+    {
+        id: "example-cv-1",
+        statut: "EN_ATTENTE",
+        fileName: "camille-martin-cv.pdf",
+        size: 1.2 * 1024 * 1024,
+        prenom: "Camille",
+        nom: "Martin",
+        email: "camille.martin@example.com",
+        discipline: "Informatique",
+        submittedAt: "2026-09-28T10:30:00",
+    },
+    {
+        id: "example-cv-2",
+        statut: "EN_ATTENTE",
+        fileName: "olivier-gagnon-cv.pdf",
+        size: 980 * 1024,
+        prenom: "Olivier",
+        nom: "Gagnon",
+        email: "olivier.gagnon@example.com",
+        discipline: "Design graphique",
+        submittedAt: "2026-09-27T15:45:00",
+    },
+];
+
+export const SAMPLE_OFFERS = [
+    {
+        id: "sample-1",
+        statut: "EN_ATTENTE",
+        email: "marie.gagnon@novalab.ca",
+        contactName: "Marie Gagnon",
+        contactPhone: "+1 514 555-0182",
+        nomEntreprise: "NovaLab",
+        position: "Stagiaire en développement web",
+        targetDiscipline: "INFORMATIQUE",
+        adresseEntreprise: "Montréal, Québec",
+        salaire: 22.5,
+        descriptionPosition: "Contribuer au développement et à l’amélioration de fonctionnalités web pour les projets de l’équipe.",
+        dateDebutStage: "2026-05-04",
+        dateFinStage: "2026-08-21",
+    },
+    {
+        id: "sample-2",
+        statut: "EN_ATTENTE",
+        email: "alexandre.roy@ateliernord.com",
+        contactName: "Alexandre Roy",
+        contactPhone: "+1 418 555-0114",
+        nomEntreprise: "Atelier Nord",
+        position: "Stagiaire en design graphique",
+        targetDiscipline: "DESIGN_GRAPHIQUE",
+        adresseEntreprise: "Québec, Québec",
+        salaire: 20,
+        descriptionPosition: "Créer des visuels pour les campagnes et les outils de communication de l’équipe.",
+        dateDebutStage: "2026-01-12",
+        dateFinStage: "2026-04-24",
+    },
+];
+
