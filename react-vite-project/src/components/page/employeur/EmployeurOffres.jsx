@@ -1,12 +1,14 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
-import {createTranslationMessage, translateMessage} from "../../utils/i18nMessage.js";
-import api from "../../utils/api.js";
-import Loading from "../Loading.jsx";
-import ErrorPage from "../ErrorPage.jsx";
-import PdfPreview from "../PdfPreview.jsx";
-import {formatOfferTitle} from "./studentOfferUtils.js";
-import ScheduleInterviewModal from "../employer/SchedulenterviewModal.jsx";
+import {createTranslationMessage, translateMessage} from "../../../utils/i18nMessage.js";
+import api from "../../../utils/api.js";
+import Loading from "../../Loading.jsx";
+import ErrorPage from "../../ErrorPage.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
+import {formatOfferTitle} from "../../componentUtils/offresUtils.js";
+import ScheduleInterviewModal from "../../componentUtils/employeur/ScheduleInterviewModal.jsx";
+import {buildOfferSubmissionFormData, errorForOfferStatus}
+    from "../../componentUtils/employeur/offresUtils/employeurOffresUtils.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -821,17 +823,6 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
         </div>
     );
 }
-
-import { normalizeApplication, normalizeOffer }
-    from "../../componentUtils/employeur/offresUtils/offresNormalizeUtils.js";
-import { getTodayIso , getApplicationsForOffer, getApplicationCount }
-    from "../../componentUtils/employeur/offresUtils/offresGetterUtils.js";
-import Icon from "../../componentUtils/employeur/offresUtils/Icon.jsx";
-import ApplicationModal from "../../componentUtils/employeur/offresUtils/ApplicationModal.jsx";
-import { sanitizeSalary, applyDecisions, formatDate, formValuesFromOffer, buildOfferSubmissionFormData, errorForOfferStatus }
-    from "../../componentUtils/employeur/offresUtils/employeurOffresUtils.js";
-import { StatusBadge, Field, inputClass } from "../../componentUtils/employeur/offresUtils/OfferFormComponents.jsx";
-import { DISCIPLINES, MAX_FILE_SIZE, NEW_OFFER_DRAFT_KEY, EMPTY_FORM, EMPTY_OFFERS } from "../../componentUtils/employeur/offresUtils/offresConstants.js";
 
 export default function EmployeurOffres({
                                             offers,
