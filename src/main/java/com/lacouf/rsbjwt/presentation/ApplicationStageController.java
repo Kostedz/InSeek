@@ -29,9 +29,6 @@ public class ApplicationStageController {
     private final UtilisateurService utilisateurService;
     private final DocumentRepository documentRepository;
 
-
-    // P: enleve le transactional du controlleur ramses sinon je vais te le foutre au cul
-    // P: aussi utilise les ResponseEntity<T> pour renvoyer les infos avec leur code
     @PostMapping("/{offreId}")
     public ResponseEntity<ApplicationStageDTO> addApplicationStage(
             @PathVariable Long offreId,

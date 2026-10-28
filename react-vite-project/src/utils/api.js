@@ -200,17 +200,17 @@ export const api = {
             }),
 
         getEligibleStudents: () =>
-            fetcher("/geststage/etudiants-stage-trouve", {
+            fetcher("/contracts/eligible-students", {
                 headers: { Accept: "application/json" },
             }),
 
-        getContractData: (studentId) =>
-            fetcher(`/geststage/contrats/pre-remplir/${encodeURIComponent(studentId)}`, {
+        getContractData: (studentId, offerId) =>
+            fetcher(`/contracts/prefilled/${encodeURIComponent(studentId)}?offerId=${encodeURIComponent(offerId)}`, {
                 headers: { Accept: "application/json" },
             }),
 
         createContract: (contractData) =>
-            fetcher("/geststage/contrats", {
+            fetcher("/contracts/contracts", {
                 method: "POST",
                 headers: {
                     Accept: "application/json",
@@ -220,7 +220,7 @@ export const api = {
             }),
 
         getContracts: () =>
-            fetcher("/geststage/contrats", {
+            fetcher("/contracts/contracts", {
                 headers: { Accept: "application/json" },
             }),
     },

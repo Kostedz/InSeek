@@ -12,5 +12,7 @@ public record ApplicationStageDTO(
         StatutValidation statutValidation,
         Long cvDocumentId,
         String cvFileName,
-        String commentaireRefus) {
+        String commentaireRefus,
+        Boolean interviewScheduled) {
+
 }
