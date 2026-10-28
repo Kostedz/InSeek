@@ -25,15 +25,29 @@ public class ContratController {
 
     @GetMapping("/prefilled/{studentId}")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
-    public ResponseEntity<PreRemplirContratDTO> preFilledContracts(@PathVariable  Long studentId, Long offerId) throws NotFoundException, BadRequestException {
-        return ResponseEntity.ok(contratService.getDonneesPreRemplies(studentId, offerId));
+    public ResponseEntity<PreRemplirContratDTO> preFilledContracts(@PathVariable  Long studentId, Long offerId) {
+        try {
+            return ResponseEntity.ok(contratService.getDonneesPreRemplies(studentId, offerId));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     @PostMapping("/contracts")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
-    public ResponseEntity<ContratDTO> createContract(@RequestBody CreateContratDTO createContratDTO, HttpServletRequest request) throws ConflictException, NotFoundException, BadRequestException {
-        ContratDTO saved = contratService.creerContrat(createContratDTO,request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    public ResponseEntity<ContratDTO> createContract(@RequestBody CreateContratDTO createContratDTO, HttpServletRequest request) {
+       try {
+           ContratDTO saved = contratService.creerContrat(createContratDTO,request);
+           return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+       } catch (ConflictException e) {
+           return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+       } catch (NotFoundException e) {
+           return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+       } catch (BadRequestException e) {
+           return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+       }
     }
 
     @GetMapping("/contracts")
@@ -44,8 +58,23 @@ public class ContratController {
 
     @GetMapping("/contracts/{id}")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
-    public ResponseEntity<ContratDTO> getContractsById(@PathVariable Long id) throws NotFoundException {
-        return ResponseEntity.ok(contratService.getContrat(id));
+    public ResponseEntity<ContratDTO> getContractsById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(contratService.getContrat(id));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
+    @GetMapping("/sign/{contractId}")
+    public ResponseEntity<ContratDTO> signContract(@PathVariable Long contractId, HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(contratService.signContract(contractId, request));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     @GetMapping("/eligible-students")
