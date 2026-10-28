@@ -319,7 +319,11 @@ export default function EmployerContractsPage({user, contracts = [], onContractS
         <section className="flex-1 bg-canvas px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">
                 <header>
-                    <h1 className="mt-4 text-3xl font-black tracking-tight text-ink sm:text-4xl">{copy.title}</h1>
+                    <span
+                        className="inline-flex w-fit rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                        {copy.eyebrow}
+                    </span>
+                    <h1 className="mt-2 text-3xl font-black tracking-tight text-ink sm:text-4xl">{copy.title}</h1>
                     <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{copy.description}</p>
                 </header>
 

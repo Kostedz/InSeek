@@ -1338,6 +1338,10 @@ export default function EmployeurOffres({
         <section className="flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             <div className="mx-auto w-full max-w-7xl">
                 <div>
+                    <span
+                        className="inline-flex w-fit rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                        {t("employerHome.eyebrow")}
+                    </span>
                     <h1 className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-ink sm:text-3xl">{t("employerOffers.title")}</h1>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">{t("employerOffers.description")}</p>
                 </div>

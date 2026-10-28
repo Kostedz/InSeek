@@ -38,32 +38,24 @@ export default function EmployerHomePage({
     const activeTab = pathname === "/employeur/contrats" ? "contracts" : "offers";
 
     return (
-        <section className="flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-            <div className="mx-auto w-full max-w-6xl">
-                <span
-                    className="flex w-fit rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
-                    {t("employerHome.eyebrow")}
-                </span>
-                <div key={activeTab}>
-                    {activeTab === "offers" ? (
-                        <EmployeurOffres
-                            user={user}
-                            canManageOffers={canManageOffers}
-                            companyName={companyName}
-                            isAccountEmailValidated={isAccountEmailValidated}
-                            drafts={drafts}
-                            setDrafts={setDrafts}
-                            workspaceTabs={<EmployerMenu activeTab={activeTab} t={t}/>}
-                        />
-                    ) : (
-                        <EmployerContractsPage
-                            user={user}
-                            contracts={contracts}
-                            workspaceTabs={<EmployerMenu activeTab={activeTab} t={t}/>}
-                        />
-                    )}
-                </div>
-            </div>
-        </section>
+        <div className="flex flex-1" key={activeTab}>
+            {activeTab === "offers" ? (
+                <EmployeurOffres
+                    user={user}
+                    canManageOffers={canManageOffers}
+                    companyName={companyName}
+                    isAccountEmailValidated={isAccountEmailValidated}
+                    drafts={drafts}
+                    setDrafts={setDrafts}
+                    workspaceTabs={<EmployerMenu activeTab={activeTab} t={t}/>}
+                />
+            ) : (
+                <EmployerContractsPage
+                    user={user}
+                    contracts={contracts}
+                    workspaceTabs={<EmployerMenu activeTab={activeTab} t={t}/>}
+                />
+            )}
+        </div>
     );
 }
