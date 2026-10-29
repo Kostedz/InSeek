@@ -564,11 +564,14 @@ const resources = {
                 eyebrow: "Espace employeur",
                 title: "Accueil",
                 description: "Gérez vos offres de stage et suivez les contrats envoyés aux étudiants.",
+                contractsTitle: "Mes contrats de stage",
+                contractsDescription: "Suivez les signatures de vos ententes et signez chaque contrat une fois la réponse de l’étudiant reçue.",
             },
             managerDashboard: {
-                title: "Tableau de bord — Gestionnaire",
+                eyebrow: "Espace gestionnaire",
+                title: "Tableau de bord",
                 description: "Vue d'ensemble des actions en attente, contrats et étudiants.",
-                tabs: { home: "Accueil" },
+                tabs: {home: "Tableau de bord"},
                 cards: {
                     studentsWithoutContract: "Sans contrat",
                     studentsDesc: "Étudiants ayant trouvé un stage",
@@ -592,7 +595,7 @@ const resources = {
             managerStudents: {
                 title: "Étudiants ayant trouvé un stage",
                 description: "Consultez les étudiants éligibles et créez leurs contrats de stage.",
-                tabLabel: "Étudiants",
+                tabLabel: "Étudiants admissibles",
                 searchPlaceholder: "Rechercher par nom ou courriel...",
                 filters: {
                     all: "Tous",
@@ -610,9 +613,9 @@ const resources = {
                 errors: { loadFailed: "Impossible de charger la liste des étudiants." },
             },
             managerContracts: {
-                title: "Contrats de stage créés",
+                title: "Suivi des contrats de stage",
                 description: "Consultez l'ensemble des ententes de stage enregistrées.",
-                tabLabel: "Contrats",
+                tabLabel: "Suivi des contrats",
                 searchPlaceholder: "Rechercher par étudiant ou entreprise...",
                 viewDetails: "Voir détail",
                 empty: "Aucun contrat de stage enregistré.",
@@ -729,7 +732,7 @@ const resources = {
                 title: "Validation des offres",
                 description: "Consultez les offres en attente de validation et prenez une décision.",
                 tabs: {
-                    offers: "Offres de stage",
+                    offers: "Offres à valider",
                     cvs: "CV des étudiants",
                 },
                 refresh: "Actualiser",
@@ -1420,9 +1423,10 @@ const resources = {
                 },
             },
             managerDashboard: {
-                title: "Dashboard — Manager",
+                eyebrow: "Manager workspace",
+                title: "Dashboard",
                 description: "Overview of pending actions, contracts, and students.",
-                tabs: { home: "Home" },
+                tabs: {home: "Dashboard"},
                 cards: {
                     studentsWithoutContract: "Without contract",
                     studentsDesc: "Students who found an internship",
@@ -1446,7 +1450,7 @@ const resources = {
             managerStudents: {
                 title: "Students who have found an internship",
                 description: "View eligible students and create their internship contracts.",
-                tabLabel: "Students",
+                tabLabel: "Eligible students",
                 searchPlaceholder: "Search by name or email...",
                 filters: {
                     all: "All",
@@ -1464,9 +1468,9 @@ const resources = {
                 errors: { loadFailed: "Failed to load the student list." },
             },
             managerContracts: {
-                title: "Created internship contracts",
+                title: "Internship contract tracking",
                 description: "View all recorded internship agreements.",
-                tabLabel: "Contracts",
+                tabLabel: "Contract tracking",
                 searchPlaceholder: "Search by student or company...",
                 viewDetails: "View details",
                 empty: "No recorded internship contracts.",
@@ -1492,6 +1496,8 @@ const resources = {
                 eyebrow: "Employer area",
                 title: "Home",
                 description: "Manage internship offers and track contracts sent to students.",
+                contractsTitle: "My internship contracts",
+                contractsDescription: "Track agreement signatures and sign each contract once the student has responded.",
             },
             roles: {
                 borrower: {
@@ -1588,7 +1594,7 @@ const resources = {
                 title: "Offer validation",
                 description: "Review offers pending validation and make a decision.",
                 tabs: {
-                    offers: "Internship offers",
+                    offers: "Offers to validate",
                     cvs: "Student résumés",
                 },
                 refresh: "Refresh",

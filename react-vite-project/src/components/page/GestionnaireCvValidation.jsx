@@ -132,7 +132,7 @@ function InfoItem({ label, value }) {
     );
 }
 
-function GestionnaireCvValidation() {
+function GestionnaireCvValidation({embedded = false}) {
     const {t, i18n} = useTranslation();
     const [cvs, setCvs] = useState(EXAMPLE_CVS.map(normalizeCv));
     const [selectedId, setSelectedId] = useState(EXAMPLE_CVS[0].id);
@@ -281,21 +281,21 @@ function GestionnaireCvValidation() {
     }
 
     return (
-        <section className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-            <div className="mx-auto max-w-6xl">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <section className={embedded ? "mt-8 w-full" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
+            <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl"}>
+                {!embedded && <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div>
-                        <h1 className="mt-4 text-2xl font-black tracking-tight text-ink sm:text-3xl">
-                            {t("managerCvValidation.title")}
-                        </h1>
-                        <p className="mt-2 text-sm leading-6 text-ink-soft">
-                            {t("managerCvValidation.description")}
-                        </p>
+                        <span
+                            className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                            {t("managerDashboard.eyebrow", "Espace gestionnaire")}
+                        </span>
+                        <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("managerCvValidation.title")}</h1>
+                        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("managerCvValidation.description")}</p>
                     </div>
-                    <p className="text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
-                </div>
+                    <p className="shrink-0 text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
+                </header>}
 
-                <ValidationTabs activeTab="cvs" cvsCount={pendingCvs.length}/>
+                {!embedded && <ValidationTabs activeTab="cvs" cvsCount={pendingCvs.length}/>}
 
                 {error && (
                     <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error" role="alert">

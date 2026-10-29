@@ -141,20 +141,6 @@ function Header({user}) {
                                 </NavLink>
                             </li>
                         )}
-                        {canAccessRole("GESTIONNAIRE") && (
-                            <li>
-                                <NavLink to="/gestionnaire" className={navLinkClass} onClick={closeMenus}>
-                                    {t("navigation.manager")}
-                                </NavLink>
-                            </li>
-                        )}
-                        {canAccessRole("GESTIONNAIRE") && (
-                            <li>
-                                <NavLink to="/gestionnaire/offres" className={navLinkClass} onClick={closeMenus}>
-                                    {t("navigation.validation")}
-                                </NavLink>
-                            </li>
-                        )}
                     </ul>
 
                     <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">

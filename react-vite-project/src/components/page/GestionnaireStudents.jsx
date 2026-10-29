@@ -4,7 +4,7 @@ import api from "../../utils/api.js";
 import ValidationTabs from "./ValidationTabs.jsx";
 import ContractCreationModal from "../gestionnaire/ContractCreationModal.jsx";
 
-export default function GestionnaireStudents() {
+export default function GestionnaireStudents({embedded = false}) {
     const { t } = useTranslation();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -48,18 +48,22 @@ export default function GestionnaireStudents() {
     }, [students, searchTerm, filterStatus]);
 
     return (
-        <section className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-6xl">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight text-ink">
+        <section className={embedded ? "mt-8 w-full" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
+            <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl"}>
+                {!embedded && <header>
+                    <span
+                        className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                        {t("managerDashboard.eyebrow", "Espace gestionnaire")}
+                    </span>
+                    <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">
                         {t("managerStudents.title", "Étudiants ayant trouvé un stage")}
                     </h1>
-                    <p className="mt-2 text-sm leading-6 text-ink-soft">
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">
                         {t("managerStudents.description", "Consultez les étudiants éligibles et créez leurs contrats de stage.")}
                     </p>
-                </div>
+                </header>}
 
-                <ValidationTabs activeTab="students" />
+                {!embedded && <ValidationTabs activeTab="students"/>}
 
                 {error && (
                     <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700" role="alert">

@@ -154,7 +154,7 @@ function InfoItem({label, value}) {
     );
 }
 
-function GestionnaireValidation() {
+function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false}) {
     const {t, i18n} = useTranslation();
     const [offers, setOffers] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
@@ -340,17 +340,29 @@ function GestionnaireValidation() {
     }
 
     return (
-        <section className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-6xl">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <section className={embedded ? "mt-10" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
+            <div className="mx-auto w-full max-w-6xl">
+                {!embedded && <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div>
-                        <h1 className="mt-4 text-3xl font-black tracking-tight text-ink">{t("managerValidation.title")}</h1>
+                        <span
+                            className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                            {t("managerDashboard.eyebrow", "Espace gestionnaire")}
+                        </span>
+                        <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("managerValidation.title")}</h1>
+                        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("managerValidation.description")}</p>
+                    </div>
+                    <p className="shrink-0 text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
+                </header>}
+                {embedded && !hideEmbeddedHeading &&
+                    <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                    <div>
+                        <h2 className="text-2xl font-black tracking-tight text-ink">{t("managerValidation.title")}</h2>
                         <p className="mt-2 text-sm leading-6 text-ink-soft">{t("managerValidation.description")}</p>
                     </div>
                     <p className="text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
-                </div>
+                    </div>}
 
-                <ValidationTabs activeTab="offers" offersCount={pendingOffers.length}/>
+                {!embedded && <ValidationTabs activeTab="offers" offersCount={pendingOffers.length}/>}
 
                 {error &&
                     <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"

@@ -1,8 +1,9 @@
-import {useEffect, useLayoutEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import {Link, useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 import {normalizeOffer} from "./studentOfferUtils.js";
+import useSlidingTabIndicator from "../useSlidingTabIndicator.js";
 
 function isPendingInterview(item) {
     const status = String(
@@ -21,11 +22,6 @@ export default function StudentMenu({user}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
     const [counts, setCounts] = useState({});
-    const navRef = useRef(null);
-    const tabRefs = useRef({});
-    const hasMeasuredIndicator = useRef(false);
-    const [activeIndicator, setActiveIndicator] = useState(null);
-    const [animateIndicator, setAnimateIndicator] = useState(false);
     const offersActive = pathname === "/" || pathname === "/etudiant/offres";
     const applicationsActive = pathname === "/etudiant/candidatures";
     const interviewsActive = pathname === "/etudiant/convocations";
@@ -33,46 +29,8 @@ export default function StudentMenu({user}) {
     const {offersCount, applicationsCount, interviewsCount} = counts;
     const activeTab = contractActive ? "contract" : interviewsActive ? "interviews" : applicationsActive ? "applications" : "offers";
 
-    useLayoutEffect(() => {
-        let animationTimer;
-
-        const updateIndicator = (animate) => {
-            const nav = navRef.current;
-            const tab = tabRefs.current[activeTab];
-            if (!nav || !tab) return;
-
-            const navRect = nav.getBoundingClientRect();
-            const tabRect = tab.getBoundingClientRect();
-            setActiveIndicator({
-                transform: `translate(${tabRect.left - navRect.left}px, ${tabRect.top - navRect.top}px)`,
-                width: `${tabRect.width}px`,
-                height: `${tabRect.height}px`,
-            });
-
-            const shouldAnimate = animate && hasMeasuredIndicator.current;
-            hasMeasuredIndicator.current = true;
-            setAnimateIndicator(shouldAnimate);
-
-            if (shouldAnimate) {
-                window.clearTimeout(animationTimer);
-                animationTimer = window.setTimeout(() => setAnimateIndicator(false), 220);
-            }
-        };
-
-        updateIndicator(true);
-        const handleResize = () => updateIndicator(false);
-        window.addEventListener("resize", handleResize);
-        const resizeObserver = typeof ResizeObserver === "undefined"
-            ? null
-            : new ResizeObserver(handleResize);
-        if (resizeObserver && navRef.current) resizeObserver.observe(navRef.current);
-
-        return () => {
-            window.removeEventListener("resize", handleResize);
-            window.clearTimeout(animationTimer);
-            resizeObserver?.disconnect();
-        };
-    }, [activeTab]);
+    const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "student-active-tab");
+    const offersPath = offersActive && pathname === "/" ? "/" : "/etudiant/offres";
 
     useEffect(() => {
         let active = true;
@@ -131,11 +89,11 @@ export default function StudentMenu({user}) {
         >
             <span
                 aria-hidden="true"
-                className={`pointer-events-none absolute left-0 top-0 z-0 rounded-xl bg-ink shadow-sm ${animateIndicator ? "transition-[transform,width,height] duration-200 ease-out" : ""}`}
-                style={activeIndicator ?? {opacity: 0}}
+                className={indicatorClassName}
+                style={indicator ?? {opacity: 0}}
             />
             <Link
-                to="/etudiant/offres"
+                to={offersPath}
                 ref={(node) => {
                     tabRefs.current.offers = node;
                 }}

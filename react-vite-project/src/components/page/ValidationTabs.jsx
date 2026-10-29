@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import {Link, useLocation} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { countPendingDocuments } from "../../utils/gestionnaireCounts.js";
+import useSlidingTabIndicator from "../useSlidingTabIndicator.js";
 
 export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
     const { t } = useTranslation();
+    const {pathname} = useLocation();
+    const homePath = pathname.startsWith("/gestionnaire") ? "/gestionnaire" : "/";
     const [loadedCounts, setLoadedCounts] = useState({ offers: null, cvs: null });
+    const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "manager-active-tab");
 
     useEffect(() => {
         let isMounted = true;
@@ -41,25 +45,39 @@ export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
     );
 
     const tabs = [
-        { id: "offers", label: t("managerValidation.tabs.offers", "Offres de stage"), path: "/gestionnaire/offres", count: displayedOffersCount },
+        {id: "home", label: t("managerDashboard.tabs.home", "Tableau de bord"), path: homePath},
+        {
+            id: "offers",
+            label: t("managerValidation.tabs.offers", "Offres à valider"),
+            path: "/gestionnaire/offres",
+            count: displayedOffersCount
+        },
         { id: "cvs", label: t("managerValidation.tabs.cvs", "CV des étudiants"), path: "/gestionnaire/cv", count: displayedCvsCount },
-        { id: "students", label: t("managerStudents.tabLabel", "Étudiants"), path: "/gestionnaire/etudiants" },
-        { id: "contracts", label: t("managerContracts.tabLabel", "Contrats"), path: "/gestionnaire/contrats" },
+        {
+            id: "students",
+            label: t("managerStudents.tabLabel", "Étudiants admissibles"),
+            path: "/gestionnaire/etudiants"
+        },
+        {id: "contracts", label: t("managerContracts.tabLabel", "Suivi des contrats"), path: "/gestionnaire/contrats"},
     ];
 
     return (
-        <div className="mt-6 flex flex-wrap gap-2 rounded-2xl border border-line bg-surface p-1.5 shadow-sm overflow-x-auto">
+        <nav
+            ref={navRef}
+            aria-label={t("navigation.managerMenuAriaLabel", "Navigation du gestionnaire")}
+            className="relative mt-7 flex w-full flex-wrap gap-1 overflow-x-auto rounded-2xl border border-line bg-surface p-1.5 shadow-[0_12px_30px_rgba(48,35,55,0.04)] sm:inline-flex sm:w-fit"
+        >
+            <span aria-hidden="true" className={indicatorClassName} style={indicator ?? {opacity: 0}}/>
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
                     <Link
                         key={tab.id}
                         to={tab.path}
-                        className={`flex-1 min-w-[120px] rounded-xl px-3 py-2.5 text-center text-xs sm:text-sm font-bold transition-all ${
-                            isActive
-                                ? "bg-ink text-white shadow-sm"
-                                : "text-ink-soft hover:bg-lavender/30 hover:text-ink"
-                        }`}
+                        ref={(node) => {
+                            tabRefs.current[tab.id] = node;
+                        }}
+                        className={`relative z-10 inline-flex flex-1 items-center justify-center rounded-xl px-4 py-2.5 text-center text-sm font-bold transition-colors sm:flex-none ${isActive ? "text-white" : "text-ink-soft hover:bg-lavender/30 hover:text-ink"}`}
                     >
                         <span className="flex items-center justify-center gap-1.5">
                             {tab.label} {countBadge(tab.count)}
@@ -67,6 +85,6 @@ export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
                     </Link>
                 );
             })}
-        </div>
+        </nav>
     );
 }

@@ -7,18 +7,14 @@ import LoginForm from "./components/auth/LoginForm.jsx";
 import fetcher from "./utils/fetcher.js";
 import ErrorPage from "./components/ErrorPage.jsx";
 import Logout from "./components/auth/Logout.jsx";
-import GestionnaireValidation from "./components/page/GestionnaireValidation.jsx";
 import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
 import EmployerHomePage from "./components/page/EmployerHomePage.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
-import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
 import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
 import StudentHomePage from "./components/page/StudentHomePage.jsx";
-import GestionnaireContracts from "./components/page/GestionnaireContracts.jsx";
 import GestionnaireDashboard from "./components/page/GestionnaireDashboard.jsx";
-import GestionnaireStudents from "./components/page/GestionnaireStudents.jsx";
 
 function App() {
     const [user, setUser] = useState({})
@@ -93,21 +89,27 @@ function App() {
                         index
                         element={
                             user?.isLoggedIn && userRole === "ETUDIANT" ? (
-                                <StudentHomePage user={user}/>
+                                <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                    <StudentHomePage user={user}/>
+                                </ProtectedRoute>
                             ) : user?.isLoggedIn && userRole === "EMPLOYEUR" ? (
-                                <EmployerHomePage
-                                    user={user}
-                                    canManageOffers={Boolean(user?.isLoggedIn)}
-                                    companyName={user?.nomCompagnie ?? ""}
-                                    isAccountEmailValidated={
-                                        Boolean(user?.isDevAccess) || user?.emailValidated !== false
-                                    }
-                                    contracts={user?.contracts}
-                                    drafts={offerDrafts}
-                                    setDrafts={setOfferDrafts}
-                                />
+                                <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["EMPLOYEUR"]}>
+                                    <EmployerHomePage
+                                        user={user}
+                                        canManageOffers={Boolean(user?.isLoggedIn)}
+                                        companyName={user?.nomCompagnie ?? ""}
+                                        isAccountEmailValidated={
+                                            Boolean(user?.isDevAccess) || user?.emailValidated !== false
+                                        }
+                                        contracts={user?.contracts}
+                                        drafts={offerDrafts}
+                                        setDrafts={setOfferDrafts}
+                                    />
+                                </ProtectedRoute>
                             ) : user?.isLoggedIn && userRole === "GESTIONNAIRE" ? (
-                                <GestionnaireDashboard/>
+                                <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                                    <GestionnaireDashboard/>
+                                </ProtectedRoute>
                             ) : (
                                 <MainContainer user={user}/>
                             )
@@ -208,7 +210,7 @@ function App() {
                         path="gestionnaire/offres"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                                <GestionnaireValidation/>
+                                <GestionnaireDashboard/>
                             </ProtectedRoute>
                         }
                     />
@@ -216,7 +218,7 @@ function App() {
                         path="gestionnaire/cv"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                                <GestionnaireCvValidation/>
+                                <GestionnaireDashboard/>
                             </ProtectedRoute>
                         }
                     />
@@ -224,7 +226,7 @@ function App() {
                         path="gestionnaire/etudiants"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                                <GestionnaireStudents/>
+                                <GestionnaireDashboard/>
                             </ProtectedRoute>
                         }
                     />
@@ -232,7 +234,7 @@ function App() {
                         path="gestionnaire/contrats"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                                <GestionnaireContracts/>
+                                <GestionnaireDashboard/>
                             </ProtectedRoute>
                         }
                     />

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import api from "../../utils/api.js";
 import ValidationTabs from "./ValidationTabs.jsx";
 
-export default function GestionnaireContracts() {
+export default function GestionnaireContracts({embedded = false}) {
     const { t, i18n } = useTranslation();
     const [contracts, setContracts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -64,18 +64,22 @@ export default function GestionnaireContracts() {
     };
 
     return (
-        <section className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-6xl">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight text-ink">
+        <section className={embedded ? "mt-8 w-full" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
+            <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl"}>
+                {!embedded && <header>
+                    <span
+                        className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                        {t("managerDashboard.eyebrow", "Espace gestionnaire")}
+                    </span>
+                    <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">
                         {t("managerContracts.title", "Contrats de stage créés")}
                     </h1>
-                    <p className="mt-2 text-sm leading-6 text-ink-soft">
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">
                         {t("managerContracts.description", "Consultez l'ensemble des ententes de stage enregistrées et prêtes pour signature.")}
                     </p>
-                </div>
+                </header>}
 
-                <ValidationTabs activeTab="contracts" />
+                {!embedded && <ValidationTabs activeTab="contracts"/>}
 
                 {error && (
                     <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700" role="alert">
