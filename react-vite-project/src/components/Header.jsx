@@ -134,13 +134,27 @@ function Header({user}) {
                         {canAccessRole("ETUDIANT") && <li><NavLink to="/etudiant" end className={navLinkClass}
                                                                    onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink>
                         </li>}
-                        {canAccessRole("GESTIONNAIRE") && <li><NavLink to="/gestionnaire" className={navLinkClass}
-                        {canAccessRole("EMPLOYEUR") && <li><NavLink to="/employeur" className={navLinkClass}
-                                                                    onClick={closeMenus}>{t("navigation.publishOffer")}</NavLink>
-                        </li>}
-                        {canAccessRole("GESTIONNAIRE") && <li><NavLink to="/gestionnaire/offres" className={navLinkClass}
-                                                                       onClick={closeMenus}>{t("navigation.validation")}</NavLink>
-                        </li>}
+                        {canAccessRole("EMPLOYEUR") && (
+                            <li>
+                                <NavLink to="/employeur" className={navLinkClass} onClick={closeMenus}>
+                                    {t("navigation.publishOffer")}
+                                </NavLink>
+                            </li>
+                        )}
+                        {canAccessRole("GESTIONNAIRE") && (
+                            <li>
+                                <NavLink to="/gestionnaire" className={navLinkClass} onClick={closeMenus}>
+                                    {t("navigation.manager")}
+                                </NavLink>
+                            </li>
+                        )}
+                        {canAccessRole("GESTIONNAIRE") && (
+                            <li>
+                                <NavLink to="/gestionnaire/offres" className={navLinkClass} onClick={closeMenus}>
+                                    {t("navigation.validation")}
+                                </NavLink>
+                            </li>
+                        )}
                     </ul>
 
                     <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">

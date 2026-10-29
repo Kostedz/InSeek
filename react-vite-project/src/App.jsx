@@ -13,7 +13,6 @@ import EmployerHomePage from "./components/page/EmployerHomePage.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
-import {useTranslation} from "react-i18next";
 import GestionnaireCvValidation from "./components/page/GestionnaireCvValidation.jsx";
 import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
 import StudentHomePage from "./components/page/StudentHomePage.jsx";
@@ -27,7 +26,6 @@ function App() {
     const [error, setError] = useState(null)
     const [offerDrafts, setOfferDrafts] = useState({})
     const navigate = useNavigate();
-    const {t} = useTranslation();
     const userRole = String(user?.role ?? "").replace(/^ROLE_/, "").toUpperCase();
 
     let token = localStorage.getItem('token')
@@ -87,299 +85,166 @@ function App() {
             }
         }, [token]
     );
-return (
-    <div>
-        <Routes>
-            <Route path="/" element={<PageLayout user={user} setUser={setUser} />}>
-                <Route
-                    index
-                    element={
-                        user?.isLoggedIn && userRole === "ETUDIANT" ? (
-                            <StudentHomePage user={user} />
-                        ) : user?.isLoggedIn && userRole === "GESTIONNAIRE" ? (
-                            <GestionnaireDashboard />
-                        ) : (
-                            <MainContainer user={user} />
-                        )
-                    }
-                />
-
-                <Route path="about" element={<About />} />
-
-                <Route
-                    path="login"
-                    element={
-                        <LoginForm
-                            user={user}
-                            authChecked={authChecked}
-                            setUser={setUser}
-                        />
-                    }
-                />
-
-                <Route path="logout" element={<Logout setUser={setUser} />} />
-
-                <Route
-                    path="etudiant"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["ETUDIANT"]}
-                        >
-                            <EtudiantTeleverseCV user={user} />
-                        </ProtectedRoute>
-                    }
-                />
-
     return (
         <div>
             <Routes>
                 <Route path="/" element={<PageLayout user={user} setUser={setUser}/>}>
-                    <Route index element={user?.isLoggedIn && userRole === "ETUDIANT"
-                        ? <StudentHomePage user={user}/>
-                        : user?.isLoggedIn && userRole === "EMPLOYEUR"
-                            ? <EmployerHomePage
-                                user={user}
-                                canManageOffers={Boolean(user?.isLoggedIn)}
-                                companyName={user?.nomCompagnie ?? ""}
-                                isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
-                                contracts={user?.contracts}
-                                drafts={offerDrafts}
-                                setDrafts={setOfferDrafts}
-                            />
-                            : <MainContainer user={user}/>
-                    }/>
-                    <Route path='about' element={<About/>}/>
-                    <Route path='login' element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
-                    <Route path='logout' element={<Logout setUser={setUser}/>}/>
-                    <Route path='etudiant' element={
-                                                <ProtectedRoute user={user} authChecked={authChecked}
-                                                                allowedRoles={["ETUDIANT"]}>
-                                                   <EtudiantTeleverseCV user={user}/>
-                                               </ProtectedRoute>
-                                           }/>
+                    <Route
+                        index
+                        element={
+                            user?.isLoggedIn && userRole === "ETUDIANT" ? (
+                                <StudentHomePage user={user}/>
+                            ) : user?.isLoggedIn && userRole === "EMPLOYEUR" ? (
+                                <EmployerHomePage
+                                    user={user}
+                                    canManageOffers={Boolean(user?.isLoggedIn)}
+                                    companyName={user?.nomCompagnie ?? ""}
+                                    isAccountEmailValidated={
+                                        Boolean(user?.isDevAccess) || user?.emailValidated !== false
+                                    }
+                                    contracts={user?.contracts}
+                                    drafts={offerDrafts}
+                                    setDrafts={setOfferDrafts}
+                                />
+                            ) : user?.isLoggedIn && userRole === "GESTIONNAIRE" ? (
+                                <GestionnaireDashboard/>
+                            ) : (
+                                <MainContainer user={user}/>
+                            )
+                        }
+                    />
+                    <Route path="about" element={<About/>}/>
+                    <Route
+                        path="login"
+                        element={<LoginForm user={user} authChecked={authChecked} setUser={setUser}/>}
+                    />
+                    <Route path="logout" element={<Logout setUser={setUser}/>}/>
 
-                <Route
-                    path="etudiant/profil"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["ETUDIANT"]}
-                        >
-                            <EtudiantProfil user={user} setUser={setUser} />
-                        </ProtectedRoute>
-                    }
-                />
+                    <Route
+                        path="etudiant"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <EtudiantTeleverseCV user={user}/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="etudiant/profil"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <EtudiantProfil user={user} setUser={setUser}/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="etudiant/offres"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <StudentHomePage user={user}/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="etudiant/candidatures"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <StudentHomePage user={user}/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="etudiant/convocations"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <StudentHomePage user={user}/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="etudiant/contrat"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <StudentHomePage user={user}/>
+                            </ProtectedRoute>
+                        }
+                    />
 
-                <Route
-                    path="etudiant/offres"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["ETUDIANT"]}
-                        >
-                            <StudentHomePage user={user} />
-                        </ProtectedRoute>
-                    }
-                />
+                    <Route
+                        path="employeur"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["EMPLOYEUR"]}>
+                                <EmployerHomePage
+                                    user={user}
+                                    canManageOffers={Boolean(user?.isLoggedIn)}
+                                    companyName={user?.nomCompagnie ?? ""}
+                                    isAccountEmailValidated={
+                                        Boolean(user?.isDevAccess) || user?.emailValidated !== false
+                                    }
+                                    contracts={user?.contracts}
+                                    drafts={offerDrafts}
+                                    setDrafts={setOfferDrafts}
+                                />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="employeur/contrats"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["EMPLOYEUR"]}>
+                                <EmployerHomePage user={user} contracts={user?.contracts}/>
+                            </ProtectedRoute>
+                        }
+                    />
 
-                <Route
-                    path="etudiant/candidatures"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["ETUDIANT"]}
-                        >
-                            <StudentHomePage user={user} />
-                        </ProtectedRoute>
-                    }
-                />
+                    <Route
+                        path="gestionnaire"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                                <GestionnaireDashboard/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="gestionnaire/offres"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                                <GestionnaireValidation/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="gestionnaire/cv"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                                <GestionnaireCvValidation/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="gestionnaire/etudiants"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                                <GestionnaireStudents/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="gestionnaire/contrats"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                                <GestionnaireContracts/>
+                            </ProtectedRoute>
+                        }
+                    />
 
-                <Route
-                    path="etudiant/convocations"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["ETUDIANT"]}
-                        >
-                            <StudentHomePage user={user} />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="etudiant/contrat"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["ETUDIANT"]}
-                        >
-                            <StudentHomePage user={user} />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="employeur"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["EMPLOYEUR"]}
-                        >
-                            <EmployeurOffres
-                                user={user}
-                                canManageOffers={Boolean(user?.isLoggedIn)}
-                                companyName={user?.nomCompagnie ?? ""}
-                                isAccountEmailValidated={
-                                    Boolean(user?.isDevAccess) ||
-                                    user?.emailValidated !== false
-                                }
-                                drafts={offerDrafts}
-                                setDrafts={setOfferDrafts}
-                            />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="gestionnaire"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["GESTIONNAIRE"]}
-                        >
-                            <GestionnaireDashboard />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="gestionnaire/offres"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["GESTIONNAIRE"]}
-                        >
-                            <GestionnaireValidation />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="gestionnaire/cv"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["GESTIONNAIRE"]}
-                        >
-                            <GestionnaireCvValidation />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="gestionnaire/etudiants"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["GESTIONNAIRE"]}
-                        >
-                            <GestionnaireStudents />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="gestionnaire/contrats"
-                    element={
-                        <ProtectedRoute
-                            user={user}
-                            authChecked={authChecked}
-                            allowedRoles={["GESTIONNAIRE"]}
-                        >
-                            <GestionnaireContracts />
-                        </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="register"
-                    element={
-                        <RegisterForm
-                            user={user}
-                            authChecked={authChecked}
-                            setUser={setUser}
-                        />
-                    }
-                />
-
-                <Route path="error" element={<ErrorPage error={error} />} />
-
-                <Route
-                    path="*"
-                    element={<ErrorPage error={{ status: 404 }} />}
-                />
-            </Route>
-        </Routes>
-    </div>
-  );
-              <Route path='employeur' element={
-                                           <ProtectedRoute user={user} authChecked={authChecked}
-                                                           allowedRoles={["EMPLOYEUR"]}>
-                                               <EmployerHomePage
-                                                  user={user}
-                                                  canManageOffers={Boolean(user?.isLoggedIn)}
-                                                  companyName={user?.nomCompagnie ?? ""}
-                                                  isAccountEmailValidated={Boolean(user?.isDevAccess) || user?.emailValidated !== false}
-                                                  contracts={user?.contracts}
-                                                  drafts={offerDrafts}
-                                                  setDrafts={setOfferDrafts}
-                                              />
-                                          </ProtectedRoute>
-                                      }/>
-                    <Route path='employeur/contrats' element={
-                                                          <ProtectedRoute user={user} authChecked={authChecked}
-                                                                          allowedRoles={["EMPLOYEUR"]}>
-                                                             <EmployerHomePage user={user} contracts={user?.contracts}/>
-                                                         </ProtectedRoute>
-                                                     }/>
-              <Route path='gestionnaire' element={
-                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                      <GestionnaireDashboard/>
-                  </ProtectedRoute>
-              }/>
-              <Route path='gestionnaire/offres' element={
-                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                      <GestionnaireValidation/>
-                  </ProtectedRoute>
-              }/>
-              <Route path='gestionnaire/cv' element={
-                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                      <GestionnaireCvValidation/>
-                  </ProtectedRoute>
-              }/>
-              <Route path='gestionnaire/etudiants' element={
-                  <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
-                      <GestionnaireStudents/>
-                  </ProtectedRoute>
-              }/>
-              <Route path='register' element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}/>
-          <Route path='error' element={<ErrorPage error={error}/>}/>
-          <Route path='*' element={<ErrorPage error={{status: 404}}/>}/>
-        </Route>
-      </Routes>
-
+                    <Route
+                        path="register"
+                        element={<RegisterForm user={user} authChecked={authChecked} setUser={setUser}/>}
+                    />
+                    <Route path="error" element={<ErrorPage error={error}/>}/>
+                    <Route path="*" element={<ErrorPage error={{status: 404}}/>}/>
+                </Route>
+            </Routes>
         </div>
     );
 }
