@@ -72,6 +72,7 @@ class ApplicationStageControllerTest {
                 null,
                 StatutValidation.EN_ATTENTE,
                 null,
+                null,
                 null
         );
 

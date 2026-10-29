@@ -82,7 +82,7 @@ public class EntrevueServiceTest {
 
         when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(employer);
         when(userRepository.findById(STUDENT_ID)).thenReturn(Optional.of(student));
-        when(documentRepository.findInternshipOfferById(OFFER_ID)).thenReturn(Optional.of(offer));
+        when(documentRepository.findOffreStageById(OFFER_ID)).thenReturn(Optional.of(offer));
         when(interviewRepository.save(any(Entrevue.class))).thenAnswer(inv -> inv.getArgument(0));
 
         EntrevueDTO result = entrevueService.scheduleInterview(request, validDto);
@@ -126,7 +126,7 @@ public class EntrevueServiceTest {
     @ParameterizedTest
     @MethodSource("invalidDtos")
     void scheduleInterview_missingField_throwsBadRequest(CreateEntrevueDTO invalid) {
-        assertThrows(BadRequestException.class,
+        assertThrows(NotFoundException.class,
                 () -> entrevueService.scheduleInterview(request, invalid));
 
         verifyNoInteractions(interviewRepository, userRepository, documentRepository, jwtTokenProvider);
@@ -179,7 +179,7 @@ public class EntrevueServiceTest {
     void scheduleInterview_offerNotFound_throwsNotFound() {
         when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(mock(Employeur.class));
         when(userRepository.findById(STUDENT_ID)).thenReturn(Optional.of(mock(Etudiant.class)));
-        when(documentRepository.findInternshipOfferById(OFFER_ID)).thenReturn(Optional.empty());
+        when(documentRepository.findOffreStageById(OFFER_ID)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
                 () -> entrevueService.scheduleInterview(request, validDto));
