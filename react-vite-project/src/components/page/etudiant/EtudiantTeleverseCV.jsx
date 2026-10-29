@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, {useState, useRef} from "react";
 import {useTranslation} from "react-i18next";
 import {Link} from "react-router-dom";
-import {api} from "../../utils/api.js";
-import {translateMessage} from "../../utils/i18nMessage.js";
-import PdfPreview from "../PdfPreview.jsx";
+import {api} from "../../../utils/api.js";
+import {translateMessage} from "../../../utils/i18nMessage.js";
+import PdfPreview from "../../PdfPreview.jsx";
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
@@ -291,19 +291,23 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
                                role="status">{selectedFile.name}</p>}
                     </div>
 
-                    <PdfPreview
-                        file={selectedFile}
-                        documentId={!selectedFile ? currentCv?.id : null}
-                        fileName={selectedFile?.name || fileName}
-                    />
+                    {(status !== "REJETE" || selectedFile) && (
+                        <PdfPreview
+                            file={selectedFile}
+                            documentId={!selectedFile ? currentCv?.id : null}
+                            fileName={selectedFile?.name || fileName}
+                        />
+                    )}
 
                     {errorMessage && (
-                        <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-medium text-error" role="alert">
+                        <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-medium text-error"
+                           role="alert">
                             {translateMessage(t, errorMessage)}
                         </p>
                     )}
                     {successMessage && (
-                        <p className="rounded-xl border border-lemon bg-lemon/45 px-4 py-3 text-sm font-medium text-ink" role="status">
+                        <p className="rounded-xl border border-lemon bg-lemon/45 px-4 py-3 text-sm font-medium text-ink"
+                           role="status">
                             {translateMessage(t, successMessage)}
                         </p>
                     )}

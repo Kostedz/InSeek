@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
-import { api } from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
-import PdfPreview from "../PdfPreview.jsx";
+import {api} from "../../../utils/api.js";
+import {notifyPendingDocumentProcessed} from "../../../utils/gestionnaireCounts.js";
+import GestionnaireTabs from "./GestionnaireTabs.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -100,7 +101,7 @@ function isPending(cv) {
     return cv.statut === "EN_ATTENTE";
 }
 
-function StatusBadge({ status }) {
+function StatusBadge({status}) {
     const {t} = useTranslation();
     const colors = {
         EN_ATTENTE: "border-gold bg-gold/45 text-ink",
@@ -121,7 +122,7 @@ function StatusBadge({ status }) {
     );
 }
 
-function InfoItem({ label, value }) {
+function InfoItem({label, value}) {
     if (!hasValue(value)) return null;
 
     return (
@@ -132,7 +133,7 @@ function InfoItem({ label, value }) {
     );
 }
 
-function GestionnaireCvValidation() {
+function GestionnaireCvValidation({embedded = false}) {
     const {t, i18n} = useTranslation();
     const [cvs, setCvs] = useState(EXAMPLE_CVS.map(normalizeCv));
     const [selectedId, setSelectedId] = useState(EXAMPLE_CVS[0].id);
@@ -188,10 +189,10 @@ function GestionnaireCvValidation() {
 
     const saveDecision = (id, result, status) => {
         const currentCv = cvs.find((cv) => cv.id === id);
-        const updatedCv = normalizeCv(result ?? { ...currentCv, statut: status, commentaireRejet: comment });
+        const updatedCv = normalizeCv(result ?? {...currentCv, statut: status, commentaireRejet: comment});
 
         setCvs((current) => current.map((cv) => (
-            cv.id === id ? { ...cv, ...updatedCv } : cv
+            cv.id === id ? {...cv, ...updatedCv} : cv
         )));
     };
 
@@ -219,6 +220,7 @@ function GestionnaireCvValidation() {
             if (!response.ok) throw new Error("approve_failed");
 
             saveDecision(selectedCv.id, await response.json().catch(() => null), "VALIDE");
+            notifyPendingDocumentProcessed("CV");
             setMessage("managerCvValidation.messages.approved");
         } catch {
             setError("managerCvValidation.errors.approve");
@@ -256,6 +258,7 @@ function GestionnaireCvValidation() {
             if (!response.ok) throw new Error("reject_failed");
 
             saveDecision(selectedCv.id, await response.json().catch(() => null), "REJETE");
+            notifyPendingDocumentProcessed("CV");
             setMessage("managerCvValidation.messages.rejected");
             setComment("");
             setShowRejectForm(false);
@@ -269,7 +272,8 @@ function GestionnaireCvValidation() {
     if (forbidden) {
         return (
             <section className="flex flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
+                <div
+                    className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
                     <p className="text-sm font-bold text-error">403</p>
                     <h1 className="mt-2 text-3xl font-black text-ink">{t("managerCvValidation.forbiddenTitle")}</h1>
                     <p className="mt-3 text-sm leading-7 text-ink-soft">
@@ -281,40 +285,44 @@ function GestionnaireCvValidation() {
     }
 
     return (
-        <section className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-            <div className="mx-auto max-w-6xl">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <section className={embedded ? "mt-8 w-full" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
+            <div className={embedded ? "w-full" : "mx-auto w-full max-w-6xl"}>
+                {!embedded && <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                     <div>
-                        <h1 className="mt-4 text-2xl font-black tracking-tight text-ink sm:text-3xl">
-                            {t("managerCvValidation.title")}
-                        </h1>
-                        <p className="mt-2 text-sm leading-6 text-ink-soft">
-                            {t("managerCvValidation.description")}
-                        </p>
+                        <span
+                            className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                            {t("managerDashboard.eyebrow", "Espace gestionnaire")}
+                        </span>
+                        <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("managerCvValidation.title")}</h1>
+                        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("managerCvValidation.description")}</p>
                     </div>
-                    <p className="text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
-                </div>
+                    <p className="shrink-0 text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
+                </header>}
 
-                <ValidationTabs activeTab="cvs" cvsCount={pendingCvs.length}/>
+                {!embedded && <GestionnaireTabs activeTab="cvs" cvsCount={pendingCvs.length}/>}
 
                 {error && (
-                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error" role="alert">
+                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"
+                       role="alert">
                         {t(error)}
                     </p>
                 )}
                 {message && (
-                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]" role="status">
+                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]"
+                       role="status">
                         {t(message)}
                     </p>
                 )}
 
                 <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
-                    <aside className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)] lg:sticky lg:top-24">
+                    <aside
+                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)] lg:sticky lg:top-24">
                         <div className="flex items-center justify-between">
                             <h2 className="font-black text-ink">{t("managerCvValidation.pending")}</h2>
                         </div>
 
-                        <div className="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1 overscroll-contain sm:max-h-[36rem]">
+                        <div
+                            className="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1 overscroll-contain sm:max-h-[36rem]">
                             {loading ? (
                                 <p className="rounded-xl bg-lavender/40 p-4 text-sm text-ink-soft">{t("managerCvValidation.loading")}</p>
                             ) : pendingCvs.length ? (
@@ -350,10 +358,11 @@ function GestionnaireCvValidation() {
                     </aside>
 
                     {selectedCv ? (
-                        <article className="rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
+                        <article
+                            className="rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                             <div className="border-b border-line p-4 sm:p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <StatusBadge status={selectedCv.statut} />
+                                    <StatusBadge status={selectedCv.statut}/>
                                     <span
                                         className="text-xs text-ink-soft">{t("managerCvValidation.cvId", {id: selectedCv.id})}</span>
                                 </div>
@@ -415,7 +424,8 @@ function GestionnaireCvValidation() {
                                 <div className="border-t border-line bg-canvas/60 p-4 sm:p-6">
                                     {showRejectForm && (
                                         <div className="mb-4">
-                                            <label htmlFor="cv-rejection-comment" className="text-sm font-bold text-ink">
+                                            <label htmlFor="cv-rejection-comment"
+                                                   className="text-sm font-bold text-ink">
                                                 {t("managerCvValidation.requiredComment")}
                                             </label>
                                             <textarea
@@ -472,13 +482,15 @@ function GestionnaireCvValidation() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft sm:p-6">
+                                <div
+                                    className="border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft sm:p-6">
                                     {t("managerCvValidation.alreadyProcessed")}
                                 </div>
                             )}
                         </article>
                     ) : (
-                        <div className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">
+                        <div
+                            className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">
                             {t("managerCvValidation.selectCv")}
                         </div>
                     )}

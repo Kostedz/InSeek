@@ -2,8 +2,8 @@ import React from "react";
 import {describe, expect, it, vi} from "vitest";
 import {api} from "../utils/api.js";
 import ApplyButton from "../components/etudiant/ApplyButton.jsx";
-import EtudiantAccueil from "../components/page/EtudiantAccueil.jsx";
-import EtudiantTeleverseCV from "../components/page/EtudiantTeleverseCV.jsx";
+import EtudiantAccueil from "../components/page/etudiant/EtudiantAccueil.jsx";
+import EtudiantTeleverseCV from "../components/page/etudiant/EtudiantTeleverseCV.jsx";
 import {fireEvent, renderWithProviders, screen, userEvent, waitFor} from "./test-utils.jsx";
 
 vi.mock("../components/PdfPreview.jsx", () => ({default: () => null}));

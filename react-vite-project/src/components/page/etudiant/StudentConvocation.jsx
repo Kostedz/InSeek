@@ -1,8 +1,6 @@
-
-import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import api from "../../utils/api.js";
-import validationTabs from "../page/ValidationTabs.jsx";
+import {useCallback, useEffect, useState} from "react";
+import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
 
 function normalizeStatus(value) {
     const normalized = String(value ?? "")
@@ -24,6 +22,7 @@ function normalizeStatus(value) {
 
     return "PENDING";
 }
+
 function normalizeInterview(item) {
     const date =
         item.DateAndTime ??
@@ -82,11 +81,11 @@ function formatDate(interview, language) {
 
     return new Intl.DateTimeFormat(
         language === "en" ? "en-CA" : "fr-CA",
-        { dateStyle: "long", timeStyle: "short" }
+        {dateStyle: "long", timeStyle: "short"}
     ).format(date);
 }
 
-function StatusBadge({ status, t }) {
+function StatusBadge({status, t}) {
     const styles = {
         PENDING: "border-gold bg-gold/45 text-ink",
         ACCEPTED: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
@@ -104,7 +103,7 @@ function StatusBadge({ status, t }) {
     );
 }
 
-function Info({ label, value }) {
+function Info({label, value}) {
     if (value === null || value === undefined || String(value).trim() === "") {
         return null;
     }
@@ -117,6 +116,142 @@ function Info({ label, value }) {
             <p className="mt-2 break-words text-sm font-semibold text-ink">
                 {value}
             </p>
+        </div>
+    );
+}
+
+function InterviewList({interviews, view, onViewChange, onSelect, language, t, page = false}) {
+    const visibleInterviews = interviews
+        .filter((interview) =>
+            view === "PENDING"
+                ? interview.status === "PENDING"
+                : ["ACCEPTED", "REJECTED", "EXPIRED"].includes(interview.status)
+        )
+        .sort((a, b) => b.id - a.id);
+
+    const pendingCount = interviews.filter((interview) => interview.status === "PENDING").length;
+    const historyCount = interviews.filter((interview) =>
+        ["ACCEPTED", "REJECTED", "EXPIRED"].includes(interview.status)
+    ).length;
+
+    return (
+        <div>
+            <div
+                className={`inline-flex max-w-full gap-1 rounded-2xl border border-line bg-surface p-1 shadow-[0_12px_30px_rgba(48,35,55,0.04)] ${
+                    page ? "" : "bg-canvas shadow-none"
+                }`}
+                role="tablist"
+            >
+                <button
+                    type="button"
+                    role="tab"
+                    onClick={() => onViewChange("PENDING")}
+                    aria-selected={view === "PENDING"}
+                    className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${
+                        view === "PENDING"
+                            ? "bg-ink text-white shadow-sm"
+                            : "text-ink-soft hover:bg-surface hover:text-ink"
+                    }`}
+                >
+                    {t("studentInterviews.pending")}
+                    <span className="ml-2 rounded-full bg-lavender/40 px-2 py-0.5 text-xs">
+                        {pendingCount}
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    role="tab"
+                    onClick={() => onViewChange("HISTORY")}
+                    aria-selected={view === "HISTORY"}
+                    className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${
+                        view === "HISTORY"
+                            ? "bg-ink text-white shadow-sm"
+                            : "text-ink-soft hover:bg-surface hover:text-ink"
+                    }`}
+                >
+                    {t("studentInterviews.history")}
+                    <span className="ml-2 rounded-full bg-lavender/40 px-2 py-0.5 text-xs">
+                        {historyCount}
+                    </span>
+                </button>
+            </div>
+
+            <div className={page ? "mt-5 grid gap-5 md:grid-cols-2" : "space-y-3 pt-5"}>
+                {visibleInterviews.length === 0 ? (
+                    <div
+                        className={page
+                            ? "rounded-2xl border border-line bg-surface p-10 text-center shadow-[0_18px_50px_rgba(48,35,55,0.06)] md:col-span-2"
+                            : "rounded-xl bg-canvas p-5 text-sm text-ink-soft"}
+                    >
+                        {page && <h2 className="text-xl font-black text-ink">
+                            {view === "PENDING"
+                                ? t("studentInterviews.noPending")
+                                : t("studentInterviews.noHistory")}
+                        </h2>}
+                        {page && <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">
+                            {t("studentInterviews.emptyDescription")}
+                        </p>}
+                        {!page && (view === "PENDING"
+                            ? t("studentInterviews.noPending")
+                            : t("studentInterviews.noHistory"))}
+                    </div>
+                ) : (
+                    visibleInterviews.map((interview) => (
+                        <button
+                            key={interview.id}
+                            type="button"
+                            onClick={() => onSelect(interview)}
+                            className={page
+                                ? "group flex h-full w-full flex-col rounded-[1.5rem] border border-line bg-surface p-6 text-left shadow-[0_12px_35px_rgba(48,35,55,0.05)] transition-all hover:-translate-y-0.5 hover:border-lavender hover:shadow-[0_18px_45px_rgba(48,35,55,0.1)] focus:outline-none focus:ring-4 focus:ring-pink/50"
+                                : "flex w-full items-center gap-3 rounded-xl border border-line bg-canvas p-4 text-left transition-colors hover:border-lavender hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40"}
+                        >
+                            <div className="flex w-full min-w-0 flex-1 flex-col">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className={page
+                                            ? "truncate text-xl font-black tracking-tight text-ink"
+                                            : "font-bold text-ink"}
+                                        >
+                                            {interview.title || t("studentInterviews.untitled")}
+                                        </p>
+                                        {interview.company && (
+                                            <p className="mt-1 text-sm font-bold text-ink-soft">{interview.company}</p>
+                                        )}
+                                    </div>
+                                    {page && <StatusBadge status={interview.status} t={t}/>}
+                                </div>
+
+                                {page ? (
+                                    <p className="mt-4 line-clamp-3 flex-1 text-sm leading-6 text-ink-soft">
+                                        {interview.message || t("studentInterviews.cardDescription")}
+                                    </p>
+                                ) : (
+                                    <p className="mt-2 text-sm text-ink-soft">{formatDate(interview, language)}</p>
+                                )}
+
+                                {!page && <div className="mt-3">
+                                    <StatusBadge status={interview.status} t={t}/>
+                                </div>}
+
+                                {page && <div
+                                    className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4 text-xs font-semibold text-ink-soft">
+                                    <span className="min-w-0 truncate">
+                                        {formatDate(interview, language)}
+                                        {interview.mode && ` · ${t(`studentInterviews.modes.${interview.mode}`, {
+                                            defaultValue: interview.mode,
+                                        })}`}
+                                    </span>
+                                    <span
+                                        className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-ink-soft transition-colors group-hover:text-ink">
+                                        {t("studentApplications.viewDetails")}
+                                    </span>
+                                </div>}
+                            </div>
+                        </button>
+                    ))
+                )}
+            </div>
         </div>
     );
 }
@@ -209,7 +344,7 @@ function InterviewDetails({
                             {interview.company}
                         </p>
                     )}
-                    <StatusBadge status={interview.status} t={t} />
+                    <StatusBadge status={interview.status} t={t}/>
                 </div>
 
                 {/* Details */}
@@ -234,10 +369,12 @@ function InterviewDetails({
                             })
                             : null}
                     />
-                    <Info
-                        label={t("studentInterviews.location")}
-                        value={interview.location}
-                    />
+                    <div className="sm:col-span-2">
+                        <Info
+                            label={t("studentInterviews.location")}
+                            value={interview.location}
+                        />
+                    </div>
                 </div>
 
                 {interview.meetingLink && (
@@ -353,7 +490,7 @@ function InterviewDetails({
                     <div className="mt-5 border-t border-line pt-4">
                         <h3 className="text-base font-black text-ink">
                             {t(
-                                action === "ACCEPTEE"
+                                action === "ACCEPTED"
                                     ? "studentInterviews.confirmAccept"
                                     : "studentInterviews.confirmDecline"
                             )}
@@ -363,7 +500,7 @@ function InterviewDetails({
                             {t("studentInterviews.confirmDescription")}
                         </p>
 
-                        {action === "REFUSEE" && (
+                        {action === "REJECTED" && (
                             <div className="mt-4">
                                 <label
                                     htmlFor="decline-comment"
@@ -421,7 +558,7 @@ function InterviewDetails({
     );
 }
 
-export default function StudentInterviews({ user }) {
+export default function StudentInterviews({user, page = false}) {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
 
@@ -433,7 +570,7 @@ export default function StudentInterviews({ user }) {
     const [error, setError] = useState(null);
     const [convocationView, setConvocationView] = useState("PENDING");
 
-    const loadInterviews = useCallback(async () => {
+    const loadInterviews = useCallback(async (isActive = () => true) => {
         setLoading(true);
         setError(null);
 
@@ -447,11 +584,23 @@ export default function StudentInterviews({ user }) {
                 ? data
                 : data.items ?? data.content ?? [];
 
-            setInterviews(items.map(normalizeInterview));
-        } catch {
-            setError(t("studentInterviews.loadError"));
+            if (isActive()) {
+                setInterviews(
+                    items
+                        .filter((item) => item && item.id != null)
+                        .map(normalizeInterview)
+                );
+            }
+        } catch (loadError) {
+            if (import.meta.env.DEV) {
+                console.debug("Student convocations could not be loaded.", loadError);
+            }
+            if (isActive()) {
+                setInterviews([]);
+                setError(t("studentInterviews.loadError"));
+            }
         } finally {
-            setLoading(false);
+            if (isActive()) setLoading(false);
         }
     }, [t]);
 
@@ -468,55 +617,51 @@ export default function StudentInterviews({ user }) {
 
     useEffect(() => {
         let active = true;
-
-        const load = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const response = await api.student.getConvocations();
-
-                if (!response.ok) throw new Error("load");
-
-                const data = response.status === 204 ? [] : await response.json();
-                const items = Array.isArray(data)
-                    ? data
-                    : data.items ?? data.content ?? [];
-
-                if (active) {
-                    setInterviews(
-                        items
-                            .filter((item) => item && item.id != null)
-                            .map(normalizeInterview)
-                    );
-                }
-            } catch {
-                if (active) setError(t("studentInterviews.loadError"));
-            } finally {
-                if (active) setLoading(false);
-            }
-        };
-
-        load();
-
+        loadInterviews(() => active);
         return () => {
             active = false;
         };
-    }, [user, t]);
+    }, [loadInterviews, user]);
 
     const respond = async (interview, responseType, comment = "") => {
         setSaving(true);
         setError(null);
 
         try {
-            const updated = await api.student.respondToConvocation(interview.id, {
+            const response = await api.student.respondToConvocation(interview.id, {
                 interviewInvitationStatus: responseType,
                 messageWhenRejected:
                     responseType === "REJECTED" ? comment.trim() || null : null,
             });
 
-            if (updated && updated.id != null) {
-                const updatedInterview = normalizeInterview(updated);
+            if (response && typeof response.json === "function") {
+                if (!response.ok) {
+                    const responseError = new Error("respond");
+                    responseError.status = response.status;
+                    throw responseError;
+                }
+
+                if (response.status !== 204) {
+                    const updated = await response.json();
+                    if (updated?.id != null) {
+                        const updatedInterview = normalizeInterview(updated);
+                        setInterviews((previous) =>
+                            previous.map((item) =>
+                                item.id === updatedInterview.id ? updatedInterview : item
+                            )
+                        );
+                        setSelected(updatedInterview);
+                        return;
+                    }
+                }
+
+                await loadInterviews();
+                setSelected(null);
+                return;
+            }
+
+            if (response && response.id != null) {
+                const updatedInterview = normalizeInterview(response);
 
                 setInterviews((previous) =>
                     previous.map((item) =>
@@ -525,7 +670,9 @@ export default function StudentInterviews({ user }) {
                 );
 
                 setSelected(updatedInterview);
-            } else {
+            }
+
+            if (!response?.id) {
                 await loadInterviews();
                 setSelected(null);
             }
@@ -553,14 +700,51 @@ export default function StudentInterviews({ user }) {
 
     const nextInterview = pendingInterviews[0] ?? null;
 
-    const visibleInterviews = interviews
-        .filter((interview) =>
-            convocationView === "PENDING"
-                ? interview.status === "PENDING"
-                : ["ACCEPTED", "REJECTED", "EXPIRED"].includes(interview.status)
-        )
-        .sort((a, b) => b.id - a.id);
+    const openInterview = (interview) => {
+        setError(null);
+        setSelected(interview);
+    };
 
+    if (page) {
+        return (
+            <>
+                {loading ? (
+                    <p className="mt-8 rounded-2xl border border-line bg-surface p-6 text-sm text-ink-soft shadow-[0_12px_30px_rgba(48,35,55,0.04)]">
+                        {t("studentInterviews.loading")}
+                    </p>
+                ) : error ? (
+                    <p className="mt-8 rounded-2xl border border-error bg-blush/30 p-6 text-sm font-semibold text-error"
+                       role="alert">
+                        {error}
+                    </p>
+                ) : (
+                    <div className="mt-8">
+                        <InterviewList
+                            interviews={interviews}
+                            view={convocationView}
+                            onViewChange={setConvocationView}
+                            onSelect={openInterview}
+                            language={language}
+                            t={t}
+                            page
+                        />
+                    </div>
+                )}
+
+                {selected && (
+                    <InterviewDetails
+                        interview={selected}
+                        language={language}
+                        t={t}
+                        onClose={() => setSelected(null)}
+                        onRespond={respond}
+                        saving={saving}
+                        error={error}
+                    />
+                )}
+            </>
+        );
+    }
 
     return (
         <>
@@ -590,11 +774,7 @@ export default function StudentInterviews({ user }) {
                             </h2>
 
                             <p className="mt-1 text-sm leading-6 text-ink-soft">
-                                {pendingInterviews.length > 0
-                                    ? t("studentInterviews.pendingCount", {
-                                        count: pendingInterviews.length,
-                                    })
-                                    : t("studentInterviews.cardDescription")}
+                                {t("studentInterviews.cardDescription")}
                             </p>
                         </div>
                     </div>
@@ -650,16 +830,6 @@ export default function StudentInterviews({ user }) {
                             </div>
                         </div>
 
-                        <svg
-                            aria-hidden="true"
-                            className="h-5 w-5 shrink-0 text-ink-soft"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
-                            <path d="m9 18 6-6-6-6"/>
-                        </svg>
                     </button>
                 ) : (
                     <p className="mt-5 rounded-xl bg-canvas p-4 text-sm text-ink-soft">
@@ -678,16 +848,6 @@ export default function StudentInterviews({ user }) {
                 >
                     {t("studentInterviews.viewAll")}
 
-                    <svg
-                        aria-hidden="true"
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                    >
-                        <path d="M5 12h14m-6-6 6 6-6 6"/>
-                    </svg>
                 </button>
             </section>
 
@@ -733,102 +893,18 @@ export default function StudentInterviews({ user }) {
                             </button>
                         </div>
 
-                        {/* Pending / History switch */}
-                        <div className="flex gap-2 border-b border-line px-5 pt-4 sm:px-6">
-                            <button
-                                type="button"
-                                onClick={() => setConvocationView("PENDING")}
-                                aria-pressed={convocationView === "PENDING"}
-                                className={`rounded-t-lg border-b-2 px-4 py-3 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${
-                                    convocationView === "PENDING"
-                                        ? "border-ink text-ink"
-                                        : "border-transparent text-ink-soft hover:text-ink"
-                                }`}
-                            >
-                                {t("studentInterviews.pending")}
-                                <span className="ml-2 rounded-full bg-lavender/40 px-2 py-0.5 text-xs">
-                                {interviews.filter(
-                                    (interview) =>
-                                        interview.status === "PENDING"
-                                ).length}
-                            </span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setConvocationView("HISTORY")}
-                                aria-pressed={convocationView === "HISTORY"}
-                                className={`rounded-t-lg border-b-2 px-4 py-3 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${
-                                    convocationView === "HISTORY"
-                                        ? "border-ink text-ink"
-                                        : "border-transparent text-ink-soft hover:text-ink"
-                                }`}
-                            >
-                                {t("studentInterviews.history")}
-                                <span className="ml-2 rounded-full bg-lavender/40 px-2 py-0.5 text-xs">
-                                {interviews.filter((interview) =>
-                                    ["ACCEPTED", "REJECTED", "EXPIRED"].includes(interview.status)
-                                ).length}
-                            </span>
-                            </button>
-                        </div>
-
-                        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5 sm:p-6">
-                            {visibleInterviews.length === 0 ? (
-                                <p className="rounded-xl bg-canvas p-5 text-sm text-ink-soft">
-                                    {convocationView === "PENDING"
-                                        ? t("studentInterviews.noPending")
-                                        : t("studentInterviews.noHistory")}
-                                </p>
-                            ) : (
-                                visibleInterviews.map((interview) => (
-                                    <button
-                                        key={interview.id}
-                                        type="button"
-                                        onClick={() => {
-                                            setShowAll(false);
-                                            setError(null);
-                                            setSelected(interview);
-                                        }}
-                                        className="flex w-full items-center gap-3 rounded-xl border border-line bg-canvas p-4 text-left transition-colors hover:border-lavender hover:bg-lavender/30 focus:outline-none focus:ring-4 focus:ring-pink/40"
-                                    >
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-bold text-ink">
-                                                {interview.title ||
-                                                    t("studentInterviews.untitled")}
-                                            </p>
-
-                                            {interview.company && (
-                                                <p className="mt-1 text-sm text-ink-soft">
-                                                    {interview.company}
-                                                </p>
-                                            )}
-
-                                            <p className="mt-2 text-sm text-ink-soft">
-                                                {formatDate(interview, language)}
-                                            </p>
-
-                                            <div className="mt-3">
-                                                <StatusBadge
-                                                    status={interview.status}
-                                                    t={t}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <svg
-                                            aria-hidden="true"
-                                            className="h-5 w-5 shrink-0 text-ink-soft"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                        >
-                                            <path d="m9 18 6-6-6-6"/>
-                                        </svg>
-                                    </button>
-                                ))
-                            )}
+                        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+                            <InterviewList
+                                interviews={interviews}
+                                view={convocationView}
+                                onViewChange={setConvocationView}
+                                onSelect={(interview) => {
+                                    setShowAll(false);
+                                    openInterview(interview);
+                                }}
+                                language={language}
+                                t={t}
+                            />
                         </div>
                     </section>
                 </div>
@@ -848,4 +924,3 @@ export default function StudentInterviews({ user }) {
         </>
     );
 }
-

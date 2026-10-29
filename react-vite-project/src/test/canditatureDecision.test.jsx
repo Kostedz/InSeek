@@ -4,7 +4,7 @@ import {cleanup, render, screen, waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 
-import EmployeurOffres from "../components/page/EmployeurOffres.jsx";
+import EmployeurOffres from "../components/page/employeur/EmployeurOffres.jsx";
 
 const apiMock = vi.hoisted(() => ({
     employer: {

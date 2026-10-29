@@ -1,12 +1,12 @@
 import React from "react";
 import {describe, expect, it, vi} from "vitest";
 import {api} from "../utils/api.js";
-import EmployeurOffres from "../components/page/EmployeurOffres.jsx";
-import GestionnaireValidation from "../components/page/GestionnaireValidation.jsx";
+import EmployeurOffres from "../components/page/employeur/EmployeurOffres.jsx";
+import GestionnaireValidation from "../components/page/gestionnaire/GestionnaireValidation.jsx";
 import {fireEvent, renderWithProviders, screen, userEvent, waitFor} from "./test-utils.jsx";
 
 vi.mock("../components/PdfPreview.jsx", () => ({default: () => null}));
-vi.mock("../components/page/ValidationTabs.jsx", () => ({default: () => null}));
+vi.mock("../components/page/gestionnaire/GestionnaireTabs.jsx", () => ({default: () => null}));
 
 describe("role workspaces", () => {
     it("creates an offer with its PDF and form fields", async () => {

@@ -2,14 +2,18 @@ package com.lacouf.rsbjwt.config;
 
 import com.lacouf.rsbjwt.model.CV;
 import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.Entrevue;
 import com.lacouf.rsbjwt.model.Employeur;
 import com.lacouf.rsbjwt.model.Etudiant;
+import com.lacouf.rsbjwt.model.ModeEntrevue;
 import com.lacouf.rsbjwt.model.OffreDeStage;
+import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
 import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.ApplicationStage;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -143,6 +147,7 @@ public class DevDemoScenarioService {
 
     private final DocumentRepository documentRepository;
     private final ApplicationStageRepository applicationStageRepository;
+    private final EntrevueRepository interviewRepository;
     private final UtilisateurRepository utilisateurRepository;
 
     @Transactional
@@ -160,6 +165,7 @@ public class DevDemoScenarioService {
         prepareValidatedCv(etudiant);
         List<OffreDeStage> offers = prepareValidatedOffers(employeur);
         prepareDemoApplications(etudiant, offers);
+        prepareDemoInterviews(etudiant, employeur, offers);
     }
 
     private void prepareValidatedCv(Etudiant student) {
@@ -209,7 +215,8 @@ public class DevDemoScenarioService {
                         .employeur(employer)
                         .build();
             }
-
+            offer.setUtilisateur(employer);
+            offer.setEmployeur(employer);
             offer.setTargetDiscipline(demoOffer.discipline());
             offer.setNomEntreprise(employer.getNomCompagnie());
             offer.setPosition(demoOffer.position());
@@ -249,18 +256,90 @@ public class DevDemoScenarioService {
                         || application.getOffreDeStage().getTargetDiscipline() != student.getDiscipline())
                 .forEach(applicationStageRepository::delete);
 
-        offers.stream()
+        List<OffreDeStage> demoApplicationOffers = offers.stream()
                 .filter(offer -> offer.getTargetDiscipline() == student.getDiscipline())
                 .limit(DEMO_APPLICATION_COUNT)
-                .forEach(offer -> {
-                    if (applicationStageRepository.findByEtudiantIdAndOffreDeStageId(student.getId(), offer.getId()).isPresent()) {
-                        return;
-                    }
+                .toList();
 
-                    ApplicationStage application = new ApplicationStage();
-                    application.setEtudiant(student);
-                    application.setOffreDeStage(offer);
-                    applicationStageRepository.save(application);
-                });
+        for (int index = 0; index < demoApplicationOffers.size(); index++) {
+            OffreDeStage offer = demoApplicationOffers.get(index);
+            ApplicationStage application = applicationStageRepository
+                    .findByEtudiantIdAndOffreDeStageId(student.getId(), offer.getId())
+                    .orElseGet(ApplicationStage::new);
+
+            application.setEtudiant(student);
+            application.setOffreDeStage(offer);
+
+            if (index == 1) {
+                application.setStatutValidation(StatutValidation.ACCEPTE);
+                application.setCommentaireRefus(null);
+                application.setDateDecision(LocalDateTime.now().minusDays(7));
+            } else if (index == 2) {
+                application.setStatutValidation(StatutValidation.REJETE);
+                application.setCommentaireRefus("Le profil ne correspond pas entièrement aux besoins actuels.");
+                application.setDateDecision(LocalDateTime.now().minusDays(5));
+            } else {
+                application.setStatutValidation(StatutValidation.EN_ATTENTE);
+                application.setCommentaireRefus(null);
+                application.setDateDecision(null);
+            }
+
+            applicationStageRepository.save(application);
+        }
+    }
+
+    private void prepareDemoInterviews(Etudiant student, Employeur employer, List<OffreDeStage> offers) {
+        List<OffreDeStage> studentOffers = offers.stream()
+                .filter(offer -> offer.getTargetDiscipline() == student.getDiscipline())
+                .toList();
+
+        if (studentOffers.isEmpty()) return;
+
+        OffreDeStage pendingOffer = studentOffers.get(0);
+        Entrevue pendingInterview = interviewRepository
+                .findByStudentIdAndInternshipOfferId(student.getId(), pendingOffer.getId())
+                .orElseGet(Entrevue::new);
+        pendingInterview.setStudent(student);
+        pendingInterview.setEmployer(employer);
+        pendingInterview.setInternshipOffer(pendingOffer);
+        pendingInterview.setDateInterview(LocalDateTime.now()
+                .plusDays(4)
+                .withHour(10)
+                .withMinute(30)
+                .withSecond(0)
+                .withNano(0));
+        pendingInterview.setModeInterview(ModeEntrevue.VIDEO_CALL);
+        pendingInterview.setLocationOrLink("https://meet.google.com/demo-inseek");
+        pendingInterview.setMessage("Nous avons hâte de discuter de votre expérience et du stage avec vous.");
+        pendingInterview.setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
+        pendingInterview.setInvitationResponseDate(null);
+        pendingInterview.setMessageWhenRejected(null);
+        interviewRepository.save(pendingInterview);
+
+        if (studentOffers.size() < 2) return;
+
+        OffreDeStage acceptedOffer = studentOffers.get(1);
+        Entrevue acceptedInterview = interviewRepository
+                .findByStudentIdAndInternshipOfferId(student.getId(), acceptedOffer.getId())
+                .orElseGet(Entrevue::new);
+        acceptedInterview.setStudent(student);
+        acceptedInterview.setEmployer(employer);
+        acceptedInterview.setInternshipOffer(acceptedOffer);
+        acceptedInterview.setDateInterview(LocalDateTime.now()
+                .minusDays(8)
+                .withHour(14)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0));
+        acceptedInterview.setModeInterview(ModeEntrevue.IN_PERSON);
+        acceptedInterview.setLocationOrLink("Bureau 304, 7250 rue du Mile End, Montréal");
+        acceptedInterview.setMessage("Merci pour votre disponibilité. Au plaisir de vous rencontrer.");
+        acceptedInterview.setInterviewInvitationStatus(StatutConvocationEntrevue.ACCEPTED);
+        acceptedInterview.setInvitationResponseDate(LocalDateTime.now().minusDays(10));
+        acceptedInterview.setMessageWhenRejected(null);
+        interviewRepository.save(acceptedInterview);
+
+        student.setDateInterview(pendingInterview.getDateInterview());
+        utilisateurRepository.save(student);
     }
 }

@@ -198,6 +198,31 @@ export const api = {
                 },
                 body: JSON.stringify({ commentaire: comment }),
             }),
+
+        getEligibleStudents: () =>
+            fetcher("/contracts/eligible-students", {
+                headers: { Accept: "application/json" },
+            }),
+
+        getContractData: (studentId, offerId) =>
+            fetcher(`/contracts/prefilled/${encodeURIComponent(studentId)}?offerId=${encodeURIComponent(offerId)}`, {
+                headers: { Accept: "application/json" },
+            }),
+
+        createContract: (contractData) =>
+            fetcher("/contracts/contracts", {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify(contractData),
+            }),
+
+        getContracts: () =>
+            fetcher("/contracts/contracts", {
+                headers: { Accept: "application/json" },
+            }),
     },
 
 };

@@ -1,13 +1,13 @@
 import {useEffect} from "react";
 import {useTranslation} from "react-i18next";
-import PdfPreview from "../PdfPreview.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
 import {
     formatDate,
     formatDateRange,
     formatDiscipline,
     formatOfferTitle,
     formatSalary,
-} from "./studentOfferUtils.js";
+} from "../studentOfferUtils.js";
 
 const STATUS_STYLES = {
     SOUMISE: "border-lavender bg-lavender/35 text-ink",

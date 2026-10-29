@@ -1,12 +1,12 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
-import {createTranslationMessage, translateMessage} from "../../utils/i18nMessage.js";
-import api from "../../utils/api.js";
-import Loading from "../Loading.jsx";
-import ErrorPage from "../ErrorPage.jsx";
-import PdfPreview from "../PdfPreview.jsx";
-import {formatOfferTitle} from "./studentOfferUtils.js";
-import ScheduleInterviewModal from "../employer/SchedulenterviewModal.jsx";
+import {createTranslationMessage, translateMessage} from "../../../utils/i18nMessage.js";
+import api from "../../../utils/api.js";
+import Loading from "../../Loading.jsx";
+import ErrorPage from "../../ErrorPage.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
+import {formatOfferTitle} from "../studentOfferUtils.js";
+import ScheduleInterviewModal from "../../employer/SchedulenterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -66,19 +66,20 @@ function getApplicationStatus(application) {
         application?.status
         ?? application?.statut
         ?? application?.statutCandidature
+        ?? application?.statutValidation
         ?? "PENDING"
     ).toUpperCase();
-    if (["ACCEPTED", "ACCEPTEE", "ACCEPTÉE", "VALIDE", "APPROVED"].includes(status)) return "ACCEPTED";
+    if (["ACCEPTED", "ACCEPTE", "ACCEPTEE", "ACCEPTÉE", "VALIDE", "APPROVED"].includes(status)) return "ACCEPTED";
     if (["REJECTED", "REJETE", "REJETÉ", "REFUSEE", "REFUSÉE"].includes(status)) return "REJECTED";
     return "PENDING";
 }
 
-function applyDecisions(applications, decisions) {
-    return applications.map((application) => {
-        const decision = decisions[String(application.id)];
-        if (!decision || getApplicationStatus(application) !== "PENDING") return application;
-        return {...application, status: decision.status, rejectionComment: decision.comment};
-    });
+const INTERNSHIP_FOUND_STATUSES = ["INTERNSHIP_FOUND", "SIGNED_CONTRACT"];
+
+function hasFoundInternship(application) {
+    if (getApplicationStatus(application) === "ACCEPTED") return true;
+    const studentStatus = String(application?.studentStatus ?? "").toUpperCase();
+    return INTERNSHIP_FOUND_STATUSES.includes(studentStatus);
 }
 
 function hasValue(value) {
@@ -108,6 +109,14 @@ function normalizeApplication(application, index = 0) {
             ?? application?.idEtudiant
             ?? student.id
             ?? null,
+        studentStatus: application?.studentStatus
+            ?? application?.statutRecherche
+            ?? application?.statutEtudiant
+            ?? student.statutRecherche
+            ?? student.statutStage
+            ?? student.statut
+            ?? student.status
+            ?? "",
         interviewScheduled: Boolean(
             application?.interviewScheduled
             ?? application?.entrevuePlanifiee
@@ -214,19 +223,6 @@ function formatDate(value, language) {
     }).format(date);
 }
 
-function formatDateTime(value, language) {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    return new Intl.DateTimeFormat(language === "en" ? "en-CA" : "fr-CA", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-    }).format(date);
-}
-
 function StatusBadge({status}) {
     const {t} = useTranslation();
     const styles = {
@@ -256,21 +252,36 @@ function ApplicationStatusBadge({status}) {
 
     if (status === "ACCEPTED") {
         return (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+            <span
+                className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
                 {t("employerOffers.applications.status.accepted", "Acceptée")}
             </span>
         );
     }
     if (status === "REJECTED") {
         return (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+            <span
+                className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
                 {t("employerOffers.applications.status.rejected", "Refusée")}
             </span>
         );
     }
     return (
-        <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+        <span
+            className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
             {t("employerOffers.applications.status.pending", "En attente")}
+        </span>
+    );
+}
+
+function InternshipFoundBadge() {
+    const {t} = useTranslation();
+
+    return (
+        <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900">
+            <Icon name="check" className="h-3.5 w-3.5"/>
+            {t("employerOffers.applications.status.internshipFound", "Stage trouvé")}
         </span>
     );
 }
@@ -370,26 +381,24 @@ function ApplicationDocument({icon, label, fileName, documentId, t}) {
     );
 }
 
-function ApplicationDetails({ application, language, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh, onDecision }) {
-    const { t } = useTranslation();
+function ApplicationDetails({application, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh}) {
+    const {t} = useTranslation();
     const hasContactDetails = application.email || application.phone || application.address;
 
     const [showDecisionModal, setShowDecisionModal] = useState(false);
-    const [decisionType, setDecisionType] = useState(null); // 'ACCEPTED' | 'REJECTED'
+    const [decisionType, setDecisionType] = useState(null);
     const [rejectionComment, setRejectionComment] = useState("");
     const [commentError, setCommentError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverError, setServerError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
-    const [decidedStatus, setDecidedStatus] = useState(null);
-    const [decidedComment, setDecidedComment] = useState("");
 
-    // Le statut local (décision qui vient d'être prise) a priorité sur celui de la candidature
-    const currentStatus = decidedStatus ?? getApplicationStatus(application);
+    const currentStatus = getApplicationStatus(application);
     const isPending = currentStatus === "PENDING";
     const isAccepted = currentStatus === "ACCEPTED";
     const isRejected = currentStatus === "REJECTED";
-    const shownRejectionComment = decidedComment || application.rejectionComment || application.commentaireRefus || "";
+    const isInternshipFound = hasFoundInternship(application);
+    const shownRejectionComment = application.rejectionComment || application.commentaireRefus || "";
 
     const handleOpenDecisionModal = (type) => {
         setDecisionType(type);
@@ -430,18 +439,15 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
             }
 
             setShowDecisionModal(false);
-            setDecidedStatus(decisionType);
-            setDecidedComment(decisionType === "REJECTED" ? rejectionComment : "");
             setSuccessMessage(
                 decisionType === "ACCEPTED"
-                    ? t("employerOffers.applications.success.accepted", "Candidature acceptée avec succès.")
+                    ? t("employerOffers.applications.success.acceptedInternshipFound", "Candidature acceptée. Le statut de l'étudiant est maintenant « Stage trouvé ».")
                     : t("employerOffers.applications.success.rejected", "Candidature refusée avec succès.")
             );
 
-            if (onDecision) onDecision(application.id, decisionType, decisionType === "REJECTED" ? rejectionComment : "");
             if (onRefresh) onRefresh();
         } catch (err) {
-            setServerError({ key: err.message });
+            setServerError({key: err.message});
         } finally {
             setIsSubmitting(false);
         }
@@ -481,7 +487,8 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                     </div>
 
                     {successMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+                        <div
+                            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
                             {successMessage}
                         </div>
                     )}
@@ -497,20 +504,24 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
 
                         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                             {isPending && (
-                                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
                                     {t("employerOffers.applications.status.pending", "En attente")}
                                 </span>
                             )}
                             {isAccepted && (
-                                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
                                     {t("employerOffers.applications.status.accepted", "Acceptée")}
                                 </span>
                             )}
                             {isRejected && (
-                                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
                                     {t("employerOffers.applications.status.rejected", "Refusée")}
                                 </span>
                             )}
+                            {isInternshipFound && <InternshipFoundBadge/>}
                             {isInterviewScheduled && (
                                 <span
                                     className="inline-flex items-center gap-1.5 rounded-full border border-lavender bg-lavender/35 px-3 py-1 text-xs font-bold text-ink">
@@ -566,14 +577,14 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">
-                                    {t("employerOffers.applications.actionsTitle")}
+                                    {t("employerOffers.applications.actionsTitle", "Actions")}
                                 </p>
                                 <p className="mt-1 text-sm leading-6 text-ink-soft">
-                                    {isInterviewScheduled
-                                        ? t("employerOffers.interviews.alreadyScheduledDescription", "Une entrevue est déjà planifiée pour cet étudiant.")
-                                        : isPending
-                                            ? t("employerOffers.applications.actionsDescription")
-                                            : t("employerOffers.applications.readOnlyNotice", "Décision déjà enregistrée.")}
+                                    {isPending
+                                        ? isInterviewScheduled
+                                            ? t("employerOffers.applications.actionsAfterInterview", "Entrevue planifiée. Vous pouvez maintenant accepter ou refuser la candidature.")
+                                            : t("employerOffers.applications.actionsDescription", "Planifiez une entrevue avant de pouvoir accepter la candidature.")
+                                        : t("employerOffers.applications.readOnlyNotice", "Décision déjà enregistrée.")}
                                 </p>
                             </div>
                         </div>
@@ -588,38 +599,46 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                                     {t("employerOffers.applications.reject", "Refuser")}
                                 </button>
                             )}
-                            <button
-                                type="button"
-                                disabled={!isPending || isInterviewScheduled}
-                                title={isInterviewScheduled
-                                    ? t("employerOffers.interviews.alreadyScheduledDescription", "Une entrevue est déjà planifiée pour cet étudiant.")
-                                    : !isPending
+
+                            {isInterviewScheduled ? (
+                                isPending && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenDecisionModal("ACCEPTED")}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
+                                    >
+                                        {t("employerOffers.applications.accept", "Accepter")}
+                                    </button>
+                                )
+                            ) : (
+                                <button
+                                    type="button"
+                                    disabled={!isPending}
+                                    title={!isPending
                                         ? t("employerOffers.interviews.disabledAfterDecision", "Une décision a déjà été prise pour cette candidature.")
                                         : undefined}
-                                onClick={() => {
-                                    if (!isPending || isInterviewScheduled) return;
-                                    onScheduleInterview({
-                                        ...application,
-                                        id: application.studentId,
-                                    });
-                                }}
-                                className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-60 ${
-                                    isInterviewScheduled || !isPending
-                                        ? "bg-line text-ink-soft"
-                                        : "bg-ink text-white hover:bg-ink-soft"
-                                }`}
-                            >
-                                <Icon name="calendar" className="h-4 w-4"/>
-                                {isInterviewScheduled
-                                    ? t("employerOffers.interviews.alreadyScheduled", "Entrevue déjà planifiée")
-                                    : t("employerOffers.interviews.title", "Planifier une entrevue")}
-                            </button>
+                                    onClick={() => {
+                                        if (!isPending) return;
+                                        onScheduleInterview({
+                                            ...application,
+                                            id: application.studentId,
+                                        });
+                                    }}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-60 ${
+                                        isPending
+                                            ? "bg-ink text-white hover:bg-ink-soft"
+                                            : "bg-line text-ink-soft"
+                                    }`}
+                                >
+                                    <Icon name="calendar" className="h-4 w-4"/>
+                                    {t("employerOffers.interviews.title", "Planifier une entrevue")}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Modal de Confirmation / Saisie du motif de refus */}
             {showDecisionModal && (
                 <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl space-y-4">
@@ -631,12 +650,13 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
 
                         <p className="text-sm text-ink-soft">
                             {decisionType === "ACCEPTED"
-                                ? t("employerOffers.applications.confirmAcceptDesc", "Souhaitez-vous vraiment accepter cette candidature ? L'étudiant sera notifié.")
+                                ? t("employerOffers.applications.confirmAcceptInternshipDesc", "Souhaitez-vous vraiment accepter cette candidature ? L'étudiant sera notifié et son statut deviendra « Stage trouvé ».")
                                 : t("employerOffers.applications.confirmRejectDesc", "Veuillez expliquer les raisons du refus. Ce commentaire sera transmis à l'étudiant.")}
                         </p>
 
                         {serverError && (
-                            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+                            <div
+                                className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
                                 {translateMessage(t, serverError)}
                             </div>
                         )}
@@ -656,7 +676,8 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                                     placeholder={t("employerOffers.applications.commentPlaceholder", "Saisissez les raisons du refus...")}
                                     className="w-full rounded-xl border border-line bg-canvas p-3 text-sm text-ink outline-none focus:border-lavender resize-none"
                                 />
-                                {commentError && <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
+                                {commentError &&
+                                    <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
                             </div>
                         )}
 
@@ -673,7 +694,7 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
                                 disabled={isSubmitting}
                                 onClick={handleSubmitDecision}
                                 className={`rounded-xl px-4 py-2 text-sm font-bold text-white transition-colors ${
-                                    decisionType === "ACCEPTED" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
+                                    decisionType === "ACCEPTED" ? "bg-ink hover:ink-soft" : "bg-rose-600 hover:bg-rose-700"
                                 } disabled:opacity-50`}
                             >
                                 {isSubmitting ? t("common.saving", "Traitement...") : t("common.confirm", "Confirmer")}
@@ -686,11 +707,10 @@ function ApplicationDetails({ application, language, isInterviewScheduled, onBac
     );
 }
 
-function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews, onRefresh, onDecision}) {
+function ApplicationsModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, onRefresh}) {
     const {t} = useTranslation();
     const [selectedApplication, setSelectedApplication] = useState(null);
 
-    // Garde la candidature sélectionnée synchronisée avec la liste rafraîchie
     const currentApplication = selectedApplication
         ? applications.find((application) => application.id === selectedApplication.id) ?? selectedApplication
         : null;
@@ -715,16 +735,11 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
         return (
             <ApplicationDetails
                 application={currentApplication}
-                language={language}
-                isInterviewScheduled={
-                    Boolean(currentApplication.interviewScheduled)
-                    || Boolean(scheduledInterviews[`${offer.id}_${currentApplication.studentId}`])
-                }
+                isInterviewScheduled={Boolean(currentApplication.interviewScheduled)}
                 onBack={() => setSelectedApplication(null)}
                 onClose={onClose}
                 onScheduleInterview={onScheduleInterview}
                 onRefresh={onRefresh}
-                onDecision={onDecision}
             />
         );
     }
@@ -776,11 +791,8 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
                         </div>
                     ) : (
                         <div className="mt-6 space-y-3">
-                            {applications.map((application) => {
-                                const applicationHasInterview = Boolean(application.interviewScheduled)
-                                    || Boolean(scheduledInterviews[`${offer.id}_${application.studentId}`]);
-
-                                return <button key={application.id} type="button"
+                            {applications.map((application) => (
+                                <button key={application.id} type="button"
                                         onClick={() => setSelectedApplication(application)}
                                         className="group flex w-full items-center gap-3 rounded-2xl border border-line bg-canvas p-4 text-left transition-colors hover:border-lavender hover:bg-lavender/15 focus:outline-none focus:ring-4 focus:ring-pink/40">
                                     <span
@@ -802,7 +814,8 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
                                         className="h-3.5 w-3.5"/>{formatDate(application.submittedAt, language) || t("employerOffers.applications.notSpecified")}</span>
                                     <span className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                                         <ApplicationStatusBadge status={getApplicationStatus(application)}/>
-                                        {applicationHasInterview && (
+                                        {hasFoundInternship(application) && <InternshipFoundBadge/>}
+                                        {application.interviewScheduled && (
                                             <span
                                                 className="inline-flex items-center gap-1.5 rounded-full border border-lavender bg-lavender/35 px-3 py-1 text-xs font-bold text-ink">
                                                 <Icon name="calendar" className="h-3.5 w-3.5"/>
@@ -812,8 +825,8 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
                                     </span>
                                     <Icon name="chevron"
                                           className="h-5 w-5 shrink-0 text-ink-soft transition-transform group-hover:translate-x-0.5"/>
-                                </button>;
-                            })}
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -858,6 +871,8 @@ export default function EmployeurOffres({
                                             companyName = "",
                                             drafts: externalDrafts,
                                             setDrafts: setExternalDrafts,
+                                            workspaceTabs,
+                                            embedded = false,
                                         }) {
     const fileInputRef = useRef(null);
     const formRef = useRef(null);
@@ -899,15 +914,10 @@ export default function EmployeurOffres({
     const [localDrafts, setLocalDrafts] = useState({});
     const [interviewCandidate, setInterviewCandidate] = useState(null);
     const [interviewOfferId, setInterviewOfferId] = useState(null);
-    const [scheduledInterviews, setScheduledInterviews] = useState({});
-    const decisionsRef = useRef({});
     const drafts = externalDrafts ?? localDrafts;
     const saveDrafts = setExternalDrafts ?? setLocalDrafts;
 
     const selectedOffer = offerList.find((offer) => offer.id === selectedId) ?? null;
-    const selectedApplications = selectedOffer
-        ? applicationsByOffer[String(selectedOffer.id)] ?? getApplicationsForOffer(selectedOffer)
-        : [];
     const isOfferReadOnly = !canManageOffers;
     const pendingCount = offerList.filter((offer) => offer.statut === "EN_ATTENTE").length;
     const publishedCount = offerList.filter((offer) => offer.statut === "VALIDE").length;
@@ -995,24 +1005,27 @@ export default function EmployeurOffres({
         }
     }, [selectedId, isNewOffer, employerCompanyName, drafts]);
 
+    const fetchApplications = async (offerId) => {
+        const response = await api.employer.applications.list(offerId);
+        if (!response.ok) throw new Error("applications_request_failed");
+
+        const data = await response.json();
+        setApplicationsByOffer((current) => ({
+            ...current,
+            [String(offerId)]: Array.isArray(data) ? data.map(normalizeApplication) : [],
+        }));
+    };
+
     const loadApplications = async (offer) => {
         if (!offer?.id) return;
 
-        const offerKey = String(offer.id);
         setApplicationsOffer(offer);
         setIsApplicationsOpen(true);
         setIsLoadingApplications(true);
         setApplicationsError("");
 
         try {
-            const response = await api.employer.applications.list(offer.id);
-            if (!response.ok) throw new Error("applications_request_failed");
-
-            const data = await response.json();
-            setApplicationsByOffer((current) => ({
-                ...current,
-                [offerKey]: Array.isArray(data) ? applyDecisions(data.map(normalizeApplication), decisionsRef.current) : [],
-            }));
+            await fetchApplications(offer.id);
         } catch {
             setApplicationsError("applications_request_failed");
         } finally {
@@ -1034,7 +1047,7 @@ export default function EmployeurOffres({
                 if (!response.ok) return null;
 
                 const data = await response.json();
-                return [String(offer.id), Array.isArray(data) ? applyDecisions(data.map(normalizeApplication), decisionsRef.current) : []];
+                return [String(offer.id), Array.isArray(data) ? data.map(normalizeApplication) : []];
             } catch {
                 return null;
             }
@@ -1049,18 +1062,6 @@ export default function EmployeurOffres({
             isMounted = false;
         };
     }, [offerList, usesRemoteOffers]);
-
-    const recordDecision = (applicationId, status, comment) => {
-        decisionsRef.current[String(applicationId)] = {status, comment};
-        setApplicationsByOffer((current) => Object.fromEntries(
-            Object.entries(current).map(([offerKey, list]) => [
-                offerKey,
-                list.map((application) => String(application.id) === String(applicationId)
-                    ? {...application, status, rejectionComment: comment}
-                    : application),
-            ])
-        ));
-    };
 
     const selectOffer = (offer) => {
         const draft = drafts[String(offer.id)];
@@ -1328,17 +1329,19 @@ export default function EmployeurOffres({
     if (isLoadingOffers) return <Loading/>;
     if (loadError) return <ErrorPage error={loadError}/>;
 
-    if (interviewCandidate) {
-        console.log("Modal Render Check - selectedOffer:", selectedOffer?.id, "applicationsOffer:", applicationsOffer?.id, "candidate:", interviewCandidate);
-    }
-
     return (
-        <section className="flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <section className={embedded ? "bg-canvas" : "flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8"}>
             <div className="mx-auto w-full max-w-7xl">
-                <div>
+                {!embedded && <div>
+                    <span
+                        className="inline-flex w-fit rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                        {t("employerHome.eyebrow")}
+                    </span>
                     <h1 className="mt-2 max-w-3xl text-2xl font-black tracking-tight text-ink sm:text-3xl">{t("employerOffers.title")}</h1>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft sm:text-base">{t("employerOffers.description")}</p>
-                </div>
+                </div>}
+
+                {!embedded && workspaceTabs}
 
                 {!isAccountEmailValidated && (
                     <div
@@ -1446,7 +1449,7 @@ export default function EmployeurOffres({
                                                 <span
                                                     className="inline-flex items-center gap-1.5 rounded-xl bg-line px-3 py-2.5 text-xs font-bold text-ink-soft">
                                                     <Icon name="users" className="h-3.5 w-3.5 shrink-0"/>
-                                                    {t("employerOffers.actions.noApplications")}
+                                                    {t("employerOffers.actions.noApplications", "Aucune candidature")}
                                                 </span>
                                             )}
                                         </div>}
@@ -1471,7 +1474,8 @@ export default function EmployeurOffres({
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
-                                            {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
+                                            {!isNewOffer && selectedOffer &&
+                                                <StatusBadge status={selectedOffer.statut}/>}
                                         </div>
                                         <h2 id="employer-offer-editor-title"
                                             className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
@@ -1493,8 +1497,9 @@ export default function EmployeurOffres({
                                 </div>
 
                                 {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
-                                    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
-                                         role="status">
+                                    <div
+                                        className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
+                                        role="status">
                                 <span
                                     className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface/80 text-error"><Icon
                                     name="info" className="h-4 w-4"/></span>
@@ -1507,7 +1512,8 @@ export default function EmployeurOffres({
 
                                 {successMessage && <div
                                     className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
-                                    role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
+                                    role="status" aria-live="polite"><Icon name="check"
+                                                                           className="mt-0.5 h-5 w-5 shrink-0"/><p
                                     className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
                                 {formError && <div
                                     className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
@@ -1517,7 +1523,8 @@ export default function EmployeurOffres({
                                     <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
                                               className="space-y-8">
                                         <div>
-                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                                            <div
+                                                className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                                 <div>
                                                     <h3 className="text-lg font-black text-ink">{t("employerOffers.fileStepTitle")}</h3>
                                                     <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileStepDescription")}</p>
@@ -1565,15 +1572,17 @@ export default function EmployeurOffres({
                                                         className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
                                                         <Icon name="file" className="h-4 w-4 shrink-0"/><span
                                                         className="truncate">{t("employerOffers.currentFile")} <strong
-                                                        className="text-ink">{selectedOffer.fileName}</strong></span></div>}
+                                                        className="text-ink">{selectedOffer.fileName}</strong></span>
+                                                    </div>}
                                                 </div>
                                             )}
-                                            {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) && <PdfPreview
-                                                file={selectedFile}
-                                                documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
-                                                fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
-                                                className="mt-5"
-                                            />}
+                                            {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) &&
+                                                <PdfPreview
+                                                    file={selectedFile}
+                                                    documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
+                                                    fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
+                                                    className="mt-5"
+                                                />}
                                             {fileError && <p className="mt-2 text-sm font-semibold text-error"
                                                              role="alert">{translateMessage(t, fileError)}</p>}
                                         </div>
@@ -1582,24 +1591,29 @@ export default function EmployeurOffres({
                                             <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
                                             <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
                                             <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                                                <Field id="position" label={t("employerOffers.fields.position")} required
+                                                <Field id="position" label={t("employerOffers.fields.position")}
+                                                       required
                                                        error={fieldErrors.position}>
                                                     <input id="position" name="position" value={formValues.position}
-                                                           onChange={updateField} className={inputClass(fieldErrors.position)}
+                                                           onChange={updateField}
+                                                           className={inputClass(fieldErrors.position)}
                                                            placeholder={t("employerOffers.placeholders.position")}/>
                                                 </Field>
-                                                <Field id="targetDiscipline" label={t("employerOffers.fields.discipline")}
+                                                <Field id="targetDiscipline"
+                                                       label={t("employerOffers.fields.discipline")}
                                                        required
                                                        error={fieldErrors.targetDiscipline}>
                                                     <select id="targetDiscipline" name="targetDiscipline"
                                                             value={formValues.targetDiscipline} onChange={updateField}
                                                             className={inputClass(fieldErrors.targetDiscipline)}>
-                                                        <option value="">{t("employerOffers.fields.selectDiscipline")}</option>
+                                                        <option
+                                                            value="">{t("employerOffers.fields.selectDiscipline")}</option>
                                                         {DISCIPLINES.map(([value]) => <option key={value}
                                                                                               value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
                                                     </select>
                                                 </Field>
-                                                <Field id="adresseEntreprise" label={t("employerOffers.fields.companyAddress")}
+                                                <Field id="adresseEntreprise"
+                                                       label={t("employerOffers.fields.companyAddress")}
                                                        required
                                                        error={fieldErrors.adresseEntreprise}>
                                                     <input id="adresseEntreprise" name="adresseEntreprise"
@@ -1607,14 +1621,16 @@ export default function EmployeurOffres({
                                                            className={inputClass(fieldErrors.adresseEntreprise)}
                                                            placeholder={t("employerOffers.placeholders.companyAddress")}/>
                                                 </Field>
-                                                <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
+                                                <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")}
+                                                       required
                                                        error={fieldErrors.dateDebutStage}>
                                                     <input id="dateDebutStage" type="date" name="dateDebutStage"
                                                            min={minimumStageDate}
                                                            value={formValues.dateDebutStage} onChange={updateField}
                                                            className={inputClass(fieldErrors.dateDebutStage)}/>
                                                 </Field>
-                                                <Field id="dateFinStage" label={t("employerOffers.fields.endDate")} required
+                                                <Field id="dateFinStage" label={t("employerOffers.fields.endDate")}
+                                                       required
                                                        error={fieldErrors.dateFinStage}>
                                                     <input id="dateFinStage" type="date" name="dateFinStage"
                                                            min={formValues.dateDebutStage || minimumStageDate}
@@ -1635,7 +1651,8 @@ export default function EmployeurOffres({
                                                     </div>
                                                 </Field>
                                             </div>
-                                            <Field id="descriptionPosition" label={t("employerOffers.fields.description")}
+                                            <Field id="descriptionPosition"
+                                                   label={t("employerOffers.fields.description")}
                                                    required
                                                    error={fieldErrors.descriptionPosition} className="mt-5">
                                         <textarea id="descriptionPosition" name="descriptionPosition" rows="4"
@@ -1651,9 +1668,10 @@ export default function EmployeurOffres({
                                     <div
                                         className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
                                         {isOfferReadOnly ? (
-                                            <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft"><Icon
-                                                name="info"
-                                                className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
+                                            <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft">
+                                                <Icon
+                                                    name="info"
+                                                    className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
                                                 ? t("employerOffers.readOnlyMessage", {
                                                     status: selectedOffer?.statut === "EN_ATTENTE"
                                                         ? t("employerOffers.status.pendingLower")
@@ -1662,9 +1680,10 @@ export default function EmployeurOffres({
                                                 : t("employerOffers.viewerReadOnlyMessage")}</p>
                                         ) : (
                                             <>
-                                                <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft"><Icon
-                                                    name="info"
-                                                    className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
+                                                <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft">
+                                                    <Icon
+                                                        name="info"
+                                                        className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
                                                 </p>
                                                 <div className="flex flex-col gap-3 sm:flex-row">
                                                     <button type="button" onClick={clearForm}
@@ -1672,7 +1691,8 @@ export default function EmployeurOffres({
                                                             className="inline-flex items-center justify-center rounded-xl border border-error bg-white px-5 py-3.5 text-sm font-bold text-error transition-colors hover:bg-[#fff0f3] focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
                                                         {t("employerOffers.clear")}
                                                     </button>
-                                                    <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
+                                                    <button type="submit"
+                                                            disabled={!isAccountEmailValidated || isSubmitting}
                                                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
                                                         {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
                                                         {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
@@ -1691,9 +1711,7 @@ export default function EmployeurOffres({
                             applications={applicationsByOffer[String(applicationsOffer.id)] ?? getApplicationsForOffer(applicationsOffer)}
                             language={i18n.resolvedLanguage}
                             isLoading={isLoadingApplications}
-                            scheduledInterviews={scheduledInterviews}
                             error={applicationsError}
-
                             onClose={() => {
                                 setIsApplicationsOpen(false);
                                 setApplicationsOffer(null);
@@ -1705,7 +1723,6 @@ export default function EmployeurOffres({
                                 setInterviewCandidate(candidate);
                             }}
                             onRefresh={() => loadApplications(applicationsOffer)}
-                            onDecision={recordDecision}
                         />
                     )}
 
@@ -1713,13 +1730,10 @@ export default function EmployeurOffres({
                         <ScheduleInterviewModal
                             offerId={interviewOfferId}
                             candidat={interviewCandidate}
-                            initialData={scheduledInterviews[`${interviewOfferId}_${interviewCandidate?.id}`]}
                             onClose={() => setInterviewCandidate(null)}
-                            onSuccess={(submittedData) => {
-                                setScheduledInterviews((current) => ({
-                                    ...current,
-                                    [`${interviewOfferId}_${interviewCandidate?.id}`]: submittedData,
-                                }));
+                            onSuccess={() => {
+                                if (interviewOfferId) fetchApplications(interviewOfferId).catch(() => {
+                                });
                             }}
                         />
                     )}

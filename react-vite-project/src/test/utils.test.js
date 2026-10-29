@@ -34,6 +34,6 @@ describe("shared utilities", () => {
 
         await expect(getRedirectPathByRole("ROLE_ETUDIANT")).resolves.toBe("/");
         await expect(getRedirectPathByRole("ROLE_GESTIONNAIRE")).resolves.toBe("/gestionnaire");
-        await expect(getRedirectPathByRole("EMPLOYEUR")).resolves.toBe("/employeur");
+        await expect(getRedirectPathByRole("EMPLOYEUR")).resolves.toBe("/");
     });
 });

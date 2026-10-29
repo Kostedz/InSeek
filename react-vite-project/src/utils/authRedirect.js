@@ -5,7 +5,7 @@ export async function getRedirectPathByRole(role) {
 
     switch (normalizedRole) {
         case "GESTIONNAIRE":
-            return "/gestionnaire";
+            return "/";
         case "ETUDIANT":
             try {
                 const cvResponse = await api.student.getCv();
@@ -18,7 +18,7 @@ export async function getRedirectPathByRole(role) {
                 return "/etudiant";
             }
         case "EMPLOYEUR":
-            return "/employeur";
+            return "/";
         case "PROFESSEUR":
         default:
             return "/";
