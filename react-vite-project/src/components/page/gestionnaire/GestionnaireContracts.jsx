@@ -1,16 +1,16 @@
-import { useEffect, useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import api from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
+import {useEffect, useState, useMemo} from "react";
+import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
+import GestionnaireTabs from "./GestionnaireTabs.jsx";
 
 export default function GestionnaireContracts({embedded = false}) {
-    const { t, i18n } = useTranslation();
+    const {t, i18n} = useTranslation();
     const [contracts, setContracts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedContract, setSelectedContract] = useState(null);
-    const STATUS_DEFAULTS = { PENDING_SIGNATURE: "En attente de signature" };
+    const STATUS_DEFAULTS = {PENDING_SIGNATURE: "En attente de signature"};
     const statusLabel = (status) =>
         status ? t(`managerContracts.status.${status}`, STATUS_DEFAULTS[status] ?? status) : "—";
 
@@ -36,7 +36,7 @@ export default function GestionnaireContracts({embedded = false}) {
             const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
             setContracts(list.map(normalizeContract));
         } catch {
-            setError({ key: "managerContracts.errors.loadFailed" });
+            setError({key: "managerContracts.errors.loadFailed"});
         } finally {
             setLoading(false);
         }
@@ -79,10 +79,11 @@ export default function GestionnaireContracts({embedded = false}) {
                     </p>
                 </header>}
 
-                {!embedded && <ValidationTabs activeTab="contracts"/>}
+                {!embedded && <GestionnaireTabs activeTab="contracts"/>}
 
                 {error && (
-                    <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700" role="alert">
+                    <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
+                       role="alert">
                         {t(error.key, "Erreur de chargement des contrats.")}
                     </p>
                 )}
@@ -117,7 +118,8 @@ export default function GestionnaireContracts({embedded = false}) {
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <h3 className="font-black text-ink">{contract.studentName || contract.nomEtudiant || "Étudiant"}</h3>
-                                            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                                            <span
+                                                className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
                                                {statusLabel(contract.status)}
                                             </span>
                                         </div>
@@ -129,7 +131,8 @@ export default function GestionnaireContracts({embedded = false}) {
                                 ))}
                             </div>
 
-                            <div className="hidden sm:block overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
+                            <div
+                                className="hidden sm:block overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                     <tr className="border-b border-line bg-canvas text-xs font-bold uppercase tracking-wider text-ink-soft">
@@ -153,7 +156,8 @@ export default function GestionnaireContracts({embedded = false}) {
                                                 {formatDate(contract.startDate || contract.dateDebut)} → {formatDate(contract.endDate || contract.dateFin)}
                                             </td>
                                             <td className="p-4">
-                                                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                                                <span
+                                                    className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
                                                     {contract.status || "CRÉÉ"}
                                                 </span>
                                             </td>
@@ -198,8 +202,10 @@ export default function GestionnaireContracts({embedded = false}) {
                                     aria-label={t("common.close", "Fermer")}
                                     className="rounded-xl border border-line p-2 text-ink-soft hover:bg-canvas hover:text-ink"
                                 >
-                                    <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M6 6l12 12M18 6 6 18" />
+                                    <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                                         stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+                                         strokeLinejoin="round">
+                                        <path d="M6 6l12 12M18 6 6 18"/>
                                     </svg>
                                 </button>
                             </div>
@@ -207,19 +213,23 @@ export default function GestionnaireContracts({embedded = false}) {
                             <div className="mt-6 space-y-4 text-sm">
                                 <div className="grid grid-cols-2 gap-4 rounded-xl border border-line bg-canvas p-4">
                                     <div>
-                                        <span className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.student", "Étudiant")}</span>
+                                        <span
+                                            className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.student", "Étudiant")}</span>
                                         <p className="mt-1 font-bold text-ink">{selectedContract.studentName || selectedContract.nomEtudiant || "—"}</p>
                                     </div>
                                     <div>
-                                        <span className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.discipline", "Discipline")}</span>
+                                        <span
+                                            className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.discipline", "Discipline")}</span>
                                         <p className="mt-1 font-bold text-ink">{selectedContract.discipline || "—"}</p>
                                     </div>
                                     <div>
-                                        <span className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.company", "Entreprise")}</span>
+                                        <span
+                                            className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.company", "Entreprise")}</span>
                                         <p className="mt-1 font-bold text-ink">{selectedContract.companyName || selectedContract.nomEntreprise || "—"}</p>
                                     </div>
                                     <div>
-                                        <span className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.employer", "Employeur")}</span>
+                                        <span
+                                            className="block text-xs font-bold uppercase text-ink-soft">{t("managerContracts.employer", "Employeur")}</span>
                                         <p className="mt-1 font-bold text-ink">{selectedContract.employerName || selectedContract.nomEmployeur || "—"}</p>
                                     </div>
                                 </div>
@@ -227,12 +237,24 @@ export default function GestionnaireContracts({embedded = false}) {
                                 <div className="rounded-xl border border-line p-4 space-y-3">
                                     <h3 className="font-black text-ink text-xs uppercase tracking-wider text-ink-soft">{t("managerContracts.modalities", "Modalités")}</h3>
                                     <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div><span className="text-ink-soft">Début :</span> <strong className="text-ink">{formatDate(selectedContract.startDate || selectedContract.dateDebut)}</strong></div>
-                                        <div><span className="text-ink-soft">Fin :</span> <strong className="text-ink">{formatDate(selectedContract.endDate || selectedContract.dateFin)}</strong></div>
-                                        <div><span className="text-ink-soft">Horaire :</span> <strong className="text-ink">{selectedContract.schedule || selectedContract.horaire || "—"}</strong></div>
-                                        <div><span className="text-ink-soft">Heures/semaine :</span> <strong className="text-ink">{selectedContract.weeklyHours || selectedContract.heuresParSemaine || "—"}</strong></div>
-                                        <div><span className="text-ink-soft">Lieu :</span> <strong className="text-ink">{selectedContract.location || selectedContract.lieu || "—"}</strong></div>
-                                        <div><span className="text-ink-soft">Rémunération :</span> <strong className="text-ink">{selectedContract.remuneration ?? selectedContract.salaire ?? 0} $/h</strong></div>
+                                        <div><span className="text-ink-soft">Début :</span> <strong
+                                            className="text-ink">{formatDate(selectedContract.startDate || selectedContract.dateDebut)}</strong>
+                                        </div>
+                                        <div><span className="text-ink-soft">Fin :</span> <strong
+                                            className="text-ink">{formatDate(selectedContract.endDate || selectedContract.dateFin)}</strong>
+                                        </div>
+                                        <div><span className="text-ink-soft">Horaire :</span> <strong
+                                            className="text-ink">{selectedContract.schedule || selectedContract.horaire || "—"}</strong>
+                                        </div>
+                                        <div><span className="text-ink-soft">Heures/semaine :</span> <strong
+                                            className="text-ink">{selectedContract.weeklyHours || selectedContract.heuresParSemaine || "—"}</strong>
+                                        </div>
+                                        <div><span className="text-ink-soft">Lieu :</span> <strong
+                                            className="text-ink">{selectedContract.location || selectedContract.lieu || "—"}</strong>
+                                        </div>
+                                        <div><span className="text-ink-soft">Rémunération :</span> <strong
+                                            className="text-ink">{selectedContract.remuneration ?? selectedContract.salaire ?? 0} $/h</strong>
+                                        </div>
                                     </div>
                                 </div>
 

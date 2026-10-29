@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import {useEffect, useState} from "react";
+import {useTranslation} from "react-i18next";
 import {Link, useLocation} from "react-router-dom";
-import api from "../../utils/api.js";
-import { countPendingDocuments } from "../../utils/gestionnaireCounts.js";
-import ValidationTabs from "./ValidationTabs.jsx";
+import api from "../../../utils/api.js";
+import {countPendingDocuments} from "../../../utils/gestionnaireCounts.js";
+import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import GestionnaireValidation from "./GestionnaireValidation.jsx";
 import GestionnaireCvValidation from "./GestionnaireCvValidation.jsx";
 import GestionnaireStudents from "./GestionnaireStudents.jsx";
@@ -25,7 +25,7 @@ const PAGE_COPY = {
 };
 
 function GestionnaireDashboardHome() {
-    const { t } = useTranslation();
+    const {t} = useTranslation();
     const {pathname} = useLocation();
     const managerTabPath = (tab) => ({
         offers: "/gestionnaire/offres",
@@ -44,6 +44,7 @@ function GestionnaireDashboardHome() {
 
     useEffect(() => {
         let isMounted = true;
+
         async function fetchDashboardData() {
             try {
                 const [offersCount, cvsCount, studentsRes, contractsRes] = await Promise.all([
@@ -74,20 +75,23 @@ function GestionnaireDashboardHome() {
                         contractsCount: contractsList.length,
                     });
                 }
-        } catch {
+            } catch {
             } finally {
                 if (isMounted) setLoading(false);
             }
         }
 
         fetchDashboardData();
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     if (forbidden) {
         return (
             <section className="flex flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
-                <div className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-sm">
+                <div
+                    className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-sm">
                     <p className="text-sm font-bold text-error">403</p>
                     <h1 className="mt-2 text-3xl font-black text-ink">{t("managerValidation.forbiddenTitle", "Accès refusé")}</h1>
                     <p className="mt-3 text-sm leading-7 text-ink-soft">{t("managerValidation.forbiddenDescription", "Cette page est réservée aux gestionnaires de stages.")}</p>
@@ -139,9 +143,10 @@ function GestionnaireDashboardHome() {
                             <h2 className="text-lg font-black text-ink">{t("managerDashboard.todo.title", "À faire / Actions prioritaires")}</h2>
                             <div className="mt-4 space-y-3">
                                 {stats.pendingOffers > 0 && (
-                                    <div className="flex items-center justify-between rounded-xl border border-line bg-canvas p-4">
+                                    <div
+                                        className="flex items-center justify-between rounded-xl border border-line bg-canvas p-4">
                                         <p className="text-sm font-semibold text-ink">
-                                            {t("managerDashboard.todo.offersAction", "{{count}} offre(s) de stage en attente de validation", { count: stats.pendingOffers })}
+                                            {t("managerDashboard.todo.offersAction", "{{count}} offre(s) de stage en attente de validation", {count: stats.pendingOffers})}
                                         </p>
                                         <Link to={managerTabPath("offers")}
                                               className="rounded-xl bg-ink px-4 py-2 text-xs font-bold text-white hover:bg-ink-soft">
@@ -150,9 +155,10 @@ function GestionnaireDashboardHome() {
                                     </div>
                                 )}
                                 {stats.pendingCvs > 0 && (
-                                    <div className="flex items-center justify-between rounded-xl border border-line bg-canvas p-4">
+                                    <div
+                                        className="flex items-center justify-between rounded-xl border border-line bg-canvas p-4">
                                         <p className="text-sm font-semibold text-ink">
-                                            {t("managerDashboard.todo.cvsAction", "{{count}} CV en attente de validation", { count: stats.pendingCvs })}
+                                            {t("managerDashboard.todo.cvsAction", "{{count}} CV en attente de validation", {count: stats.pendingCvs})}
                                         </p>
                                         <Link to={managerTabPath("cvs")}
                                               className="rounded-xl bg-ink px-4 py-2 text-xs font-bold text-white hover:bg-ink-soft">
@@ -161,9 +167,10 @@ function GestionnaireDashboardHome() {
                                     </div>
                                 )}
                                 {stats.studentsWithoutContract > 0 && (
-                                    <div className="flex items-center justify-between rounded-xl border border-line bg-canvas p-4">
+                                    <div
+                                        className="flex items-center justify-between rounded-xl border border-line bg-canvas p-4">
                                         <p className="text-sm font-semibold text-ink">
-                                            {t("managerDashboard.todo.contractsAction", "{{count}} étudiant(s) au statut 'STAGE TROUVÉ' sans contrat", { count: stats.studentsWithoutContract })}
+                                            {t("managerDashboard.todo.contractsAction", "{{count}} étudiant(s) au statut 'STAGE TROUVÉ' sans contrat", {count: stats.studentsWithoutContract})}
                                         </p>
                                         <Link to={managerTabPath("students")}
                                               className="rounded-xl bg-ink px-4 py-2 text-xs font-bold text-white hover:bg-ink-soft">
@@ -209,7 +216,7 @@ export default function GestionnaireDashboard() {
                         <p className="shrink-0 text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
                     )}
                 </header>
-                <ValidationTabs activeTab={activeTab}/>
+                <GestionnaireTabs activeTab={activeTab}/>
 
                 {activeTab === "home" && <GestionnaireDashboardHome/>}
                 {activeTab === "offers" && <GestionnaireValidation embedded hideEmbeddedHeading/>}

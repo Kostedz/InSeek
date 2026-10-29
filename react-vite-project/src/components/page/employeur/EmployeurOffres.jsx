@@ -1,12 +1,12 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
-import {createTranslationMessage, translateMessage} from "../../utils/i18nMessage.js";
-import api from "../../utils/api.js";
-import Loading from "../Loading.jsx";
-import ErrorPage from "../ErrorPage.jsx";
-import PdfPreview from "../PdfPreview.jsx";
-import {formatOfferTitle} from "./studentOfferUtils.js";
-import ScheduleInterviewModal from "../employer/SchedulenterviewModal.jsx";
+import {createTranslationMessage, translateMessage} from "../../../utils/i18nMessage.js";
+import api from "../../../utils/api.js";
+import Loading from "../../Loading.jsx";
+import ErrorPage from "../../ErrorPage.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
+import {formatOfferTitle} from "../studentOfferUtils.js";
+import ScheduleInterviewModal from "../../employer/SchedulenterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -252,20 +252,23 @@ function ApplicationStatusBadge({status}) {
 
     if (status === "ACCEPTED") {
         return (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+            <span
+                className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
                 {t("employerOffers.applications.status.accepted", "Acceptée")}
             </span>
         );
     }
     if (status === "REJECTED") {
         return (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+            <span
+                className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
                 {t("employerOffers.applications.status.rejected", "Refusée")}
             </span>
         );
     }
     return (
-        <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+        <span
+            className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
             {t("employerOffers.applications.status.pending", "En attente")}
         </span>
     );
@@ -275,7 +278,8 @@ function InternshipFoundBadge() {
     const {t} = useTranslation();
 
     return (
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900">
+        <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-900">
             <Icon name="check" className="h-3.5 w-3.5"/>
             {t("employerOffers.applications.status.internshipFound", "Stage trouvé")}
         </span>
@@ -377,8 +381,8 @@ function ApplicationDocument({icon, label, fileName, documentId, t}) {
     );
 }
 
-function ApplicationDetails({ application, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh }) {
-    const { t } = useTranslation();
+function ApplicationDetails({application, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh}) {
+    const {t} = useTranslation();
     const hasContactDetails = application.email || application.phone || application.address;
 
     const [showDecisionModal, setShowDecisionModal] = useState(false);
@@ -443,7 +447,7 @@ function ApplicationDetails({ application, isInterviewScheduled, onBack, onClose
 
             if (onRefresh) onRefresh();
         } catch (err) {
-            setServerError({ key: err.message });
+            setServerError({key: err.message});
         } finally {
             setIsSubmitting(false);
         }
@@ -483,7 +487,8 @@ function ApplicationDetails({ application, isInterviewScheduled, onBack, onClose
                     </div>
 
                     {successMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+                        <div
+                            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
                             {successMessage}
                         </div>
                     )}
@@ -499,17 +504,20 @@ function ApplicationDetails({ application, isInterviewScheduled, onBack, onClose
 
                         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                             {isPending && (
-                                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
                                     {t("employerOffers.applications.status.pending", "En attente")}
                                 </span>
                             )}
                             {isAccepted && (
-                                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
                                     {t("employerOffers.applications.status.accepted", "Acceptée")}
                                 </span>
                             )}
                             {isRejected && (
-                                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
                                     {t("employerOffers.applications.status.rejected", "Refusée")}
                                 </span>
                             )}
@@ -647,7 +655,8 @@ function ApplicationDetails({ application, isInterviewScheduled, onBack, onClose
                         </p>
 
                         {serverError && (
-                            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+                            <div
+                                className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
                                 {translateMessage(t, serverError)}
                             </div>
                         )}
@@ -667,7 +676,8 @@ function ApplicationDetails({ application, isInterviewScheduled, onBack, onClose
                                     placeholder={t("employerOffers.applications.commentPlaceholder", "Saisissez les raisons du refus...")}
                                     className="w-full rounded-xl border border-line bg-canvas p-3 text-sm text-ink outline-none focus:border-lavender resize-none"
                                 />
-                                {commentError && <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
+                                {commentError &&
+                                    <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
                             </div>
                         )}
 
@@ -1464,7 +1474,8 @@ export default function EmployeurOffres({
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.editor.label")}</p>
-                                            {!isNewOffer && selectedOffer && <StatusBadge status={selectedOffer.statut}/>}
+                                            {!isNewOffer && selectedOffer &&
+                                                <StatusBadge status={selectedOffer.statut}/>}
                                         </div>
                                         <h2 id="employer-offer-editor-title"
                                             className="mt-3 text-2xl font-black tracking-tight text-ink">{t(editorTitleKey)}</h2>
@@ -1486,8 +1497,9 @@ export default function EmployeurOffres({
                                 </div>
 
                                 {selectedOffer?.statut === "REJETE" && selectedOffer.commentaireRejet && (
-                                    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
-                                         role="status">
+                                    <div
+                                        className="mt-6 flex items-start gap-3 rounded-2xl border border-blush bg-blush/30 p-4"
+                                        role="status">
                                 <span
                                     className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface/80 text-error"><Icon
                                     name="info" className="h-4 w-4"/></span>
@@ -1500,7 +1512,8 @@ export default function EmployeurOffres({
 
                                 {successMessage && <div
                                     className="mt-6 flex items-start gap-3 rounded-2xl border border-[#9ed9bd] bg-[#dff6e8] p-4 text-sm text-[#245e3b]"
-                                    role="status" aria-live="polite"><Icon name="check" className="mt-0.5 h-5 w-5 shrink-0"/><p
+                                    role="status" aria-live="polite"><Icon name="check"
+                                                                           className="mt-0.5 h-5 w-5 shrink-0"/><p
                                     className="font-semibold">{translateMessage(t, successMessage)}</p></div>}
                                 {formError && <div
                                     className="mt-6 rounded-2xl border border-error bg-blush/25 p-4 text-sm font-semibold text-error"
@@ -1510,7 +1523,8 @@ export default function EmployeurOffres({
                                     <fieldset disabled={!isAccountEmailValidated || isSubmitting || isOfferReadOnly}
                                               className="space-y-8">
                                         <div>
-                                            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                                            <div
+                                                className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                                                 <div>
                                                     <h3 className="text-lg font-black text-ink">{t("employerOffers.fileStepTitle")}</h3>
                                                     <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.fileStepDescription")}</p>
@@ -1558,15 +1572,17 @@ export default function EmployeurOffres({
                                                         className="mt-5 flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink-soft">
                                                         <Icon name="file" className="h-4 w-4 shrink-0"/><span
                                                         className="truncate">{t("employerOffers.currentFile")} <strong
-                                                        className="text-ink">{selectedOffer.fileName}</strong></span></div>}
+                                                        className="text-ink">{selectedOffer.fileName}</strong></span>
+                                                    </div>}
                                                 </div>
                                             )}
-                                            {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) && <PdfPreview
-                                                file={selectedFile}
-                                                documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
-                                                fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
-                                                className="mt-5"
-                                            />}
+                                            {(selectedFile || (!isFileCleared && selectedOffer?.fileName)) &&
+                                                <PdfPreview
+                                                    file={selectedFile}
+                                                    documentId={!selectedFile && !isFileCleared ? selectedOffer?.id : null}
+                                                    fileName={selectedFile?.name || (!isFileCleared && selectedOffer?.fileName)}
+                                                    className="mt-5"
+                                                />}
                                             {fileError && <p className="mt-2 text-sm font-semibold text-error"
                                                              role="alert">{translateMessage(t, fileError)}</p>}
                                         </div>
@@ -1575,24 +1591,29 @@ export default function EmployeurOffres({
                                             <h3 className="text-lg font-black text-ink">{t("employerOffers.detailsStepTitle")}</h3>
                                             <p className="mt-1 text-sm text-ink-soft">{t("employerOffers.detailsStepDescription")}</p>
                                             <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                                                <Field id="position" label={t("employerOffers.fields.position")} required
+                                                <Field id="position" label={t("employerOffers.fields.position")}
+                                                       required
                                                        error={fieldErrors.position}>
                                                     <input id="position" name="position" value={formValues.position}
-                                                           onChange={updateField} className={inputClass(fieldErrors.position)}
+                                                           onChange={updateField}
+                                                           className={inputClass(fieldErrors.position)}
                                                            placeholder={t("employerOffers.placeholders.position")}/>
                                                 </Field>
-                                                <Field id="targetDiscipline" label={t("employerOffers.fields.discipline")}
+                                                <Field id="targetDiscipline"
+                                                       label={t("employerOffers.fields.discipline")}
                                                        required
                                                        error={fieldErrors.targetDiscipline}>
                                                     <select id="targetDiscipline" name="targetDiscipline"
                                                             value={formValues.targetDiscipline} onChange={updateField}
                                                             className={inputClass(fieldErrors.targetDiscipline)}>
-                                                        <option value="">{t("employerOffers.fields.selectDiscipline")}</option>
+                                                        <option
+                                                            value="">{t("employerOffers.fields.selectDiscipline")}</option>
                                                         {DISCIPLINES.map(([value]) => <option key={value}
                                                                                               value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
                                                     </select>
                                                 </Field>
-                                                <Field id="adresseEntreprise" label={t("employerOffers.fields.companyAddress")}
+                                                <Field id="adresseEntreprise"
+                                                       label={t("employerOffers.fields.companyAddress")}
                                                        required
                                                        error={fieldErrors.adresseEntreprise}>
                                                     <input id="adresseEntreprise" name="adresseEntreprise"
@@ -1600,14 +1621,16 @@ export default function EmployeurOffres({
                                                            className={inputClass(fieldErrors.adresseEntreprise)}
                                                            placeholder={t("employerOffers.placeholders.companyAddress")}/>
                                                 </Field>
-                                                <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")} required
+                                                <Field id="dateDebutStage" label={t("employerOffers.fields.startDate")}
+                                                       required
                                                        error={fieldErrors.dateDebutStage}>
                                                     <input id="dateDebutStage" type="date" name="dateDebutStage"
                                                            min={minimumStageDate}
                                                            value={formValues.dateDebutStage} onChange={updateField}
                                                            className={inputClass(fieldErrors.dateDebutStage)}/>
                                                 </Field>
-                                                <Field id="dateFinStage" label={t("employerOffers.fields.endDate")} required
+                                                <Field id="dateFinStage" label={t("employerOffers.fields.endDate")}
+                                                       required
                                                        error={fieldErrors.dateFinStage}>
                                                     <input id="dateFinStage" type="date" name="dateFinStage"
                                                            min={formValues.dateDebutStage || minimumStageDate}
@@ -1628,7 +1651,8 @@ export default function EmployeurOffres({
                                                     </div>
                                                 </Field>
                                             </div>
-                                            <Field id="descriptionPosition" label={t("employerOffers.fields.description")}
+                                            <Field id="descriptionPosition"
+                                                   label={t("employerOffers.fields.description")}
                                                    required
                                                    error={fieldErrors.descriptionPosition} className="mt-5">
                                         <textarea id="descriptionPosition" name="descriptionPosition" rows="4"
@@ -1644,9 +1668,10 @@ export default function EmployeurOffres({
                                     <div
                                         className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
                                         {isOfferReadOnly ? (
-                                            <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft"><Icon
-                                                name="info"
-                                                className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
+                                            <p className="flex items-start gap-2 text-sm font-semibold text-ink-soft">
+                                                <Icon
+                                                    name="info"
+                                                    className="mt-0.5 h-4 w-4 shrink-0"/>{canManageOffers
                                                 ? t("employerOffers.readOnlyMessage", {
                                                     status: selectedOffer?.statut === "EN_ATTENTE"
                                                         ? t("employerOffers.status.pendingLower")
@@ -1655,9 +1680,10 @@ export default function EmployeurOffres({
                                                 : t("employerOffers.viewerReadOnlyMessage")}</p>
                                         ) : (
                                             <>
-                                                <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft"><Icon
-                                                    name="info"
-                                                    className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
+                                                <p className="flex items-start gap-2 text-xs leading-5 text-ink-soft">
+                                                    <Icon
+                                                        name="info"
+                                                        className="mt-0.5 h-4 w-4 shrink-0"/>{t("employerOffers.resubmissionMessage")}
                                                 </p>
                                                 <div className="flex flex-col gap-3 sm:flex-row">
                                                     <button type="button" onClick={clearForm}
@@ -1665,7 +1691,8 @@ export default function EmployeurOffres({
                                                             className="inline-flex items-center justify-center rounded-xl border border-error bg-white px-5 py-3.5 text-sm font-bold text-error transition-colors hover:bg-[#fff0f3] focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
                                                         {t("employerOffers.clear")}
                                                     </button>
-                                                    <button type="submit" disabled={!isAccountEmailValidated || isSubmitting}
+                                                    <button type="submit"
+                                                            disabled={!isAccountEmailValidated || isSubmitting}
                                                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50 disabled:cursor-not-allowed disabled:opacity-50">
                                                         {isSubmitting ? t("employerOffers.submitting") : isNewOffer ? t("employerOffers.submit") : t("employerOffers.submitUpdated")}
                                                         {!isSubmitting && <Icon name="arrow" className="h-4 w-4"/>}
@@ -1705,7 +1732,8 @@ export default function EmployeurOffres({
                             candidat={interviewCandidate}
                             onClose={() => setInterviewCandidate(null)}
                             onSuccess={() => {
-                                if (interviewOfferId) fetchApplications(interviewOfferId).catch(() => {});
+                                if (interviewOfferId) fetchApplications(interviewOfferId).catch(() => {
+                                });
                             }}
                         />
                     )}

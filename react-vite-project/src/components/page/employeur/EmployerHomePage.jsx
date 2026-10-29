@@ -2,7 +2,7 @@ import {useLocation, Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import EmployeurOffres from "./EmployeurOffres.jsx";
 import EmployerContractsPage from "./EmployerContractsPage.jsx";
-import useSlidingTabIndicator from "../useSlidingTabIndicator.js";
+import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
 function EmployerMenu({activeTab, t, offersPath}) {
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "employer-active-tab");
@@ -65,23 +65,23 @@ export default function EmployerHomePage({
                 <EmployerMenu activeTab={activeTab} t={t} offersPath={offersPath}/>
 
                 <div className="mt-6">
-            {activeTab === "offers" ? (
-                <EmployeurOffres
-                    user={user}
-                    canManageOffers={canManageOffers}
-                    companyName={companyName}
-                    isAccountEmailValidated={isAccountEmailValidated}
-                    drafts={drafts}
-                    setDrafts={setDrafts}
-                    embedded
-                />
-            ) : (
-                <EmployerContractsPage
-                    user={user}
-                    contracts={contracts}
-                    embedded
-                />
-            )}
+                    {activeTab === "offers" ? (
+                        <EmployeurOffres
+                            user={user}
+                            canManageOffers={canManageOffers}
+                            companyName={companyName}
+                            isAccountEmailValidated={isAccountEmailValidated}
+                            drafts={drafts}
+                            setDrafts={setDrafts}
+                            embedded
+                        />
+                    ) : (
+                        <EmployerContractsPage
+                            user={user}
+                            contracts={contracts}
+                            embedded
+                        />
+                    )}
                 </div>
             </div>
         </section>

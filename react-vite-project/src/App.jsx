@@ -7,14 +7,14 @@ import LoginForm from "./components/auth/LoginForm.jsx";
 import fetcher from "./utils/fetcher.js";
 import ErrorPage from "./components/ErrorPage.jsx";
 import Logout from "./components/auth/Logout.jsx";
-import EtudiantTeleverseCV from "./components/page/EtudiantTeleverseCV.jsx";
-import EmployerHomePage from "./components/page/EmployerHomePage.jsx";
+import EtudiantTeleverseCV from "./components/page/etudiant/EtudiantTeleverseCV.jsx";
+import EmployerHomePage from "./components/page/employeur/EmployerHomePage.jsx";
 import RegisterForm from "./components/auth/RegisterForm.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import {createTranslationMessage} from "./utils/i18nMessage.js";
-import EtudiantProfil from "./components/page/EtudiantProfil.jsx";
-import StudentHomePage from "./components/page/StudentHomePage.jsx";
-import GestionnaireDashboard from "./components/page/GestionnaireDashboard.jsx";
+import EtudiantProfil from "./components/page/etudiant/EtudiantProfil.jsx";
+import StudentHomePage from "./components/page/etudiant/StudentHomePage.jsx";
+import GestionnaireDashboard from "./components/page/gestionnaire/GestionnaireDashboard.jsx";
 
 function App() {
     const [user, setUser] = useState({})

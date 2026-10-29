@@ -1,11 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import api from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
-import ContractCreationModal from "../gestionnaire/ContractCreationModal.jsx";
+import {useEffect, useState, useMemo} from "react";
+import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
+import GestionnaireTabs from "./GestionnaireTabs.jsx";
+import ContractCreationModal from "../../gestionnaire/ContractCreationModal.jsx";
 
 export default function GestionnaireStudents({embedded = false}) {
-    const { t } = useTranslation();
+    const {t} = useTranslation();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -23,7 +23,7 @@ export default function GestionnaireStudents({embedded = false}) {
             const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
             setStudents(list);
         } catch {
-            setError({ key: "managerStudents.errors.loadFailed" });
+            setError({key: "managerStudents.errors.loadFailed"});
         } finally {
             setLoading(false);
         }
@@ -63,10 +63,11 @@ export default function GestionnaireStudents({embedded = false}) {
                     </p>
                 </header>}
 
-                {!embedded && <ValidationTabs activeTab="students"/>}
+                {!embedded && <GestionnaireTabs activeTab="students"/>}
 
                 {error && (
-                    <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700" role="alert">
+                    <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
+                       role="alert">
                         {t(error.key, "Erreur de chargement des étudiants.")}
                     </p>
                 )}
@@ -127,20 +128,23 @@ export default function GestionnaireStudents({embedded = false}) {
                                 const studentName = `${student.firstName || student.prenom || ""} ${student.lastName || student.nom || ""}`.trim();
 
                                 return (
-                                    <div key={student.id} className="flex flex-col justify-between rounded-2xl border border-line bg-surface p-5 shadow-sm">
+                                    <div key={student.id}
+                                         className="flex flex-col justify-between rounded-2xl border border-line bg-surface p-5 shadow-sm">
                                         <div>
                                             <div className="flex items-start justify-between gap-2">
                                                 <h3 className="font-black text-ink text-base">{studentName || "Étudiant"}</h3>
-                                                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                                                    hasContract ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
-                                                }`}>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                                                        hasContract ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                                                    }`}>
                                                     {hasContract ? t("managerStudents.status.hasContract", "Contrat créé") : t("managerStudents.status.noContract", "Stage trouvé")}
                                                 </span>
                                             </div>
                                             <p className="mt-1 text-xs text-ink-soft break-all">{student.email}</p>
                                             {student.discipline && (
                                                 <p className="mt-3 text-xs font-semibold text-ink">
-                                                    <span className="text-ink-soft">{t("managerStudents.discipline", "Discipline")} : </span>
+                                                    <span
+                                                        className="text-ink-soft">{t("managerStudents.discipline", "Discipline")} : </span>
                                                     {student.discipline}
                                                 </p>
                                             )}
@@ -148,7 +152,8 @@ export default function GestionnaireStudents({embedded = false}) {
 
                                         <div className="mt-5 pt-4 border-t border-line">
                                             {hasContract ? (
-                                                <span className="block text-center text-xs font-bold text-ink-soft italic">
+                                                <span
+                                                    className="block text-center text-xs font-bold text-ink-soft italic">
                                                     {t("managerStudents.contractAlreadyCreated", "Contrat déjà actif")}
                                                 </span>
                                             ) : (

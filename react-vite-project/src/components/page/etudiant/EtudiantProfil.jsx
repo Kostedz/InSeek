@@ -1,8 +1,8 @@
 import React, {useState} from "react";
 import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
-import {api} from "../../utils/api.js";
-import {DisciplineEnum} from "../../constants/disciplines.js";
+import {api} from "../../../utils/api.js";
+import {DisciplineEnum} from "../../../constants/disciplines.js";
 
 const disciplines = Object.values(DisciplineEnum).map(({value}) => value);
 

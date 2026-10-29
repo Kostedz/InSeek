@@ -5,7 +5,7 @@ import ContractSignaturePage, {
     getDemoContracts,
     isDemoEmployer,
     saveDemoContract
-} from "./ContractSignaturePage.jsx";
+} from "../ContractSignaturePage.jsx";
 
 const SIGNED_VALUES = new Set(["TRUE", "SIGNED", "SIGN", "COMPLETE", "COMPLETED"]);
 

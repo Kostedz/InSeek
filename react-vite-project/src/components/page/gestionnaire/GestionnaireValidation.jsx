@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { translateMessage } from "../../utils/i18nMessage.js";
-import api from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
-import PdfPreview from "../PdfPreview.jsx";
+import {useEffect, useMemo, useState} from "react";
+import {useTranslation} from "react-i18next";
+import {translateMessage} from "../../../utils/i18nMessage.js";
+import api from "../../../utils/api.js";
+import GestionnaireTabs from "./GestionnaireTabs.jsx";
+import PdfPreview from "../../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
@@ -205,7 +205,7 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
             const samples = createSampleOffers().map((offer) => normalizeOffer(offer, t));
             setOffers(samples);
             setSelectedId(samples[0]?.id ?? null);
-            setError({ key: "managerValidation.errors.unavailable" });
+            setError({key: "managerValidation.errors.unavailable"});
         } finally {
             if (showLoading) setLoading(false);
         }
@@ -355,14 +355,14 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
                 </header>}
                 {embedded && !hideEmbeddedHeading &&
                     <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
-                    <div>
-                        <h2 className="text-2xl font-black tracking-tight text-ink">{t("managerValidation.title")}</h2>
-                        <p className="mt-2 text-sm leading-6 text-ink-soft">{t("managerValidation.description")}</p>
-                    </div>
-                    <p className="text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
+                        <div>
+                            <h2 className="text-2xl font-black tracking-tight text-ink">{t("managerValidation.title")}</h2>
+                            <p className="mt-2 text-sm leading-6 text-ink-soft">{t("managerValidation.description")}</p>
+                        </div>
+                        <p className="text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
                     </div>}
 
-                {!embedded && <ValidationTabs activeTab="offers" offersCount={pendingOffers.length}/>}
+                {!embedded && <GestionnaireTabs activeTab="offers" offersCount={pendingOffers.length}/>}
 
                 {error &&
                     <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"
@@ -453,7 +453,7 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
                                                   value={formatHourlyPay(selectedOffer.salaire, i18n.resolvedLanguage, t)}/>
                                         {selectedOffer.descriptionPosition && <div className="sm:col-span-2"><InfoItem
                                             label={t("managerValidation.descriptionLabel")}
-                                                                                 value={selectedOffer.descriptionPosition}/>
+                                            value={selectedOffer.descriptionPosition}/>
                                         </div>}
                                     </div>
                                 </div>}

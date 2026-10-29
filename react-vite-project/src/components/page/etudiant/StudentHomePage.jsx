@@ -2,14 +2,14 @@ import {useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import EtudiantAccueil from "./EtudiantAccueil.jsx";
 import EtudiantCandidatures from "./EtudiantCandidatures.jsx";
-import StudentConvocation from "../etudiant/StudentConvocation.jsx";
+import StudentConvocation from "./StudentConvocation.jsx";
 import StudentMenu from "./StudentMenu.jsx";
 import ContractSignaturePage, {
     createDemoContract,
     getDemoContracts,
     isDemoStudent,
     saveDemoContract
-} from "./ContractSignaturePage.jsx";
+} from "../ContractSignaturePage.jsx";
 import StudentCvAccess from "./StudentCvAccess.jsx";
 
 function getActiveTab(pathname) {

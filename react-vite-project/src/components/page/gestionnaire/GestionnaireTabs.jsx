@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import {Link, useLocation} from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { countPendingDocuments } from "../../utils/gestionnaireCounts.js";
-import useSlidingTabIndicator from "../useSlidingTabIndicator.js";
+import {useTranslation} from "react-i18next";
+import {countPendingDocuments, PENDING_DOCUMENT_PROCESSED_EVENT} from "../../../utils/gestionnaireCounts.js";
+import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
-export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
-    const { t } = useTranslation();
+export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
+    const {t} = useTranslation();
     const {pathname} = useLocation();
     const homePath = pathname.startsWith("/gestionnaire") ? "/gestionnaire" : "/";
-    const [loadedCounts, setLoadedCounts] = useState({ offers: null, cvs: null });
+    const [loadedCounts, setLoadedCounts] = useState({offers: null, cvs: null});
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "manager-active-tab");
 
     useEffect(() => {
@@ -22,7 +22,9 @@ export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
             requests.push(countPendingDocuments("CV").then((count) => ["cvs", count]));
         }
 
-        if (!requests.length) return () => { isMounted = false; };
+        if (!requests.length) return () => {
+            isMounted = false;
+        };
 
         Promise.all(requests).then((results) => {
             if (!isMounted) return;
@@ -30,16 +32,37 @@ export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
                 ...current,
                 ...Object.fromEntries(results.filter(([, count]) => count !== null)),
             }));
-        }).catch(() => {});
+        }).catch(() => {
+        });
 
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+        };
     }, [offersCount, cvsCount]);
+
+    useEffect(() => {
+        const handleProcessedDocument = (event) => {
+            const key = event.detail?.type === "CV" ? "cvs"
+                : event.detail?.type === "OffreDeStage" ? "offers"
+                    : null;
+            if (!key) return;
+
+            setLoadedCounts((current) => current[key] === null ? current : ({
+                ...current,
+                [key]: Math.max(0, current[key] - 1),
+            }));
+        };
+
+        window.addEventListener(PENDING_DOCUMENT_PROCESSED_EVENT, handleProcessedDocument);
+        return () => window.removeEventListener(PENDING_DOCUMENT_PROCESSED_EVENT, handleProcessedDocument);
+    }, []);
 
     const displayedOffersCount = offersCount ?? loadedCounts.offers;
     const displayedCvsCount = cvsCount ?? loadedCounts.cvs;
 
     const countBadge = (count) => count === null || count === undefined || count === 0 ? null : (
-        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
+        <span
+            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
             {count}
         </span>
     );
@@ -52,7 +75,12 @@ export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
             path: "/gestionnaire/offres",
             count: displayedOffersCount
         },
-        { id: "cvs", label: t("managerValidation.tabs.cvs", "CV des étudiants"), path: "/gestionnaire/cv", count: displayedCvsCount },
+        {
+            id: "cvs",
+            label: t("managerValidation.tabs.cvs", "CV des étudiants"),
+            path: "/gestionnaire/cv",
+            count: displayedCvsCount
+        },
         {
             id: "students",
             label: t("managerStudents.tabLabel", "Étudiants admissibles"),

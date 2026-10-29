@@ -1,7 +1,6 @@
-
-import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import api from "../../utils/api.js";
+import {useCallback, useEffect, useState} from "react";
+import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
 
 function normalizeStatus(value) {
     const normalized = String(value ?? "")
@@ -23,6 +22,7 @@ function normalizeStatus(value) {
 
     return "PENDING";
 }
+
 function normalizeInterview(item) {
     const date =
         item.DateAndTime ??
@@ -81,11 +81,11 @@ function formatDate(interview, language) {
 
     return new Intl.DateTimeFormat(
         language === "en" ? "en-CA" : "fr-CA",
-        { dateStyle: "long", timeStyle: "short" }
+        {dateStyle: "long", timeStyle: "short"}
     ).format(date);
 }
 
-function StatusBadge({ status, t }) {
+function StatusBadge({status, t}) {
     const styles = {
         PENDING: "border-gold bg-gold/45 text-ink",
         ACCEPTED: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
@@ -103,7 +103,7 @@ function StatusBadge({ status, t }) {
     );
 }
 
-function Info({ label, value }) {
+function Info({label, value}) {
     if (value === null || value === undefined || String(value).trim() === "") {
         return null;
     }
@@ -344,7 +344,7 @@ function InterviewDetails({
                             {interview.company}
                         </p>
                     )}
-                    <StatusBadge status={interview.status} t={t} />
+                    <StatusBadge status={interview.status} t={t}/>
                 </div>
 
                 {/* Details */}

@@ -1,12 +1,12 @@
 import React from "react";
 import {describe, expect, it, vi} from "vitest";
 import {api} from "../utils/api.js";
-import GestionnaireValidation from "../components/page/GestionnaireValidation.jsx";
-import GestionnaireCvValidation from "../components/page/GestionnaireCvValidation.jsx";
+import GestionnaireValidation from "../components/page/gestionnaire/GestionnaireValidation.jsx";
+import GestionnaireCvValidation from "../components/page/gestionnaire/GestionnaireCvValidation.jsx";
 import {renderWithProviders, screen, userEvent, waitFor} from "./test-utils.jsx";
 
 vi.mock("../components/PdfPreview.jsx", () => ({default: () => null}));
-vi.mock("../components/page/ValidationTabs.jsx", () => ({default: () => null}));
+vi.mock("../components/page/gestionnaire/GestionnaireTabs.jsx", () => ({default: () => null}));
 
 const pendingOffer = {
     id: 12,

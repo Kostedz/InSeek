@@ -1,5 +1,11 @@
 import api from "./api.js";
 
+export const PENDING_DOCUMENT_PROCESSED_EVENT = "gestionnaire:pending-document-processed";
+
+export function notifyPendingDocumentProcessed(type) {
+    window.dispatchEvent(new CustomEvent(PENDING_DOCUMENT_PROCESSED_EVENT, {detail: {type}}));
+}
+
 export async function countPendingDocuments(type) {
     try {
         const response = await api.gestionnaire.getPendingDocuments(type);
