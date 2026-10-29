@@ -234,7 +234,7 @@ export default function ContractCreationModal({ student, onClose, onSuccess }) {
 
                     {loading ? (
                         <div className="py-12 text-center text-ink-soft font-medium">
-                            {t("common.loading", "Chargement des informations...")}
+                            {t("loading.message", "Chargement des informations...")}
                         </div>
                     ) : loadFailed ? (
                         <div className="flex justify-end pt-2">
@@ -259,7 +259,8 @@ export default function ContractCreationModal({ student, onClose, onSuccess }) {
                                     </div>
                                     <div>
                                         <span className="block text-xs text-ink-soft">{t("contracts.discipline", "Discipline")}</span>
-                                        <span className="font-bold text-ink">{formData.discipline || "—"}</span>
+                                        <span
+                                            className="font-bold text-ink">{formData.discipline ? t(`employerOffers.disciplines.${String(formData.discipline).toUpperCase()}`, {defaultValue: formData.discipline}) : "—"}</span>
                                     </div>
                                     <div>
                                         <span className="block text-xs text-ink-soft">{t("contracts.company", "Entreprise")}</span>

@@ -181,6 +181,22 @@ export const api = {
     },
 
     gestionnaire: {
+        getInternshipStudents: () =>
+            fetcher("/gestionnaire/stagiaires", {headers: {Accept: "application/json"}}),
+
+        getProfessors: () =>
+            fetcher("/gestionnaire/professeurs", {headers: {Accept: "application/json"}}),
+
+        assignProfessor: (studentId, professorId) =>
+            fetcher(`/gestionnaire/stagiaires/${encodeURIComponent(studentId)}/professeur`, {
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify({professeurId: professorId}),
+            }),
+
         getPendingDocuments: (type) => {
             const query = type ? `?type=${encodeURIComponent(type)}` : "";
             return fetcher(`/gestionnaire/documents/pending${query}`, { method: "GET" });
@@ -222,6 +238,15 @@ export const api = {
         getContracts: () =>
             fetcher("/contracts/contracts", {
                 headers: { Accept: "application/json" },
+            }),
+    },
+
+    professor: {
+        getStudents: () => fetcher("/professeur/etudiants", {headers: {Accept: "application/json"}}),
+
+        getStudentApplications: (studentId) =>
+            fetcher(`/professeur/etudiants/${encodeURIComponent(studentId)}/demandes`, {
+                headers: {Accept: "application/json"},
             }),
     },
 

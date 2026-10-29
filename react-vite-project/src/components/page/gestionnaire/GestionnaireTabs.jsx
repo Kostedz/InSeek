@@ -1,14 +1,13 @@
 import {useEffect, useState} from "react";
-import {Link, useLocation} from "react-router-dom";
+import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
 import {countPendingDocuments, PENDING_DOCUMENT_PROCESSED_EVENT} from "../../../utils/gestionnaireCounts.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
 export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
     const {t} = useTranslation();
-    const {pathname} = useLocation();
-    const homePath = pathname.startsWith("/gestionnaire") ? "/gestionnaire" : "/";
-    const [loadedCounts, setLoadedCounts] = useState({offers: null, cvs: null});
+    const [loadedCounts, setLoadedCounts] = useState({offers: null, cvs: null, students: null, assignments: null});
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "manager-active-tab");
 
     useEffect(() => {
@@ -21,10 +20,20 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
         if (cvsCount === undefined) {
             requests.push(countPendingDocuments("CV").then((count) => ["cvs", count]));
         }
-
-        if (!requests.length) return () => {
-            isMounted = false;
-        };
+        requests.push(api.gestionnaire.getEligibleStudents().then(async (response) => {
+            if (!response.ok) return ["students", null];
+            const data = await response.json();
+            const students = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+            const studentsWithoutContract = students.filter((student) => !student.hasContract && !student.contractExists).length;
+            return ["students", studentsWithoutContract];
+        }).catch(() => ["students", null]));
+        requests.push(api.gestionnaire.getInternshipStudents().then(async (response) => {
+            if (!response.ok) return ["assignments", null];
+            const data = await response.json();
+            const students = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+            const unassignedStudents = students.filter((student) => !student.professeurId).length;
+            return ["assignments", unassignedStudents];
+        }).catch(() => ["assignments", null]));
 
         Promise.all(requests).then((results) => {
             if (!isMounted) return;
@@ -44,6 +53,7 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
         const handleProcessedDocument = (event) => {
             const key = event.detail?.type === "CV" ? "cvs"
                 : event.detail?.type === "OffreDeStage" ? "offers"
+                    : event.detail?.type === "STUDENT_ASSIGNMENT" ? "assignments"
                     : null;
             if (!key) return;
 
@@ -59,16 +69,18 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
 
     const displayedOffersCount = offersCount ?? loadedCounts.offers;
     const displayedCvsCount = cvsCount ?? loadedCounts.cvs;
+    const displayedStudentsCount = loadedCounts.students;
+    const displayedAssignmentsCount = loadedCounts.assignments;
 
-    const countBadge = (count) => count === null || count === undefined || count === 0 ? null : (
+    const countBadge = (count, ariaLabel) => count === null || count === undefined || count === 0 ? null : (
         <span
+            aria-label={ariaLabel}
             className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
             {count}
         </span>
     );
 
     const tabs = [
-        {id: "home", label: t("managerDashboard.tabs.home", "Tableau de bord"), path: homePath},
         {
             id: "offers",
             label: t("managerValidation.tabs.offers", "Offres à valider"),
@@ -84,7 +96,22 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
         {
             id: "students",
             label: t("managerStudents.tabLabel", "Étudiants admissibles"),
-            path: "/gestionnaire/etudiants"
+            path: "/gestionnaire/etudiants",
+            count: displayedStudentsCount,
+            countLabel: t("managerContracts.pendingStudentsNotification", {
+                count: displayedStudentsCount,
+                defaultValue: "{{count}} student(s) without an internship contract",
+            }),
+        },
+        {
+            id: "assignments",
+            label: t("professorAssignment.tabLabel", "Assignation des professeurs"),
+            path: "/gestionnaire/assignation",
+            count: displayedAssignmentsCount,
+            countLabel: t("professorAssignment.unassignedStudentsNotification", {
+                count: displayedAssignmentsCount,
+                defaultValue: "{{count}} students without an assigned professor",
+            }),
         },
         {id: "contracts", label: t("managerContracts.tabLabel", "Suivi des contrats"), path: "/gestionnaire/contrats"},
     ];
@@ -108,7 +135,7 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
                         className={`relative z-10 inline-flex flex-1 items-center justify-center rounded-xl px-4 py-2.5 text-center text-sm font-bold transition-colors sm:flex-none ${isActive ? "text-white" : "text-ink-soft hover:bg-lavender/30 hover:text-ink"}`}
                     >
                         <span className="flex items-center justify-center gap-1.5">
-                            {tab.label} {countBadge(tab.count)}
+                            {tab.label} {countBadge(tab.count, tab.countLabel)}
                         </span>
                     </Link>
                 );

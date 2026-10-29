@@ -15,6 +15,7 @@ import {createTranslationMessage} from "./utils/i18nMessage.js";
 import EtudiantProfil from "./components/page/etudiant/EtudiantProfil.jsx";
 import StudentHomePage from "./components/page/etudiant/StudentHomePage.jsx";
 import GestionnaireDashboard from "./components/page/gestionnaire/GestionnaireDashboard.jsx";
+import ProfessorDashboard from "./components/page/professeur/ProfessorDashboard.jsx";
 
 function App() {
     const [user, setUser] = useState({})
@@ -109,6 +110,10 @@ function App() {
                             ) : user?.isLoggedIn && userRole === "GESTIONNAIRE" ? (
                                 <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
                                     <GestionnaireDashboard/>
+                                </ProtectedRoute>
+                            ) : user?.isLoggedIn && userRole === "PROFESSEUR" ? (
+                                <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["PROFESSEUR"]}>
+                                    <ProfessorDashboard/>
                                 </ProtectedRoute>
                             ) : (
                                 <MainContainer user={user}/>
@@ -224,6 +229,14 @@ function App() {
                     />
                     <Route
                         path="gestionnaire/etudiants"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
+                                <GestionnaireDashboard/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="gestionnaire/assignation"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
                                 <GestionnaireDashboard/>
