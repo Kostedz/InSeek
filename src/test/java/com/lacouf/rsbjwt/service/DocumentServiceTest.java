@@ -16,8 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.mock.web.MockMultipartFile;
+ import org.springframework.mock.web.MockMultipartFile;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -52,6 +52,7 @@ public class DocumentServiceTest {
 
     @BeforeEach
     public void setUp() {
+        documentService.setObjectMapper(new ObjectMapper());
 
         fileCV = new MockMultipartFile(
                 "file",
