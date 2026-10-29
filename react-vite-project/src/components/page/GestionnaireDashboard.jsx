@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import api from "../../utils/api.js";
-import ValidationTabs from "./ValidationTabs.jsx";
 import { countPendingDocuments } from "../../utils/gestionnaireCounts.js";
 
 export default function GestionnaireDashboard() {
@@ -81,8 +80,6 @@ export default function GestionnaireDashboard() {
                         {t("managerDashboard.description", "Vue d'ensemble des actions en attente, contrats et validations.")}
                     </p>
                 </div>
-
-                <ValidationTabs activeTab="dashboard" offersCount={stats.pendingOffers} cvsCount={stats.pendingCvs} />
 
                 {loading ? (
                     <div className="mt-8 py-12 text-center text-ink-soft font-medium">

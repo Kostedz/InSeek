@@ -41,7 +41,6 @@ export default function ValidationTabs({ activeTab, offersCount, cvsCount }) {
     );
 
     const tabs = [
-        { id: "dashboard", label: t("managerDashboard.tabs.home", "Accueil"), path: "/gestionnaire" },
         { id: "offers", label: t("managerValidation.tabs.offers", "Offres de stage"), path: "/gestionnaire/offres", count: displayedOffersCount },
         { id: "cvs", label: t("managerValidation.tabs.cvs", "CV des étudiants"), path: "/gestionnaire/cv", count: displayedCvsCount },
         { id: "students", label: t("managerStudents.tabLabel", "Étudiants"), path: "/gestionnaire/etudiants" },
