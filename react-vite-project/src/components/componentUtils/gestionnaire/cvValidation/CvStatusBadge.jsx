@@ -1,6 +1,6 @@
 import {useTranslation} from "react-i18next";
 
-export default function StatusBadge({ status }) {
+export default function StatusBadge({status}) {
     const {t} = useTranslation();
     const colors = {
         EN_ATTENTE: "border-gold bg-gold/45 text-ink",

@@ -41,7 +41,8 @@ export default function OfferDetails({offer, language, t, onClose, studentCv, al
                                     className="mt-4 text-2xl font-black tracking-tight text-ink sm:text-3xl">
                                     {formatOfferTitle(offer.title) || t("studentOffers.untitled")}
                                 </h2>
-                                {offer.company && <p className="mt-2 text-base font-bold text-ink-soft">{offer.company}</p>}
+                                {offer.company &&
+                                    <p className="mt-2 text-base font-bold text-ink-soft">{offer.company}</p>}
                             </div>
                             <button
                                 type="button"

@@ -1,6 +1,6 @@
 import {hasValue} from "./validationUtils.js";
 
-export function InfoItem({ label, value }) {
+export function InfoItem({label, value}) {
     if (!hasValue(value)) return null;
 
     return (

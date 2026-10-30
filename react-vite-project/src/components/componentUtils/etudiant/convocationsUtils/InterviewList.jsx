@@ -1,4 +1,4 @@
-import { StatusBadge, FormatDate } from "./InterviewUtils.jsx";
+import {StatusBadge, FormatDate} from "./InterviewUtils.jsx";
 
 export default function InterviewList({interviews, view, onViewChange, onSelect, language, t, page = false}) {
     const visibleInterviews = interviews

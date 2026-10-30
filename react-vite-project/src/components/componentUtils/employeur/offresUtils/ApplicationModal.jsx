@@ -9,7 +9,18 @@ import {formatDate} from "./employeurOffresUtils.js";
 import {ApplicationStatusBadge} from "./ApplicationOffresComponents.jsx";
 import {initials} from "./employeurOffresUtils.js";
 
-export default function ApplicationModal({offer, applications, language, onClose, isLoading, error, onScheduleInterview, scheduledInterviews, onRefresh, onDecision}) {
+export default function ApplicationModal({
+                                             offer,
+                                             applications,
+                                             language,
+                                             onClose,
+                                             isLoading,
+                                             error,
+                                             onScheduleInterview,
+                                             scheduledInterviews,
+                                             onRefresh,
+                                             onDecision
+                                         }) {
     const {t} = useTranslation();
     const [selectedApplication, setSelectedApplication] = useState(null);
 

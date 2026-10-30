@@ -5,8 +5,8 @@ import api from "../../../utils/api.js";
 import Loading from "../../Loading.jsx";
 import ErrorPage from "../../ErrorPage.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
-import {formatOfferTitle} from "../studentOfferUtils.js";
-import ScheduleInterviewModal from "../../employer/SchedulenterviewModal.jsx";
+import {formatOfferTitle} from "../../componentUtils/offresUtils.js";
+import ScheduleInterviewModal from "../../componentUtils/employeur/ScheduleInterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 

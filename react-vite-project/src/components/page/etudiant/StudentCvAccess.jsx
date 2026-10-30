@@ -3,7 +3,7 @@ import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
 import Loading from "../../Loading.jsx";
-import {normalizeOfferStatus} from "../studentOfferUtils.js";
+import {normalizeOfferStatus} from "../../componentUtils/offresUtils.js";
 
 export function StudentCvRequiredMessage({cvState, cv}) {
     const {t} = useTranslation();

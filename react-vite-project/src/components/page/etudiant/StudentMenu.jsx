@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import {Link, useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
-import {normalizeOffer} from "../studentOfferUtils.js";
+import {normalizeOffer} from "../../componentUtils/offresUtils.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
 function isPendingInterview(item) {

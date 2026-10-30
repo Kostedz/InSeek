@@ -2,6 +2,17 @@ import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {api} from "../../../utils/api.js";
 import {notifyPendingDocumentProcessed} from "../../../utils/gestionnaireCounts.js";
+import StatusBadge from "../../componentUtils/gestionnaire/cvValidation/CvStatusBadge.jsx";
+import {InfoItem} from "../../componentUtils/gestionnaire/ValidationComponents.jsx";
+import {
+    formatDate,
+    formatDiscipline,
+    formatFileSizeInMb,
+    hasValue,
+    isPending,
+    normalizeCv,
+    studentDisplayName,
+} from "../../componentUtils/gestionnaire/validationUtils.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 

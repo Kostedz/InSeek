@@ -1,4 +1,4 @@
-import { DISCIPLINES } from "./offresConstants.js";
+import {DISCIPLINES} from "./offresConstants.js";
 
 export function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();

@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
-import { StatusBadge, getInterviewDate, FormatDate } from "./InterviewUtils.jsx";
+import {StatusBadge, getInterviewDate, FormatDate} from "./InterviewUtils.jsx";
 
-function Info({ label, value }) {
+function Info({label, value}) {
     if (value === null || value === undefined || String(value).trim() === "") {
         return null;
     }
@@ -24,14 +24,14 @@ function isExpired(interview) {
 }
 
 export default function InterviewDetails({
-                              interview,
-                              language,
-                              t,
-                              onClose,
-                              onRespond,
-                              saving,
-                              error,
-                          }) {
+                                             interview,
+                                             language,
+                                             t,
+                                             onClose,
+                                             onRespond,
+                                             saving,
+                                             error,
+                                         }) {
     const [action, setAction] = useState(null);
     const [comment, setComment] = useState("");
     const expired = isExpired(interview);
@@ -110,7 +110,7 @@ export default function InterviewDetails({
                             {interview.company}
                         </p>
                     )}
-                    <StatusBadge status={interview.status} t={t} />
+                    <StatusBadge status={interview.status} t={t}/>
                 </div>
 
                 {/* Details */}

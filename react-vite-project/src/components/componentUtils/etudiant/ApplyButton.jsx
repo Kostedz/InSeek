@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api } from "../../../utils/api.js";
+import {api} from "../../../utils/api.js";
 
 export default function ApplyButton({ offerId, initialApplied = false, onAppliedSuccess }) {
     const { t } = useTranslation();

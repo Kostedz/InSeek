@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import { useTranslation } from "react-i18next";
-import { api } from "../../../utils/api.js";
-import { translateMessage } from "../../../utils/i18nMessage.js";
+import {api} from "../../../utils/api.js";
+import {translateMessage} from "../../../utils/i18nMessage.js";
 
 const DEFAULT_FORM_STATE = {date: "", heure: "", mode: "VIDEO_CALL", lieuOuLien: "", message: ""};
 const MAX_LOCATION_LENGTH = 300;

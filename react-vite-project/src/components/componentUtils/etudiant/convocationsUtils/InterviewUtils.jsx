@@ -18,6 +18,7 @@ function normalizeStatus(value) {
 
     return "PENDING";
 }
+
 export function normalizeInterview(item) {
     const date =
         item.DateAndTime ??
@@ -65,7 +66,7 @@ export function getInterviewDate(interview) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function StatusBadge({ status, t }) {
+export function StatusBadge({status, t}) {
     const styles = {
         PENDING: "border-gold bg-gold/45 text-ink",
         ACCEPTED: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
@@ -89,6 +90,6 @@ export function FormatDate(interview, language) {
 
     return new Intl.DateTimeFormat(
         language === "en" ? "en-CA" : "fr-CA",
-        { dateStyle: "long", timeStyle: "short" }
+        {dateStyle: "long", timeStyle: "short"}
     ).format(date);
 }

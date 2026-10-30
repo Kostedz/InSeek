@@ -8,8 +8,17 @@ import {ApplicationDocument} from "./ApplicationOffresComponents.jsx";
 import Icon from "./Icon.jsx";
 import {initials} from "./employeurOffresUtils.js";
 
-export default function ApplicationDetails({ application, language, isInterviewScheduled, onBack, onClose, onScheduleInterview, onRefresh, onDecision }) {
-    const { t } = useTranslation();
+export default function ApplicationDetails({
+                                               application,
+                                               language,
+                                               isInterviewScheduled,
+                                               onBack,
+                                               onClose,
+                                               onScheduleInterview,
+                                               onRefresh,
+                                               onDecision
+                                           }) {
+    const {t} = useTranslation();
     const hasContactDetails = application.email || application.phone || application.address;
 
     const [showDecisionModal, setShowDecisionModal] = useState(false);
@@ -79,7 +88,7 @@ export default function ApplicationDetails({ application, language, isInterviewS
             if (onDecision) onDecision(application.id, decisionType, decisionType === "REJECTED" ? rejectionComment : "");
             if (onRefresh) onRefresh();
         } catch (err) {
-            setServerError({ key: err.message });
+            setServerError({key: err.message});
         } finally {
             setIsSubmitting(false);
         }
@@ -119,7 +128,8 @@ export default function ApplicationDetails({ application, language, isInterviewS
                     </div>
 
                     {successMessage && (
-                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
+                        <div
+                            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-800">
                             {successMessage}
                         </div>
                     )}
@@ -135,17 +145,20 @@ export default function ApplicationDetails({ application, language, isInterviewS
 
                         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
                             {isPending && (
-                                <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
                                     {t("employerOffers.applications.status.pending", "En attente")}
                                 </span>
                             )}
                             {isAccepted && (
-                                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
                                     {t("employerOffers.applications.status.accepted", "Acceptée")}
                                 </span>
                             )}
                             {isRejected && (
-                                <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+                                <span
+                                    className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
                                     {t("employerOffers.applications.status.rejected", "Refusée")}
                                 </span>
                             )}
@@ -274,7 +287,8 @@ export default function ApplicationDetails({ application, language, isInterviewS
                         </p>
 
                         {serverError && (
-                            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+                            <div
+                                className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
                                 {translateMessage(t, serverError)}
                             </div>
                         )}
@@ -294,7 +308,8 @@ export default function ApplicationDetails({ application, language, isInterviewS
                                     placeholder={t("employerOffers.applications.commentPlaceholder", "Saisissez les raisons du refus...")}
                                     className="w-full rounded-xl border border-line bg-canvas p-3 text-sm text-ink outline-none focus:border-lavender resize-none"
                                 />
-                                {commentError && <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
+                                {commentError &&
+                                    <p className="mt-1 text-xs font-semibold text-rose-600">{commentError}</p>}
                             </div>
                         )}
 

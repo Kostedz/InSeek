@@ -344,14 +344,14 @@ export default function ContractSignaturePage({user, contract, signer = "student
 
                     <div className="mt-5 space-y-4 text-sm leading-7 text-ink-soft">
                         <p>
-                            {copy.contractIntro} <ContractValue value={firstName} label={copy.firstName}/>
+                            {copy.contractIntro} <ContractValue value={firstName} label={copy.firstName}/>{" "}
                             <ContractValue value={lastName} label={copy.lastName}/> {copy.and}{" "}
                             <ContractValue value={employerName} label={copy.company}/> {copy.representedBy}{" "}
-                            <ContractValue value={employee.prenom} label={copy.employerFirstName}/> <ContractValue
+                            <ContractValue value={employee.prenom} label={copy.employerFirstName}/>{" "}<ContractValue
                             value={employee.nom} label={copy.employerLastName}/>. {copy.supervisorIntro}{" "}
                             <ContractValue value={contract?.supervisorName}
                                            label={copy.supervisor}/> {copy.managerIntro}{" "}
-                            <ContractValue value={admin.prenom} label={copy.managerFirstName}/> <ContractValue
+                            <ContractValue value={admin.prenom} label={copy.managerFirstName}/>{" "}<ContractValue
                             value={admin.nom} label={copy.managerLastName}/>.
                         </p>
 

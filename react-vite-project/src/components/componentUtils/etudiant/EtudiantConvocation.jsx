@@ -1,11 +1,10 @@
-
-import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import {useCallback, useEffect, useState} from "react";
+import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
 
 import InterviewList from "./convocationsUtils/InterviewList.jsx";
 import InterviewDetails from "./convocationsUtils/InterviewDetails.jsx";
-import { normalizeInterview, getInterviewDate, StatusBadge, FormatDate } from "./convocationsUtils/InterviewUtils.jsx";
+import {normalizeInterview, getInterviewDate, StatusBadge, FormatDate} from "./convocationsUtils/InterviewUtils.jsx";
 
 export default function StudentInterviews({user, page = false, onPendingCountChange}) {
     const {t, i18n} = useTranslation();

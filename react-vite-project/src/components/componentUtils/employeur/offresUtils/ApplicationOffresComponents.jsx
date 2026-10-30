@@ -27,20 +27,23 @@ export function ApplicationStatusBadge({status}) {
 
     if (status === "ACCEPTED") {
         return (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+            <span
+                className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
                 {t("employerOffers.applications.status.accepted", "Acceptée")}
             </span>
         );
     }
     if (status === "REJECTED") {
         return (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
+            <span
+                className="inline-flex shrink-0 items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-800">
                 {t("employerOffers.applications.status.rejected", "Refusée")}
             </span>
         );
     }
     return (
-        <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
+        <span
+            className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800">
             {t("employerOffers.applications.status.pending", "En attente")}
         </span>
     );
