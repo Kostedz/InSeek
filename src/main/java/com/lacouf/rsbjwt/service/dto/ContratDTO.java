@@ -15,7 +15,9 @@ public record ContratDTO(
         String fieldOfStudy,
         String companyName,
         String employerFullName,
+        String managerFullName,
         String offerTitle,
+        String offerDescription,
         String supervisorName,
         String assignedTeacherName,
         LocalDate internshipStartingDate,
@@ -35,6 +37,8 @@ public record ContratDTO(
         String discipline = contract.getStudent() != null && contract.getStudent().getDiscipline() != null
                 ? contract.getStudent().getDiscipline().name() : "";
         String teacherName = contract.getTeacher() != null ? contract.getTeacher().getPrenom() + " " + contract.getTeacher().getNom() : null;
+        String managerName = contract.getAdmin() != null
+                ? contract.getAdmin().getPrenom() + " " + contract.getAdmin().getNom() : null;
         return ContratDTO.builder()
                 .id(contract.getContractId())
                 .studentFullName(studentFullName)
@@ -42,7 +46,9 @@ public record ContratDTO(
                 .fieldOfStudy(discipline)
                 .companyName(companyName)
                 .employerFullName(employerFullName)
+                .managerFullName(managerName)
                 .offerTitle(contract.getInternshipOffer().getPosition())
+                .offerDescription(contract.getInternshipOffer().getDescriptionPosition())
                 .supervisorName(contract.getSupervisorName())
                 .assignedTeacherName(teacherName)
                 .internshipStartingDate(contract.getStartingDate())

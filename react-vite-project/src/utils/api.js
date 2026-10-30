@@ -118,6 +118,16 @@ export const api = {
             fetcher("/api/applications/my-applications/details", {
                 headers: {Accept: "application/json"},
             }),
+
+        getContracts: () =>
+            fetcher("/contracts/student", {
+                headers: {Accept: "application/json"},
+            }),
+
+        signContract: (contractId) =>
+            fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+                headers: {Accept: "application/json"},
+            }),
     },
 
     documents: {

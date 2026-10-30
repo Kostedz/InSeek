@@ -23,7 +23,7 @@ export default function StudentMenu({user}) {
     const applicationsActive = pathname === "/etudiant/candidatures";
     const interviewsActive = pathname === "/etudiant/convocations";
     const contractActive = pathname === "/etudiant/contrat";
-    const {offersCount, applicationsCount, interviewsCount} = counts;
+    const {offersCount, applicationsCount, interviewsCount, contractsCount} = counts;
     const activeTab = contractActive ? "contract" : interviewsActive ? "interviews" : applicationsActive ? "applications" : "offers";
 
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "student-active-tab");
@@ -41,16 +41,19 @@ export default function StudentMenu({user}) {
             api.student.getOffers(),
             api.student.getAppliedOfferIds(),
             api.student.getConvocations(),
-        ]).then(async ([offersResponse, applicationsResponse, interviewsResponse]) => {
-            if (!offersResponse.ok || !applicationsResponse.ok || !interviewsResponse.ok) throw new Error("student_counts_load_failed");
+            api.student.getContracts(),
+        ]).then(async ([offersResponse, applicationsResponse, interviewsResponse, contractsResponse]) => {
+            if (!offersResponse.ok || !applicationsResponse.ok || !interviewsResponse.ok || !contractsResponse.ok) throw new Error("student_counts_load_failed");
 
-            const [offersData, applicationsData, interviewsData] = await Promise.all([
+            const [offersData, applicationsData, interviewsData, contractsData] = await Promise.all([
                 offersResponse.json(),
                 applicationsResponse.json(),
                 interviewsResponse.status === 204 ? Promise.resolve([]) : interviewsResponse.json(),
+                contractsResponse.status === 204 ? Promise.resolve([]) : contractsResponse.json(),
             ]);
             const appliedIds = new Set((Array.isArray(applicationsData) ? applicationsData : []).map(String));
             const interviews = Array.isArray(interviewsData) ? interviewsData : interviewsData.items ?? interviewsData.content ?? [];
+            const contracts = Array.isArray(contractsData) ? contractsData : contractsData.items ?? contractsData.content ?? [];
 
             if (active) {
                 setCounts({
@@ -59,6 +62,9 @@ export default function StudentMenu({user}) {
                         .filter(({statut, id}) => statut === "VALIDE" && !appliedIds.has(String(id))).length,
                     applicationsCount: appliedIds.size,
                     interviewsCount: interviews.filter(isPendingInterview).length,
+                    contractsCount: contracts.filter((contract) =>
+                        String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "PENDING_SIGNATURE"
+                    ).length,
                 });
             }
         }).catch(() => {
@@ -140,8 +146,7 @@ export default function StudentMenu({user}) {
             >
                 <span className="flex items-center justify-center gap-2">
                     {t("navigation.contract", "Contrat")}
-                    <span className={`h-2 w-2 rounded-full ${contractActive ? "bg-pink" : "bg-gold"}`}
-                          aria-hidden="true"/>
+                    {countBadge(contractsCount)}
                 </span>
             </Link>
         </nav>

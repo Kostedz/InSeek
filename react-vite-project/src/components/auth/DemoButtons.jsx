@@ -3,7 +3,7 @@ import {useNavigate} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../utils/api.js";
 import {getRedirectPathByRole} from "../../utils/authRedirect.js";
-import {resetDemoContracts} from "../page/ContractSignaturePage.jsx";
+import {clearDemoContracts} from "../page/ContractSignaturePage.jsx";
 
 const demoRoles = [
     {value: "ETUDIANT", label: "student", color: "bg-lavender hover:bg-lavender"},
@@ -47,7 +47,7 @@ function DemoButtons({setUser}) {
             }
 
             const userData = await userResponse.json();
-            if (demoRole.value === "ETUDIANT") resetDemoContracts();
+            if (demoRole.value === "ETUDIANT") clearDemoContracts();
             setUser({...userData, isLoggedIn: true, isDevAccess: false});
             navigate(await getRedirectPathByRole(userData.role ?? demoRole.value), {replace: true});
         } catch {
@@ -84,7 +84,7 @@ function DemoButtons({setUser}) {
             }
 
             const userData = await userResponse.json();
-            resetDemoContracts();
+            clearDemoContracts();
             setUser({...userData, isLoggedIn: true, isDevAccess: false});
             navigate("/", {replace: true});
         } catch {

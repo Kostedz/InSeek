@@ -32,17 +32,40 @@ public class ContratService {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
-    public ContratDTO signContract(Long contractId, HttpServletRequest request) throws NotFoundException, BadRequestException {
+    public ContratDTO signContract(Long contractId, HttpServletRequest request) throws NotFoundException, BadRequestException, ConflictException {
         Contract contract = contratRepository.findById(contractId)
                 .orElseThrow(() -> new NotFoundException("Contrat non trouvé "));
 
         Utilisateur user = getAuthUser(request);
 
         validateUserRelatedToContract(user, contract);
+        if (user instanceof Etudiant student) {
+            utilisateurRepository.lockEtudiantById(student.getId())
+                    .orElseThrow(() -> new NotFoundException("Étudiant introuvable."));
+            if (contratRepository.existsByStudentIdAndContractStatusInAndContractIdNot(
+                    student.getId(),
+                    List.of(StatutContrat.SIGNED_BY_STUDENT, StatutContrat.SIGNED_BY_EMPLOYER,
+                            StatutContrat.SIGNED_BY_GESTIONNAIRE, StatutContrat.EXECUTED),
+                    contractId)) {
+                throw new ConflictException("Un étudiant ne peut signer qu'un seul contrat.");
+            }
+        }
         updateContractStatusBasedOnUser(user, contract);
 
         contratRepository.save(contract);
         return ContratDTO.of(contract);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ContratDTO> listerContratsEtudiant(HttpServletRequest request) throws BadRequestException {
+        Utilisateur user = getAuthUser(request);
+        if (!(user instanceof Etudiant student)) {
+            throw new BadRequestException("Cette liste est réservée aux étudiants.");
+        }
+        return contratRepository.findByStudentIdOrderByDateCreationDesc(student.getId())
+                .stream()
+                .map(ContratDTO::of)
+                .toList();
     }
 
     private Utilisateur getAuthUser(HttpServletRequest request) throws BadRequestException {

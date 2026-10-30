@@ -141,7 +141,8 @@ function ContractIcon({name, className = "h-5 w-5"}) {
     </svg>;
 }
 
-function StatusBadge({state, copy}) {
+function StatusBadge({state}) {
+    const {t} = useTranslation();
     const styles = {
         waiting: "border-gold/60 bg-gold/20 text-ink",
         ready: "border-pink bg-pink/60 text-ink",
@@ -154,7 +155,7 @@ function StatusBadge({state, copy}) {
         <span
             className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-black ${styles[state]}`}>
             <ContractIcon name={icons[state]} className="h-3.5 w-3.5"/>
-            {copy.status[state]}
+            {t(`employerContracts.status.${state}`)}
         </span>
     );
 }
@@ -166,78 +167,8 @@ export default function EmployerContractsPage({
                                                   workspaceTabs,
                                                   embedded = false
                                               }) {
-    const {i18n} = useTranslation();
+    const {i18n, t} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
-    const copy = {
-        fr: {
-            eyebrow: "Espace employeur",
-            title: "Mes contrats de stage",
-            description: "Suivez les signatures de vos ententes et signez chaque contrat une fois la réponse de l’étudiant reçue.",
-            total: "Contrats envoyés",
-            waiting: "En attente de l’étudiant",
-            ready: "À signer",
-            signed: "Signés par vous",
-            listEyebrow: "Vos ententes",
-            listTitle: "Contrats envoyés aux étudiants",
-            listDescription: "Chaque contrat devient accessible lorsque l’étudiant l’a signé.",
-            contractNumber: "Contrat no",
-            student: "Étudiant",
-            position: "Poste",
-            sentOn: "Début du stage",
-            notSpecified: "Non précisé",
-            viewAndSign: "Consulter et signer",
-            viewContract: "Consulter le contrat",
-            closeContract: "Fermer le contrat",
-            selectedContract: "Contrat sélectionné",
-            waitingForStudentTitle: "En attente de la signature de l’étudiant",
-            waitingForStudentDescription: "Vous pourrez signer ce contrat après que l’étudiant l’aura signé.",
-            status: {
-                waiting: "En attente de la réponse de l’étudiant",
-                ready: "Votre signature est requise",
-                signed: "Signé par vous",
-                declined: "Réponse de l’étudiant refusée",
-            },
-            waitingMessage: "Nous attendons la réponse de l’étudiant. Vous pourrez consulter et signer ce contrat après sa signature.",
-            signedMessage: "Votre signature a été enregistrée. Vous pouvez consulter cette entente en tout temps.",
-            declinedMessage: "L’étudiant a refusé cette entente.",
-            emptyTitle: "Aucun contrat envoyé",
-            emptyDescription: "Vous n’avez encore envoyé aucun contrat à un étudiant. Les contrats à signer apparaîtront ici après leur envoi.",
-        },
-        en: {
-            eyebrow: "Employer area",
-            title: "My internship contracts",
-            description: "Track agreement signatures and sign each contract once the student has responded.",
-            total: "Contracts sent",
-            waiting: "Waiting for student",
-            ready: "To sign",
-            signed: "Signed by you",
-            listEyebrow: "Your agreements",
-            listTitle: "Contracts sent to students",
-            listDescription: "Each contract becomes available once the student has signed it.",
-            contractNumber: "Contract no.",
-            student: "Student",
-            position: "Position",
-            sentOn: "Internship start",
-            notSpecified: "Not specified",
-            viewAndSign: "Review and sign",
-            viewContract: "View contract",
-            closeContract: "Close contract",
-            selectedContract: "Selected contract",
-            waitingForStudentTitle: "Waiting for the student’s signature",
-            waitingForStudentDescription: "You can sign this contract after the student has signed it.",
-            status: {
-                waiting: "Waiting for the student's response",
-                ready: "Your signature is required",
-                signed: "Signed by you",
-                declined: "Student declined",
-            },
-            waitingMessage: "We are waiting for the student’s response. You can review and sign this contract after the student signs it.",
-            signedMessage: "Your signature was recorded. You can review this agreement at any time.",
-            declinedMessage: "The student declined this agreement.",
-            emptyTitle: "No contracts sent",
-            emptyDescription: "You have not sent a contract to a student yet. Contracts waiting for your signature will appear here after they are sent.",
-        },
-    }[language];
     const [selectedContractId, setSelectedContractId] = useState(null);
     const [locallySignedContracts, setLocallySignedContracts] = useState({});
     const [demoContracts, setDemoContracts] = useState([]);
@@ -327,20 +258,20 @@ export default function EmployerContractsPage({
                 {!embedded && <header>
                     <span
                         className="inline-flex w-fit rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
-                        {copy.eyebrow}
+                        {t("employerContracts.eyebrow")}
                     </span>
-                    <h1 className="mt-2 text-3xl font-black tracking-tight text-ink sm:text-4xl">{copy.title}</h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{copy.description}</p>
+                    <h1 className="mt-2 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("employerContracts.title")}</h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("employerContracts.description")}</p>
                 </header>}
 
                 {!embedded && workspaceTabs}
 
                 <div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                     {[
-                        [copy.total, contractList.length, "bg-surface"],
-                        [copy.waiting, totals.waiting, "bg-gold/15"],
-                        [copy.ready, totals.ready, "bg-pink/30"],
-                        [copy.signed, totals.signed, "bg-green-50"],
+                        [t("employerContracts.total"), contractList.length, "bg-surface"],
+                        [t("employerContracts.waiting"), totals.waiting, "bg-gold/15"],
+                        [t("employerContracts.ready"), totals.ready, "bg-pink/30"],
+                        [t("employerContracts.signed"), totals.signed, "bg-green-50"],
                     ].map(([label, value, background]) => (
                         <div key={label}
                              className={`flex items-center justify-between rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)] ${background}`}>
@@ -354,10 +285,10 @@ export default function EmployerContractsPage({
                     className="mt-6 rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-6"
                     aria-labelledby="employer-contracts-list">
                     <div className="rounded-2xl border border-line bg-canvas p-4">
-                        <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{copy.listEyebrow}</p>
+                        <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerContracts.listEyebrow")}</p>
                         <h2 id="employer-contracts-list"
-                            className="mt-1 text-xl font-black tracking-tight text-ink">{copy.listTitle}</h2>
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{copy.listDescription}</p>
+                            className="mt-1 text-xl font-black tracking-tight text-ink">{t("employerContracts.listTitle")}</h2>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{t("employerContracts.listDescription")}</p>
                     </div>
 
                     {contractList.length === 0 ? (
@@ -366,16 +297,16 @@ export default function EmployerContractsPage({
                             <span
                                 className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-pink text-ink"><ContractIcon
                                 name="file" className="h-5 w-5"/></span>
-                            <h3 className="mt-4 text-base font-black text-ink">{copy.emptyTitle}</h3>
-                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">{copy.emptyDescription}</p>
+                            <h3 className="mt-4 text-base font-black text-ink">{t("employerContracts.emptyTitle")}</h3>
+                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">{t("employerContracts.emptyDescription")}</p>
                         </div>
                     ) : (
                         <div className="mt-5 grid gap-3 lg:grid-cols-2">
                             {contractList.map((entry) => {
                                 const {contract, id, state} = entry;
-                                const student = studentName(contract) || copy.notSpecified;
-                                const position = contractPosition(contract) || copy.notSpecified;
-                                const startDate = formatDate(contractStartDate(contract), language) || copy.notSpecified;
+                                const student = studentName(contract) || t("employerContracts.notSpecified");
+                                const position = contractPosition(contract) || t("employerContracts.notSpecified");
+                                const startDate = formatDate(contractStartDate(contract), language) || t("employerContracts.notSpecified");
                                 const isOpen = selectedContractId === id;
 
                                 return (
@@ -383,29 +314,30 @@ export default function EmployerContractsPage({
                                              className={`rounded-2xl border p-4 transition-colors ${isOpen ? "border-ink bg-lavender/25" : "border-line bg-canvas"}`}>
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
-                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-soft">{copy.contractNumber} {id}</p>
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-soft">{t("employerContracts.contractNumber")} {id}</p>
                                                 <p className="mt-1 truncate text-base font-black text-ink">{position}</p>
                                             </div>
-                                            <StatusBadge state={state} copy={copy}/>
+                                            <StatusBadge state={state}/>
                                         </div>
 
                                         <dl className="mt-4 grid gap-3 border-y border-line py-3 text-sm sm:grid-cols-2">
                                             <div className="min-w-0">
                                                 <dt className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">
-                                                    <ContractIcon name="person" className="h-3.5 w-3.5"/>{copy.student}
+                                                    <ContractIcon name="person"
+                                                                  className="h-3.5 w-3.5"/>{t("employerContracts.student")}
                                                 </dt>
                                                 <dd className="mt-1 truncate font-bold text-ink">{student}</dd>
                                             </div>
                                             <div>
-                                                <dt className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{copy.sentOn}</dt>
+                                                <dt className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerContracts.sentOn")}</dt>
                                                 <dd className="mt-1 font-bold text-ink">{startDate}</dd>
                                             </div>
                                         </dl>
 
                                         <div className="mt-3 min-h-11 text-xs leading-5 text-ink-soft">
-                                            {state === "waiting" && <p>{copy.waitingMessage}</p>}
-                                            {state === "signed" && <p>{copy.signedMessage}</p>}
-                                            {state === "declined" && <p>{copy.declinedMessage}</p>}
+                                            {state === "waiting" && <p>{t("employerContracts.waitingMessage")}</p>}
+                                            {state === "signed" && <p>{t("employerContracts.signedMessage")}</p>}
+                                            {state === "declined" && <p>{t("employerContracts.declinedMessage")}</p>}
                                         </div>
 
                                         {(state === "ready" || state === "signed") && (
@@ -413,7 +345,7 @@ export default function EmployerContractsPage({
                                                     onClick={() => setSelectedContractId(isOpen ? null : id)}
                                                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
                                                 <ContractIcon name="file" className="h-4 w-4"/>
-                                                {isOpen ? copy.closeContract : state === "ready" ? copy.viewAndSign : copy.viewContract}
+                                                {isOpen ? t("employerContracts.closeContract") : state === "ready" ? t("employerContracts.viewAndSign") : t("employerContracts.viewContract")}
                                             </button>
                                         )}
                                     </article>
@@ -441,12 +373,12 @@ export default function EmployerContractsPage({
                                 className="flex items-center justify-between gap-4 border-b border-line bg-surface px-5 py-4 sm:px-7">
                                 <h2 id="employer-selected-contract-title"
                                     className="text-base font-black text-ink sm:text-lg">
-                                    {copy.selectedContract} · {copy.contractNumber} {signableContract.id}
+                                    {t("employerContracts.selectedContract")} · {t("employerContracts.contractNumber")} {signableContract.id}
                                 </h2>
                                 <button
                                     type="button"
                                     onClick={() => setSelectedContractId(null)}
-                                    aria-label={copy.closeContract}
+                                    aria-label={t("employerContracts.closeContract")}
                                     className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft transition-colors hover:border-ink hover:bg-lavender/30 hover:text-ink focus:outline-none focus:ring-4 focus:ring-pink/40"
                                 >
                                     <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none"

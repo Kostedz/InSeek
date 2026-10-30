@@ -10,9 +10,8 @@ export default function GestionnaireContracts({embedded = false}) {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedContract, setSelectedContract] = useState(null);
-    const STATUS_DEFAULTS = {PENDING_SIGNATURE: "En attente de signature"};
     const statusLabel = (status) =>
-        status ? t(`managerContracts.status.${status}`, STATUS_DEFAULTS[status] ?? status) : "—";
+        status ? t(`managerContracts.status.${status}`, {defaultValue: status}) : "—";
 
     const normalizeContract = (c) => ({
         ...c,
