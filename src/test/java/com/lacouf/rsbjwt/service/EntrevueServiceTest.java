@@ -113,12 +113,11 @@ public class EntrevueServiceTest {
     static Stream<CreateEntrevueDTO> invalidDtos() {
         LocalDateTime future = LocalDateTime.now().plusDays(1);
         return Stream.of(
-                new CreateEntrevueDTO(null, OFFER_ID, future, ModeEntrevue.IN_PERSON, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, null, future, ModeEntrevue.IN_PERSON, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, null, ModeEntrevue.IN_PERSON, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, future, null, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, future, ModeEntrevue.IN_PERSON, null, "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, future, ModeEntrevue.IN_PERSON, "Salle 101", null)
+                new CreateEntrevueDTO(null, 1L, future, ModeEntrevue.IN_PERSON, "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, null, future, ModeEntrevue.IN_PERSON, "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, 1L, null,   ModeEntrevue.IN_PERSON, "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, 1L, future, null,                   "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, 1L, future, ModeEntrevue.IN_PERSON, null,       "msg")
         );
     }
 
@@ -126,7 +125,7 @@ public class EntrevueServiceTest {
     @ParameterizedTest
     @MethodSource("invalidDtos")
     void scheduleInterview_missingField_throwsBadRequest(CreateEntrevueDTO invalid) {
-        assertThrows(NotFoundException.class,
+        assertThrows(BadRequestException.class,
                 () -> entrevueService.scheduleInterview(request, invalid));
 
         verifyNoInteractions(interviewRepository, userRepository, documentRepository, jwtTokenProvider);

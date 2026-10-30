@@ -148,7 +148,7 @@ public class EntrevueService {
     private void validateRequiredFields(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
         if (InterviewDTO.studentId() == null || InterviewDTO.offerId() == null ||
                 InterviewDTO.DateAndTime() == null || InterviewDTO.mode() == null ||
-                InterviewDTO.locationOrLink() == null) {
+                InterviewDTO.locationOrLink() == null ) {
             throw new BadRequestException("tous les champs sont obligatoires.");
         }
     }
