@@ -20,6 +20,7 @@ export default function EtudiantCandidatures() {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const [applications, setApplications] = useState([]);
+    const [offersCount, setOffersCount] = useState(null);
     const [cv, setCv] = useState(null);
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -45,6 +46,9 @@ export default function EtudiantCandidatures() {
                 setCv(cvData);
                 setLoading(false);
 
+                loadAvailableOffersCount(normalizedApplications).then((count) => {
+                    if (isMounted) setOffersCount(count);
+                });
             })
             .catch(() => {
                 if (!isMounted) return;
@@ -57,63 +61,69 @@ export default function EtudiantCandidatures() {
         };
     }, []);
 
+    useEffect(() => {
+        onCountsChange?.({
+            offersCount,
+            applicationsCount: loading ? undefined : applications.length,
+        });
+    }, [onCountsChange, offersCount, loading, applications.length]);
+
     return (
         <>
             {loading && <Loading/>}
 
             {error && !loading && (
-                <div className="mt-8 rounded-2xl border border-error bg-blush/30 p-6" role="alert">
-                    <p className="text-sm font-semibold text-error">{t("studentApplications.loadError")}</p>
-                </div>
-            )}
+                    <div className="mt-8 rounded-2xl border border-error bg-blush/30 p-6" role="alert">
+                        <p className="text-sm font-semibold text-error">{t("studentApplications.loadError")}</p>
+                    </div>
+                )}
 
             {!error && !loading && applications.length === 0 && (
-                <div
-                    className="mt-8 rounded-2xl border border-line bg-surface p-10 text-center shadow-[0_18px_50px_rgba(48,35,55,0.06)]">
-                    <h2 className="text-xl font-black text-ink">{t("studentApplications.emptyTitle")}</h2>
-                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">{t("studentApplications.emptyDescription")}</p>
-                </div>
-            )}
+                    <div
+                        className="mt-8 rounded-2xl border border-line bg-surface p-10 text-center shadow-[0_18px_50px_rgba(48,35,55,0.06)]">
+                        <h2 className="text-xl font-black text-ink">{t("studentApplications.emptyTitle")}</h2>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">{t("studentApplications.emptyDescription")}</p>
+                    </div>
+                )}
 
             {!error && !loading && applications.length > 0 && (
-                <div className="mt-8 grid gap-5 md:grid-cols-2">
-                    {applications.map((application) => {
-                        const {offer} = application;
-                        return (
-                            <button
-                                type="button"
-                                key={application.id ?? offer.id}
-                                onClick={() => setSelectedApplication(application)}
-                                className="group flex h-full flex-col rounded-[1.5rem] border border-line bg-surface p-6 text-left shadow-[0_12px_35px_rgba(48,35,55,0.05)] transition-all hover:-translate-y-0.5 hover:border-lavender hover:shadow-[0_18px_45px_rgba(48,35,55,0.1)] focus:outline-none focus:ring-4 focus:ring-pink/50"
-                            >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <h2 className="truncate text-xl font-black tracking-tight text-ink">
-                                            {formatOfferTitle(offer.title) || t("studentApplications.untitled")}
-                                        </h2>
-                                        {offer.company &&
-                                            <p className="mt-1 text-sm font-bold text-ink-soft">{offer.company}</p>}
+                    <div className="mt-8 grid gap-5 md:grid-cols-2">
+                        {applications.map((application) => {
+                            const {offer} = application;
+                            return (
+                                <button
+                                    type="button"
+                                    key={application.id ?? offer.id}
+                                    onClick={() => setSelectedApplication(application)}
+                                    className="group flex h-full flex-col rounded-[1.5rem] border border-line bg-surface p-6 text-left shadow-[0_12px_35px_rgba(48,35,55,0.05)] transition-all hover:-translate-y-0.5 hover:border-lavender hover:shadow-[0_18px_45px_rgba(48,35,55,0.1)] focus:outline-none focus:ring-4 focus:ring-pink/50"
+                                >
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <h2 className="truncate text-xl font-black tracking-tight text-ink">
+                                                {formatOfferTitle(offer.title) || t("studentApplications.untitled")}
+                                            </h2>
+                                            {offer.company &&
+                                                <p className="mt-1 text-sm font-bold text-ink-soft">{offer.company}</p>}
+                                        </div>
+                                        <ApplicationStatusBadge status={application.status} t={t}/>
                                     </div>
-                                    <ApplicationStatusBadge status={application.status} t={t}/>
-                                </div>
-                                <p className="mt-4 line-clamp-3 flex-1 text-sm leading-6 text-ink-soft">
-                                    {offer.description || t("studentApplications.noDescription")}
-                                </p>
-                                <div
-                                    className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4 text-xs font-semibold text-ink-soft">
-                                    <span>{t("studentApplications.appliedOn")} {formatDate(application.appliedAt, language) || t("studentApplications.notSpecified")}</span>
-                                    <span
-                                        className="inline-flex shrink-0 items-center whitespace-nowrap text-xs font-bold text-ink-soft transition-colors group-hover:text-ink sm:text-sm">
+                                    <p className="mt-4 line-clamp-3 flex-1 text-sm leading-6 text-ink-soft">
+                                        {offer.description || t("studentApplications.noDescription")}
+                                    </p>
+                                    <div
+                                        className="mt-6 flex items-center justify-between gap-3 border-t border-line pt-4 text-xs font-semibold text-ink-soft">
+                                        <span>{t("studentApplications.appliedOn")} {formatDate(application.appliedAt, language) || t("studentApplications.notSpecified")}</span>
+                                        <span
+                                            className="inline-flex shrink-0 items-center whitespace-nowrap text-xs font-bold text-ink-soft transition-colors group-hover:text-ink sm:text-sm">
                                             {t("studentApplications.viewDetails")}
                                         </span>
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             {selectedApplication && (
-                <StudentApplicationDetails
                     application={selectedApplication}
                     cv={cv}
                     language={language}

@@ -117,11 +117,10 @@ function normalizeApplication(application, index = 0) {
             ?? student.statut
             ?? student.status
             ?? "",
-        interviewScheduled: Boolean(
-            application?.interviewScheduled
-            ?? application?.entrevuePlanifiee
-            ?? application?.hasInterview
-        ),
+        interviewScheduled: String(application?.etatEntrevue ?? "").toUpperCase() !== "PASSEE"
+            && application?.interviewInvitationStatus !== "EXPIRED"
+            && Boolean(application?.interviewScheduled ?? application?.entrevuePlanifiee ?? application?.hasInterview
+                ?? String(application?.etatEntrevue ?? "").toUpperCase() === "PLANIFIEE"),
         firstName,
         lastName,
         name: String(fullName || "").trim(),
@@ -833,33 +832,6 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
             </div>
         </div>
     );
-}
-
-export function buildOfferSubmissionFormData({file, fields, offerId}) {
-    const formData = new FormData();
-    if (file) formData.append("file", file);
-    formData.append("formContent", JSON.stringify({
-        type: "OffreDeStage",
-        offerId: offerId ?? null,
-        nomEntreprise: fields.nomEntreprise,
-        position: fields.position,
-        descriptionPosition: fields.descriptionPosition,
-        dateDebutStage: fields.dateDebutStage,
-        dateFinStage: fields.dateFinStage,
-        adresseEntreprise: fields.adresseEntreprise,
-        salaire: fields.salaire === "" ? null : Number(fields.salaire),
-        contactName: fields.contactName,
-        email: fields.email,
-        contactPhone: fields.contactPhone,
-        targetDiscipline: fields.targetDiscipline,
-    }));
-    return formData;
-}
-
-function errorForOfferStatus(status) {
-    if (status === 401) return createTranslationMessage("errors.unauthorized");
-    if (status === 403) return createTranslationMessage("errors.forbidden");
-    return createTranslationMessage("employerOffers.errors.loadFailed");
 }
 
 export default function EmployeurOffres({

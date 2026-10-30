@@ -27,7 +27,7 @@ describe("manager validation workflows", () => {
             new Response(JSON.stringify({...pendingOffer, statut: "VALIDE"}), {status: 200}),
         );
 
-        renderWithProviders(<GestionnaireValidation/>);
+        renderWithProviders(<GestionnaireOffresValidation/>);
 
         expect((await screen.findAllByText("Stagiaire en développement web")).length).toBeGreaterThan(0);
         await userEvent.setup().click(screen.getByRole("button", {name: "Valider"}));
@@ -46,7 +46,7 @@ describe("manager validation workflows", () => {
         );
         const user = userEvent.setup();
 
-        renderWithProviders(<GestionnaireValidation/>);
+        renderWithProviders(<GestionnaireOffresValidation/>);
 
         await screen.findAllByText("Stagiaire en développement web");
         await user.click(screen.getByRole("button", {name: "Refuser"}));

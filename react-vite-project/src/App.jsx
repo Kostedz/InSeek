@@ -91,7 +91,7 @@ function App() {
                         element={
                             user?.isLoggedIn && userRole === "ETUDIANT" ? (
                                 <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
-                                    <StudentHomePage user={user}/>
+                                    <EtudiantHomePage user={user}/>
                                 </ProtectedRoute>
                             ) : user?.isLoggedIn && userRole === "EMPLOYEUR" ? (
                                 <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["EMPLOYEUR"]}>
@@ -147,7 +147,7 @@ function App() {
                         path="etudiant/offres"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
-                                <StudentHomePage user={user}/>
+                                <EtudiantHomePage user={user}/>
                             </ProtectedRoute>
                         }
                     />
@@ -155,7 +155,7 @@ function App() {
                         path="etudiant/candidatures"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
-                                <StudentHomePage user={user}/>
+                                <EtudiantHomePage user={user}/>
                             </ProtectedRoute>
                         }
                     />
@@ -171,7 +171,7 @@ function App() {
                         path="etudiant/contrat"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
-                                <StudentHomePage user={user}/>
+                                <EtudiantHomePage user={user}/>
                             </ProtectedRoute>
                         }
                     />
