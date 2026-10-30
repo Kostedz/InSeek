@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
+import {normalizeMeetingLink} from "../../componentUtils/etudiant/convocationsUtils/InterviewUtils.jsx";
+import {notifyStudentTabCountsChanged} from "../../../utils/tabCounts.js";
 
 function normalizeStatus(value) {
     const normalized = String(value ?? "")
@@ -51,7 +53,7 @@ function normalizeInterview(item) {
         duration: item.duree ?? item.duration,
         mode: item.mode ?? item.modeInterview,
         location: item.locationOrLink ?? item.lieu ?? item.location ?? "",
-        meetingLink: item.lienVisio ?? item.meetingLink ?? "",
+        meetingLink: normalizeMeetingLink(item.lienVisio ?? item.meetingLink),
         message: item.message ?? item.messageEmployeur ?? "",
         status: status === "PENDING" && expiredByDate
             ? "EXPIRED"
@@ -640,6 +642,7 @@ export default function StudentInterviews({user, page = false}) {
                     responseError.status = response.status;
                     throw responseError;
                 }
+                notifyStudentTabCountsChanged();
 
                 if (response.status !== 204) {
                     const updated = await response.json();
@@ -661,6 +664,7 @@ export default function StudentInterviews({user, page = false}) {
             }
 
             if (response && response.id != null) {
+                notifyStudentTabCountsChanged();
                 const updatedInterview = normalizeInterview(response);
 
                 setInterviews((previous) =>

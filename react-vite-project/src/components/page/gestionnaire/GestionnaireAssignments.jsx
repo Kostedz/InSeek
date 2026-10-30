@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
-import {notifyPendingDocumentProcessed} from "../../../utils/gestionnaireCounts.js";
+import {notifyPendingDocumentProcessed} from "../../../utils/tabCounts.js";
 
 const asList = (value) => Array.isArray(value) ? value : value?.items ?? value?.content ?? [];
 const fullName = (person) => [person?.prenom ?? person?.firstName, person?.nom ?? person?.lastName].filter(Boolean).join(" ");

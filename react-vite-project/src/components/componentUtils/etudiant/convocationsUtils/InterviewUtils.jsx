@@ -19,6 +19,24 @@ function normalizeStatus(value) {
     return "PENDING";
 }
 
+export function normalizeMeetingLink(value) {
+    const rawLink = String(value ?? "").trim();
+    if (!rawLink) return "";
+
+    const candidate = rawLink.startsWith("//")
+        ? `https:${rawLink}`
+        : /^[a-z][a-z\d+.-]*:/i.test(rawLink)
+            ? rawLink
+            : `https://${rawLink}`;
+
+    try {
+        const url = new URL(candidate);
+        return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+    } catch {
+        return "";
+    }
+}
+
 export function normalizeInterview(item) {
     const date =
         item.DateAndTime ??
@@ -47,7 +65,7 @@ export function normalizeInterview(item) {
         duration: item.duree ?? item.duration,
         mode: item.mode ?? item.modeInterview,
         location: item.locationOrLink ?? item.lieu ?? item.location ?? "",
-        meetingLink: item.lienVisio ?? item.meetingLink ?? "",
+        meetingLink: normalizeMeetingLink(item.lienVisio ?? item.meetingLink),
         message: item.message ?? item.messageEmployeur ?? "",
         status: status === "PENDING" && expiredByDate
             ? "EXPIRED"

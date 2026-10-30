@@ -3,25 +3,22 @@ import {Link, useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
 import {normalizeOffer} from "../../componentUtils/offresUtils.js";
+import {getInterviewDate, normalizeInterview} from "../../componentUtils/etudiant/convocationsUtils/InterviewUtils.jsx";
+import {STUDENT_TAB_COUNTS_CHANGED_EVENT} from "../../../utils/tabCounts.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
 function isPendingInterview(item) {
-    const status = String(
-        item?.interviewInvitationStatus ?? item?.statut ?? item?.status ?? ""
-    ).toUpperCase();
-    const dateValue = item?.DateAndTime ?? item?.dateAndTime ?? item?.dateInterview ?? item?.date;
-    const date = dateValue ? new Date(dateValue) : null;
+    const interview = normalizeInterview(item);
+    const date = getInterviewDate(interview);
 
-    return status === "PENDING"
-        && date !== null
-        && !Number.isNaN(date.getTime())
-        && date.getTime() > Date.now();
+    return interview.status === "PENDING" && date !== null && date.getTime() > Date.now();
 }
 
 export default function StudentMenu({user}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
     const [counts, setCounts] = useState({});
+    const [refreshVersion, setRefreshVersion] = useState(0);
     const offersActive = pathname === "/" || pathname === "/etudiant/offres";
     const applicationsActive = pathname === "/etudiant/candidatures";
     const interviewsActive = pathname === "/etudiant/convocations";
@@ -31,6 +28,12 @@ export default function StudentMenu({user}) {
 
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "student-active-tab");
     const offersPath = offersActive && pathname === "/" ? "/" : "/etudiant/offres";
+
+    useEffect(() => {
+        const refreshCounts = () => setRefreshVersion((version) => version + 1);
+        window.addEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshCounts);
+        return () => window.removeEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshCounts);
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -65,7 +68,7 @@ export default function StudentMenu({user}) {
         return () => {
             active = false;
         };
-    }, [user?.id]);
+    }, [user?.id, pathname, refreshVersion]);
 
     const countBadge = (count) => count === null || count === undefined ? null : (
         <span

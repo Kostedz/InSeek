@@ -6,6 +6,10 @@ import Loading from "../../Loading.jsx";
 import ErrorPage from "../../ErrorPage.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 import {formatOfferTitle} from "../../componentUtils/offresUtils.js";
+import {
+    buildOfferSubmissionFormData,
+    errorForOfferStatus
+} from "../../componentUtils/employeur/offresUtils/employeurOffresUtils.js";
 import ScheduleInterviewModal from "../../componentUtils/employeur/ScheduleInterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;

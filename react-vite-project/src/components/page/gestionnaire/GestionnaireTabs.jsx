@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
-import {countPendingDocuments, PENDING_DOCUMENT_PROCESSED_EVENT} from "../../../utils/gestionnaireCounts.js";
+import {countPendingDocuments, PENDING_DOCUMENT_PROCESSED_EVENT} from "../../../utils/tabCounts.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
 export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
