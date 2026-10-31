@@ -31,52 +31,6 @@ public class ContratService {
     private final ApplicationStageRepository applicationStageRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
-    @Transactional
-    public ContratDTO signContract(Long contractId, HttpServletRequest request) throws NotFoundException, BadRequestException, ConflictException {
-        Contract contract = contratRepository.findById(contractId)
-                .orElseThrow(() -> new NotFoundException("Contrat non trouvé "));
-
-        Utilisateur user = getAuthUser(request);
-
-        validateUserRelatedToContract(user, contract);
-        if (user instanceof Etudiant student) {
-            utilisateurRepository.lockEtudiantById(student.getId())
-                    .orElseThrow(() -> new NotFoundException("Étudiant introuvable."));
-            if (contratRepository.existsByStudentIdAndContractStatusInAndContractIdNot(
-                    student.getId(),
-                    List.of(StatutContrat.SIGNED_BY_STUDENT, StatutContrat.SIGNED_BY_EMPLOYER,
-                            StatutContrat.SIGNED_BY_GESTIONNAIRE, StatutContrat.EXECUTED),
-                    contractId)) {
-                throw new ConflictException("Un étudiant ne peut signer qu'un seul contrat.");
-            }
-        }
-        updateContractStatusBasedOnUser(user, contract);
-
-        contratRepository.save(contract);
-        return ContratDTO.of(contract);
-    }
-
-    @Transactional(readOnly = true)
-    public List<ContratDTO> listerContratsEtudiant(HttpServletRequest request) throws BadRequestException {
-        Utilisateur user = getAuthUser(request);
-        if (!(user instanceof Etudiant student)) {
-            throw new BadRequestException("Cette liste est réservée aux étudiants.");
-        }
-        return contratRepository.findByStudentIdOrderByDateCreationDesc(student.getId())
-                .stream()
-                .map(ContratDTO::of)
-                .toList();
-    }
-
-    private Utilisateur getAuthUser(HttpServletRequest request) throws BadRequestException {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new BadRequestException("Jeton d'authentification manquant.");
-        }
-        String email = jwtTokenProvider.getEmailFromJWT(authHeader.substring(7));
-        return utilisateurRepository.findByEmail(email);
-    }
-
     @Transactional(readOnly = true)
     public List<EtudiantEligibleContratDTO> getEtudiantsEligibles() {
         List<Etudiant> etudiants = utilisateurRepository
@@ -135,11 +89,40 @@ public class ContratService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ContratDTO> listerContratsEtudiant(HttpServletRequest request) throws BadRequestException {
+        Utilisateur user = getAuthUser(request);
+        if (!(user instanceof Etudiant student)) {
+            throw new BadRequestException("Cette liste est réservée aux étudiants.");
+        }
+        return contratRepository.findByStudentIdOrderByDateCreationDesc(student.getId())
+                .stream()
+                .map(ContratDTO::of)
+                .toList();
+    }
+
     //donne le detail d'un contrat
     @Transactional(readOnly = true)
     public ContratDTO getContrat(Long id) throws NotFoundException {
         Contract contract = contratRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Contrat non trouvé "));
+        return ContratDTO.of(contract);
+    }
+
+    @Transactional
+    public ContratDTO signContract(Long contractId, HttpServletRequest request) throws NotFoundException, BadRequestException, ConflictException {
+        Contract contract = contratRepository.findById(contractId)
+                .orElseThrow(() -> new NotFoundException("Contrat non trouvé "));
+
+        Utilisateur user = getAuthUser(request);
+
+        validateUserRelatedToContract(user, contract);
+        if (user instanceof Etudiant student) {
+            checkStudentHasNoOtherSignedContract(student, contractId);
+        }
+        updateContractStatusBasedOnUser(user, contract);
+
+        contratRepository.save(contract);
         return ContratDTO.of(contract);
     }
 
@@ -291,6 +274,10 @@ public class ContratService {
             if (!student.getId().equals(contract.getStudent().getId())) {
                 throw new BadRequestException("L'utilisateur connecté n'est pas l'étudiant associé à ce contrat.");
             }
+        } else if (user instanceof Employeur employer) {
+            if (!employer.getId().equals(contract.getEmployer().getId())) {
+                throw new BadRequestException("L'utilisateur connecté n'est pas l'employeur associé à ce contrat.");
+            }
         } else if (user instanceof Gestionnaire admin) {
             if (!admin.getId().equals(contract.getAdmin().getId())) {
                 throw new BadRequestException("L'utilisateur connecté n'est pas le gestionnaire associé à ce contrat.");
@@ -307,6 +294,13 @@ public class ContratService {
                     throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
                 } else {
                     contract.setContractStatus(StatutContrat.SIGNED_BY_STUDENT);
+                }
+                break;
+            case "Employeur":
+                if (contract.getContractStatus() != StatutContrat.SIGNED_BY_STUDENT) {
+                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
+                } else {
+                    contract.setContractStatus(StatutContrat.SIGNED_BY_EMPLOYER);
                 }
                 break;
             case "Gestionnaire":
@@ -327,6 +321,30 @@ public class ContratService {
         }
     }
 
+    private void checkStudentHasNoOtherSignedContract(Etudiant student, Long contractId)
+            throws NotFoundException, ConflictException {
+        utilisateurRepository.lockEtudiantById(student.getId())
+                .orElseThrow(() -> new NotFoundException("Étudiant introuvable."));
+
+        boolean alreadySigned = contratRepository.existsByStudentIdAndContractStatusInAndContractIdNot(
+                student.getId(),
+                List.of(StatutContrat.SIGNED_BY_STUDENT, StatutContrat.SIGNED_BY_EMPLOYER,
+                        StatutContrat.SIGNED_BY_GESTIONNAIRE, StatutContrat.EXECUTED),
+                contractId);
+
+        if (alreadySigned) {
+            throw new ConflictException("Un étudiant ne peut signer qu'un seul contrat.");
+        }
+    }
+
+    private Utilisateur getAuthUser(HttpServletRequest request) throws BadRequestException {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BadRequestException("Jeton d'authentification manquant.");
+        }
+        String email = jwtTokenProvider.getEmailFromJWT(authHeader.substring(7));
+        return utilisateurRepository.findByEmail(email);
+    }
 
     private Gestionnaire getConnectedGestionnaire(HttpServletRequest request) throws NotFoundException, BadRequestException {
         Utilisateur user = getAuthUser(request);
