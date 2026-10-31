@@ -83,7 +83,7 @@ class SuiviEtudiantsServiceTest {
         ApplicationStageDTO demande = new ApplicationStageDTO(
                 5L, LocalDate.of(2026, 10, 1),
                 EtudiantDTO.of(etudiant), null,
-                StatutValidation.EN_ATTENTE, null, null, null);
+                StatutValidation.EN_ATTENTE, null, null, null, null);
         when(etudiantRepository.findById(1L)).thenReturn(Optional.of(etudiant));
         when(applicationStageService.findApplicationsForStudent(etudiant)).thenReturn(List.of(demande));
 
