@@ -66,7 +66,7 @@ public class ContratController {
         }
     }
 
-    @GetMapping("/sign/{contractId}")
+    @PatchMapping("/sign/{contractId}")
     public ResponseEntity<ContratDTO> signContract(@PathVariable Long contractId, HttpServletRequest request) {
         try {
             return ResponseEntity.ok(contratService.signContract(contractId, request));
