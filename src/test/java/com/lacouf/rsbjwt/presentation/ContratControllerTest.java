@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,14 +35,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,9 +56,11 @@ class ContratControllerTest {
     static class MethodSecurityTestConfig {
     }
     private static final String ELIGIBLE_URL = "/contracts/eligible-students";
-    private static final String PREFILLED_URL = "/contracts/contracts/prefilled/{studentId}";
+    private static final String PREFILLED_URL = "/contracts/prefilled/{studentId}";
     private static final String CONTRACTS_URL = "/contracts/contracts";
     private static final String CONTRACT_BY_ID_URL = "/contracts/contracts/{id}";
+    private static final String SIGN_URL = "/contracts/sign/{contractId}";
+    private static final String STUDENT_URL = "/contracts/student";
 
     @Autowired
     MockMvc mockMvc;
@@ -174,7 +175,7 @@ class ContratControllerTest {
     }
 
     @Test
-    @DisplayName("GET /contracts/contracts/prefilled/{studentId}?offerId= retourne 200 et les données pré-remplies")
+    @DisplayName("GET /contracts/prefilled/{studentId}?offerId= retourne 200 et les données pré-remplies")
     void preFilledContracts_succes_retourne200() throws Exception {
         PreRemplirContratDTO prefill = PreRemplirContratDTO.builder()
                 .studentName("Jean Tremblay")
@@ -382,5 +383,202 @@ class ContratControllerTest {
                 .andExpect(status().isForbidden());
 
         verify(contratService, never()).creerContrat(any(), any());
+    }
+
+    // ======================= Helper =======================
+
+    private ContratDTO contratAvecStatut(StatutContrat statut) {
+        return ContratDTO.builder()
+                .id(100L)
+                .studentFullName("Jean Tremblay")
+                .contractStatus(statut)
+                .build();
+    }
+
+    // ======================= PATCH /contracts/sign/{contractId} : succès =======================
+
+    @Test
+    @WithMockUser(authorities = "ETUDIANT")
+    @DisplayName("PATCH /contracts/sign/{id} par un étudiant retourne 200 et le contrat signé")
+    void signContract_etudiant_retourne200() throws Exception {
+        when(contratService.signContract(eq(100L), any()))
+                .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_STUDENT));
+
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(100))
+                .andExpect(jsonPath("$.contractStatus").value("SIGNED_BY_STUDENT"));
+    }
+
+    @Test
+    @WithMockUser(authorities = "EMPLOYEUR")
+    @DisplayName("PATCH /contracts/sign/{id} par un employeur retourne 200 et le contrat signé")
+    void signContract_employeur_retourne200() throws Exception {
+        when(contratService.signContract(eq(100L), any()))
+                .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_EMPLOYER));
+
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contractStatus").value("SIGNED_BY_EMPLOYER"));
+    }
+
+    @Test
+    @WithMockUser(authorities = "GESTIONNAIRE")
+    @DisplayName("PATCH /contracts/sign/{id} par un gestionnaire retourne 200 et le contrat signé")
+    void signContract_gestionnaire_retourne200() throws Exception {
+        when(contratService.signContract(eq(100L), any()))
+                .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_GESTIONNAIRE));
+
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contractStatus").value("SIGNED_BY_GESTIONNAIRE"));
+    }
+
+    @Test
+    @DisplayName("PATCH /contracts/sign/{id} transmet l'id du contrat et la requête au service")
+    void signContract_transmetIdEtRequeteAuService() throws Exception {
+        when(contratService.signContract(eq(100L), any()))
+                .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_STUDENT));
+
+        mockMvc.perform(patch(SIGN_URL, 100L)
+                        .with(csrf())
+                        .header("Authorization", "Bearer un-jeton"))
+                .andExpect(status().isOk());
+
+        verify(contratService).signContract(
+                eq(100L),
+                org.mockito.ArgumentMatchers.argThat((HttpServletRequest r) ->
+                        "Bearer un-jeton".equals(r.getHeader("Authorization"))));
+    }
+
+
+    @Test
+    @DisplayName("PATCH /contracts/sign/{id} avec un contrat inexistant retourne 404")
+    void signContract_contratInexistant_retourne404() throws Exception {
+        when(contratService.signContract(eq(404L), any()))
+                .thenThrow(new NotFoundException("Contrat non trouvé "));
+
+        mockMvc.perform(patch(SIGN_URL, 404L).with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PATCH /contracts/sign/{id} avec une signature non permise retourne 400")
+    void signContract_signatureNonPermise_retourne400() throws Exception {
+        when(contratService.signContract(eq(100L), any()))
+                .thenThrow(new BadRequestException("Le contrat ne peut pas être signé dans son état actuel."));
+
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PATCH /contracts/sign/{id} par un utilisateur non lié au contrat retourne 400")
+    void signContract_utilisateurNonLie_retourne400() throws Exception {
+        when(contratService.signContract(eq(100L), any()))
+                .thenThrow(new BadRequestException("L'utilisateur connecté n'est pas l'employeur associé à ce contrat."));
+
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PATCH /contracts/sign/{id} avec un étudiant ayant déjà un contrat signé retourne 409")
+    void signContract_etudiantDejaSigne_retourne409() throws Exception {
+        when(contratService.signContract(eq(100L), any()))
+                .thenThrow(new ConflictException("Un étudiant ne peut signer qu'un seul contrat."));
+
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+                .andExpect(status().isConflict());
+    }
+
+
+    @Test
+    @WithMockUser(authorities = "ETUDIANT")
+    @DisplayName("GET /contracts/student retourne 200 et les contrats de l'étudiant")
+    void getStudentContracts_succes_retourne200() throws Exception {
+        when(contratService.listerContratsEtudiant(any()))
+                .thenReturn(List.of(sampleContratDTO));
+
+        mockMvc.perform(get(STUDENT_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(100))
+                .andExpect(jsonPath("$[0].contractStatus").value("PENDING_SIGNATURE"));
+
+        verify(contratService).listerContratsEtudiant(any(HttpServletRequest.class));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ETUDIANT")
+    @DisplayName("GET /contracts/student sans contrat retourne 200 et une liste vide")
+    void getStudentContracts_aucun_retourneListeVide() throws Exception {
+        when(contratService.listerContratsEtudiant(any())).thenReturn(List.of());
+
+        mockMvc.perform(get(STUDENT_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @WithMockUser(authorities = "ETUDIANT")
+    @DisplayName("GET /contracts/student avec un jeton invalide retourne 400")
+    void getStudentContracts_erreurService_retourne400() throws Exception {
+        when(contratService.listerContratsEtudiant(any()))
+                .thenThrow(new BadRequestException("Jeton d'authentification manquant."));
+
+        mockMvc.perform(get(STUDENT_URL))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(authorities = "GESTIONNAIRE")
+    @DisplayName("GET /contracts/student par un gestionnaire retourne 403")
+    void getStudentContracts_gestionnaire_retourne403() throws Exception {
+        mockMvc.perform(get(STUDENT_URL))
+                .andExpect(status().isForbidden());
+
+        verify(contratService, never()).listerContratsEtudiant(any());
+    }
+
+    @Test
+    @WithMockUser(authorities = "EMPLOYEUR")
+    @DisplayName("GET /contracts/student par un employeur retourne 403")
+    void getStudentContracts_employeur_retourne403() throws Exception {
+        mockMvc.perform(get(STUDENT_URL))
+                .andExpect(status().isForbidden());
+
+        verify(contratService, never()).listerContratsEtudiant(any());
+    }
+
+
+    @Test
+    @WithMockUser(authorities = "ETUDIANT")
+    @DisplayName("GET /contracts/prefilled/{studentId} avec un rôle autre que GESTIONNAIRE retourne 403")
+    void preFilledContracts_mauvaisRole_retourne403() throws Exception {
+        mockMvc.perform(get(PREFILLED_URL, 1L).param("offerId", "10"))
+                .andExpect(status().isForbidden());
+
+        verify(contratService, never()).getDonneesPreRemplies(any(), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = "ETUDIANT")
+    @DisplayName("GET /contracts/contracts avec un rôle autre que GESTIONNAIRE retourne 403")
+    void getContracts_mauvaisRole_retourne403() throws Exception {
+        mockMvc.perform(get(CONTRACTS_URL))
+                .andExpect(status().isForbidden());
+
+        verify(contratService, never()).listerContrats();
+    }
+
+    @Test
+    @WithMockUser(authorities = "EMPLOYEUR")
+    @DisplayName("GET /contracts/contracts/{id} avec un rôle autre que GESTIONNAIRE retourne 403")
+    void getContractsById_mauvaisRole_retourne403() throws Exception {
+        mockMvc.perform(get(CONTRACT_BY_ID_URL, 100L))
+                .andExpect(status().isForbidden());
+
+        verify(contratService, never()).getContrat(any());
     }
 }

@@ -68,6 +68,7 @@ class ContratServiceTest {
         when(etudiant.getStatutRecherche()).thenReturn(StatutRechercheEtudiant.INTERNSHIP_FOUND);
 
         employeur = mock(Employeur.class);
+        when(employeur.getId()).thenReturn(2L);
         when(employeur.getPrenom()).thenReturn("Will");
         when(employeur.getNom()).thenReturn("Gates");
         when(employeur.getNomCompagnie()).thenReturn("Microsoft");
@@ -76,7 +77,7 @@ class ContratServiceTest {
         when(offre.getId()).thenReturn(10L);
         when(offre.getPosition()).thenReturn("Développeur Java");
         when(offre.getNomEntreprise()).thenReturn("Microsoft");
-        when(offre.getEmployeur()).thenReturn(employeur);
+        when(offre.getUtilisateur()).thenReturn(employeur);
         when(offre.getSalaire()).thenReturn(25.0);
         when(offre.getAdresseEntreprise()).thenReturn("123 rue Principale");
 
@@ -85,6 +86,7 @@ class ContratServiceTest {
         when(professeur.getNom()).thenReturn("Gagnon");
 
         gestionnaire = mock(Gestionnaire.class);
+        when(gestionnaire.getId()).thenReturn(3L);
 
         applicationAcceptee = mock(ApplicationStage.class);
         when(applicationAcceptee.getStatutValidation()).thenReturn(StatutValidation.ACCEPTE);
@@ -596,7 +598,7 @@ class ContratServiceTest {
     @Test
     @DisplayName("creerContrat() avec une offre sans employeur valide lève une NotFoundException")
     void creerContrat_offreSansEmployeur_leveNotFound() {
-        when(offre.getEmployeur()).thenReturn(mock(Etudiant.class));
+        when(offre.getUtilisateur()).thenReturn(mock(Etudiant.class));
 
         NotFoundException ex = assertThrows(NotFoundException.class,
                 () -> contratService.creerContrat(dtoValide(), requeteAvecToken()));
@@ -688,5 +690,394 @@ class ContratServiceTest {
                 () -> contratService.getContrat(404L));
 
         assertEquals("Contrat non trouvé ", ex.getMessage());
+    }
+
+
+    private Contract contrat(StatutContrat statut) {
+        return Contract.builder()
+                .contractId(100L)
+                .student(etudiant)
+                .employer(employeur)
+                .admin(gestionnaire)
+                .internshipOffer(offre)
+                .contractStatus(statut)
+                .build();
+    }
+
+    private void contratExiste(Contract contract) {
+        when(contratRepository.findById(100L)).thenReturn(Optional.of(contract));
+    }
+
+    private MockHttpServletRequest requeteAuthentifieePour(Utilisateur user) {
+        when(jwtTokenProvider.getEmailFromJWT("token-test")).thenReturn("test@mail.com");
+        when(utilisateurRepository.findByEmail("test@mail.com")).thenReturn(user);
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-test");
+        return request;
+    }
+
+    private Etudiant autreEtudiant() {
+        Etudiant e = mock(Etudiant.class);
+        when(e.getId()).thenReturn(50L);
+        return e;
+    }
+
+    private Employeur autreEmployeur() {
+        Employeur employer = mock(Employeur.class);
+        when(employer.getId()).thenReturn(20L);
+        return employer;
+    }
+
+    private Gestionnaire autreGestionnaire() {
+        Gestionnaire admin = mock(Gestionnaire.class);
+        when(admin.getId()).thenReturn(30L);
+        return admin;
+    }
+
+    @Test
+    @DisplayName("signContract() par l'étudiant passe le contrat à SIGNED_BY_STUDENT")
+    void signContract_etudiant_signeContrat() throws Exception {
+        Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
+        contratExiste(contract);
+        when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.of(etudiant));
+
+        ContratDTO result = contratService.signContract(100L, requeteAuthentifieePour(etudiant));
+
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, result.contractStatus());
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, contract.getContractStatus());
+        verify(contratRepository).save(contract);
+    }
+
+    @Test
+    @DisplayName("signContract() par l'employeur passe le contrat à SIGNED_BY_EMPLOYER (et non GESTIONNAIRE)")
+    void signContract_employeur_signeContrat() throws Exception {
+        Contract contract = contrat(StatutContrat.SIGNED_BY_STUDENT);
+        contratExiste(contract);
+
+        ContratDTO result = contratService.signContract(100L, requeteAuthentifieePour(employeur));
+
+        assertEquals(StatutContrat.SIGNED_BY_EMPLOYER, result.contractStatus());
+        assertEquals(StatutContrat.SIGNED_BY_EMPLOYER, contract.getContractStatus());
+        verify(contratRepository).save(contract);
+    }
+
+    @Test
+    @DisplayName("signContract() par le gestionnaire passe le contrat à SIGNED_BY_GESTIONNAIRE")
+    void signContract_gestionnaire_signeContrat() throws Exception {
+        Contract contract = contrat(StatutContrat.SIGNED_BY_EMPLOYER);
+        contratExiste(contract);
+
+        ContratDTO result = contratService.signContract(100L, requeteAuthentifieePour(gestionnaire));
+
+        assertEquals(StatutContrat.SIGNED_BY_GESTIONNAIRE, result.contractStatus());
+        verify(contratRepository).save(contract);
+    }
+
+    @Test
+    @DisplayName("signContract() flux complet : étudiant, puis employeur, puis gestionnaire")
+    void signContract_fluxComplet_ordreRespecte() throws Exception {
+        Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
+        contratExiste(contract);
+        when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.of(etudiant));
+
+        contratService.signContract(100L, requeteAuthentifieePour(etudiant));
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, contract.getContractStatus());
+
+        contratService.signContract(100L, requeteAuthentifieePour(employeur));
+        assertEquals(StatutContrat.SIGNED_BY_EMPLOYER, contract.getContractStatus());
+
+        contratService.signContract(100L, requeteAuthentifieePour(gestionnaire));
+        assertEquals(StatutContrat.SIGNED_BY_GESTIONNAIRE, contract.getContractStatus());
+
+        verify(contratRepository, times(3)).save(contract);
+    }
+
+
+    @Test
+    @DisplayName("signContract() avec un contrat inexistant lève une NotFoundException")
+    void signContract_contratInexistant_leveNotFound() {
+        when(contratRepository.findById(404L)).thenReturn(Optional.empty());
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> contratService.signContract(404L, requeteAuthentifieePour(etudiant)));
+
+        assertEquals("Contrat non trouvé ", ex.getMessage());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() sans en-tête Authorization lève une BadRequestException")
+    void signContract_sansHeader_leveBadRequest() {
+        contratExiste(contrat(StatutContrat.PENDING_SIGNATURE));
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, new MockHttpServletRequest()));
+
+        assertEquals("Jeton d'authentification manquant.", ex.getMessage());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() avec un utilisateur inexistant en base lève une BadRequestException")
+    void signContract_utilisateurInexistant_leveBadRequest() {
+        contratExiste(contrat(StatutContrat.PENDING_SIGNATURE));
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(null)));
+
+        assertEquals("L'utilisateur connecté n'est pas rattaché à ce contrat.", ex.getMessage());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par un professeur lève une BadRequestException")
+    void signContract_professeur_leveBadRequest() {
+        contratExiste(contrat(StatutContrat.PENDING_SIGNATURE));
+        Professeur prof = mock(Professeur.class);
+        when(prof.getId()).thenReturn(4L);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(prof)));
+
+        assertEquals("L'utilisateur connecté n'est pas rattaché à ce contrat.", ex.getMessage());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par un autre étudiant lève une BadRequestException")
+    void signContract_mauvaisEtudiant_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
+        contratExiste(contract);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(autreEtudiant())));
+
+        assertEquals("L'utilisateur connecté n'est pas l'étudiant associé à ce contrat.", ex.getMessage());
+        assertEquals(StatutContrat.PENDING_SIGNATURE, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par un autre employeur lève une BadRequestException")
+    void signContract_mauvaisEmployeur_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.SIGNED_BY_STUDENT);
+        contratExiste(contract);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(autreEmployeur())));
+
+        assertEquals("L'utilisateur connecté n'est pas l'employeur associé à ce contrat.", ex.getMessage());
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par un autre gestionnaire lève une BadRequestException")
+    void signContract_mauvaisGestionnaire_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.SIGNED_BY_EMPLOYER);
+        contratExiste(contract);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(autreGestionnaire())));
+
+        assertEquals("L'utilisateur connecté n'est pas le gestionnaire associé à ce contrat.", ex.getMessage());
+        assertEquals(StatutContrat.SIGNED_BY_EMPLOYER, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par l'étudiant sur un contrat déjà signé par lui lève une BadRequestException")
+    void signContract_etudiantDejaSigne_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.SIGNED_BY_STUDENT);
+        contratExiste(contract);
+        when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.of(etudiant));
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(etudiant)));
+
+        assertEquals("Le contrat ne peut pas être signé dans son état actuel.", ex.getMessage());
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par l'employeur avant l'étudiant lève une BadRequestException")
+    void signContract_employeurAvantEtudiant_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
+        contratExiste(contract);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(employeur)));
+
+        assertEquals("Le contrat ne peut pas être signé dans son état actuel.", ex.getMessage());
+        assertEquals(StatutContrat.PENDING_SIGNATURE, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par l'employeur sur un contrat qu'il a déjà signé lève une BadRequestException")
+    void signContract_employeurDejaSigne_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.SIGNED_BY_EMPLOYER);
+        contratExiste(contract);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(employeur)));
+
+        assertEquals("Le contrat ne peut pas être signé dans son état actuel.", ex.getMessage());
+        assertEquals(StatutContrat.SIGNED_BY_EMPLOYER, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par le gestionnaire avant l'employeur lève une BadRequestException")
+    void signContract_gestionnaireAvantEmployeur_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.SIGNED_BY_STUDENT);
+        contratExiste(contract);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(gestionnaire)));
+
+        assertEquals("Le contrat ne peut pas être signé dans son état actuel.", ex.getMessage());
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par le gestionnaire sur un contrat en attente lève une BadRequestException")
+    void signContract_gestionnaireSurContratEnAttente_leveBadRequest() {
+        Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
+        contratExiste(contract);
+
+        assertThrows(BadRequestException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(gestionnaire)));
+
+        assertEquals(StatutContrat.PENDING_SIGNATURE, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par un étudiant ayant déjà signé un autre contrat lève une ConflictException")
+    void signContract_etudiantAutreContratSigne_leveConflict() {
+        Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
+        contratExiste(contract);
+        when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.of(etudiant));
+        when(contratRepository.existsByStudentIdAndContractStatusInAndContractIdNot(eq(1L), any(), eq(100L)))
+                .thenReturn(true);
+
+        ConflictException ex = assertThrows(ConflictException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(etudiant)));
+
+        assertEquals("Un étudiant ne peut signer qu'un seul contrat.", ex.getMessage());
+        assertEquals(StatutContrat.PENDING_SIGNATURE, contract.getContractStatus());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par l'étudiant verrouille l'étudiant avant de vérifier les autres contrats")
+    void signContract_etudiant_verrouilleEtudiant() throws Exception {
+        contratExiste(contrat(StatutContrat.PENDING_SIGNATURE));
+        when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.of(etudiant));
+
+        contratService.signContract(100L, requeteAuthentifieePour(etudiant));
+
+        var ordre = inOrder(utilisateurRepository, contratRepository);
+        ordre.verify(utilisateurRepository).lockEtudiantById(1L);
+        ordre.verify(contratRepository)
+                .existsByStudentIdAndContractStatusInAndContractIdNot(eq(1L), any(), eq(100L));
+    }
+
+    @Test
+    @DisplayName("signContract() avec un étudiant introuvable au verrouillage lève une NotFoundException")
+    void signContract_etudiantVerrouIntrouvable_leveNotFound() {
+        contratExiste(contrat(StatutContrat.PENDING_SIGNATURE));
+        when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.empty());
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(etudiant)));
+
+        assertEquals("Étudiant introuvable.", ex.getMessage());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par l'employeur ne applique pas la règle du contrat unique")
+    void signContract_employeur_pasDeVerificationContratUnique() throws Exception {
+        contratExiste(contrat(StatutContrat.SIGNED_BY_STUDENT));
+
+        contratService.signContract(100L, requeteAuthentifieePour(employeur));
+
+        verify(utilisateurRepository, never()).lockEtudiantById(any());
+        verify(contratRepository, never())
+                .existsByStudentIdAndContractStatusInAndContractIdNot(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("signContract() par le gestionnaire ne applique pas la règle du contrat unique")
+    void signContract_gestionnaire_pasDeVerificationContratUnique() throws Exception {
+        contratExiste(contrat(StatutContrat.SIGNED_BY_EMPLOYER));
+
+        contratService.signContract(100L, requeteAuthentifieePour(gestionnaire));
+
+        verify(utilisateurRepository, never()).lockEtudiantById(any());
+        verify(contratRepository, never())
+                .existsByStudentIdAndContractStatusInAndContractIdNot(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("listerContratsEtudiant() retourne les contrats de l'étudiant connecté")
+    void listerContratsEtudiant_retourneSesContrats() throws Exception {
+        Contract c1 = contrat(StatutContrat.PENDING_SIGNATURE);
+        Contract c2 = contrat(StatutContrat.SIGNED_BY_STUDENT);
+        when(contratRepository.findByStudentIdOrderByDateCreationDesc(1L)).thenReturn(List.of(c1, c2));
+
+        List<ContratDTO> result = contratService.listerContratsEtudiant(requeteAuthentifieePour(etudiant));
+
+        assertEquals(2, result.size());
+        verify(contratRepository).findByStudentIdOrderByDateCreationDesc(1L);
+    }
+
+    @Test
+    @DisplayName("listerContratsEtudiant() sans contrat retourne une liste vide")
+    void listerContratsEtudiant_aucunContrat_listeVide() throws Exception {
+        when(contratRepository.findByStudentIdOrderByDateCreationDesc(1L)).thenReturn(List.of());
+
+        assertTrue(contratService.listerContratsEtudiant(requeteAuthentifieePour(etudiant)).isEmpty());
+    }
+
+    @Test
+    @DisplayName("listerContratsEtudiant() par un gestionnaire lève une BadRequestException")
+    void listerContratsEtudiant_gestionnaire_leveBadRequest() {
+        BadRequestException badRequestException = assertThrows(BadRequestException.class,
+                () -> contratService.listerContratsEtudiant(requeteAuthentifieePour(gestionnaire)));
+
+        assertEquals("Cette liste est réservée aux étudiants.", badRequestException.getMessage());
+        verify(contratRepository, never()).findByStudentIdOrderByDateCreationDesc(any());
+    }
+
+    @Test
+    @DisplayName("listerContratsEtudiant() par un employeur lève une BadRequestException")
+    void listerContratsEtudiant_employeur_leveBadRequest() {
+        BadRequestException badRequestException = assertThrows(BadRequestException.class,
+                () -> contratService.listerContratsEtudiant(requeteAuthentifieePour(employeur)));
+
+        assertEquals("Cette liste est réservée aux étudiants.", badRequestException.getMessage());
+    }
+
+    @Test
+    @DisplayName("listerContratsEtudiant() avec un utilisateur inexistant lève une BadRequestException")
+    void listerContratsEtudiant_utilisateurInexistant_leveBadRequest() {
+        BadRequestException badRequestException = assertThrows(BadRequestException.class,
+                () -> contratService.listerContratsEtudiant(requeteAuthentifieePour(null)));
+
+        assertEquals("Cette liste est réservée aux étudiants.", badRequestException.getMessage());
+    }
+
+    @Test
+    @DisplayName("listerContratsEtudiant() sans en-tête Authorization lève une BadRequestException")
+    void listerContratsEtudiant_sansHeader_leveBadRequest() {
+        BadRequestException badRequestException = assertThrows(BadRequestException.class,
+                () -> contratService.listerContratsEtudiant(new MockHttpServletRequest()));
+
+        assertEquals("Jeton d'authentification manquant.", badRequestException.getMessage());
     }
 }
