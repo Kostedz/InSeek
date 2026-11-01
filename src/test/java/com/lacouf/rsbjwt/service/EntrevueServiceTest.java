@@ -1,4 +1,4 @@
-/*package com.lacouf.rsbjwt.service;
+package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
@@ -428,4 +428,3 @@ public class EntrevueServiceTest {
     }
 
 }
-*/
