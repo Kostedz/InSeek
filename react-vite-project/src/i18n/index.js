@@ -361,7 +361,7 @@ const resources = {
                 waitingForStudentDescription: "Vous pourrez signer ce contrat après que l’étudiant l’aura signé.",
                 status: {
                     waiting: "En attente de la réponse de l’étudiant",
-                    ready: "Votre signature est requise",
+                    ready: "Signature requise",
                     signed: "Signé par vous",
                     declined: "Réponse de l’étudiant refusée",
                 },
@@ -1438,7 +1438,7 @@ const resources = {
                 waitingForStudentDescription: "You can sign this contract after the student has signed it.",
                 status: {
                     waiting: "Waiting for the student's response",
-                    ready: "Your signature is required",
+                    ready: "Signature required",
                     signed: "Signed by you",
                     declined: "Student declined",
                 },

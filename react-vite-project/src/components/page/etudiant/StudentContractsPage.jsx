@@ -68,25 +68,35 @@ export default function StudentContractsPage({user}) {
     useEffect(() => {
         let active = true;
 
-        setLoading(true);
-        api.student.getContracts()
-            .then(async (response) => {
+        const loadContracts = async (showLoading = false) => {
+            if (showLoading) setLoading(true);
+            setError(false);
+            try {
+                const response = await api.student.getContracts();
                 if (!response.ok) throw new Error("contract_load_failed");
                 const payload = response.status === 204 ? [] : await response.json();
                 const list = Array.isArray(payload) ? payload : payload.items ?? payload.content ?? [];
                 if (active) setContracts(list);
-            })
-            .catch(() => {
+            } catch {
                 if (active) setError(true);
-            })
-            .finally(() => {
+            } finally {
                 if (active) setLoading(false);
-            });
+            }
+        };
+
+        loadContracts(true);
+        const refreshWhenVisible = () => {
+            if (document.visibilityState === "visible") loadContracts();
+        };
+        window.addEventListener("focus", refreshWhenVisible);
+        document.addEventListener("visibilitychange", refreshWhenVisible);
 
         return () => {
             active = false;
+            window.removeEventListener("focus", refreshWhenVisible);
+            document.removeEventListener("visibilitychange", refreshWhenVisible);
         };
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         if (!selectedId) return undefined;

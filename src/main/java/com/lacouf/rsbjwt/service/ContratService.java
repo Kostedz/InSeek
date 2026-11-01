@@ -101,6 +101,18 @@ public class ContratService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ContratDTO> listerContratsEmployeur(HttpServletRequest request) throws BadRequestException {
+        Utilisateur user = getAuthUser(request);
+        if (!(user instanceof Employeur employer)) {
+            throw new BadRequestException("Cette liste est réservée aux employeurs.");
+        }
+        return contratRepository.findByEmployer_IdOrderByDateCreationDesc(employer.getId())
+                .stream()
+                .map(ContratDTO::of)
+                .toList();
+    }
+
     //donne le detail d'un contrat
     @Transactional(readOnly = true)
     public ContratDTO getContrat(Long id) throws NotFoundException {

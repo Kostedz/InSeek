@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
 import ContractSignaturePage, {
     DEMO_CONTRACTS_UPDATED_EVENT,
     getDemoContracts,
@@ -83,16 +84,16 @@ function studentName(contract) {
         student.nom ?? student.lastName,
     ].filter(Boolean).join(" ");
 
-    return name || student.name || contract?.studentName || contract?.etudiantName || "";
+    return name || student.name || contract?.studentFullName || contract?.studentName || contract?.etudiantName || "";
 }
 
 function contractPosition(contract) {
     const offer = contract?.internshipOffer ?? contract?.offreDeStage ?? contract?.offer ?? {};
-    return offer.position ?? offer.title ?? contract?.position ?? "";
+    return offer.position ?? offer.title ?? contract?.offerTitle ?? contract?.position ?? "";
 }
 
 function contractStartDate(contract) {
-    return contract?.startingDate ?? contract?.startDate ?? contract?.dateDebutStage;
+    return contract?.startingDate ?? contract?.startDate ?? contract?.internshipStartingDate ?? contract?.dateDebutStage;
 }
 
 function formatDate(value, language) {
@@ -145,7 +146,7 @@ function StatusBadge({state}) {
     const {t} = useTranslation();
     const styles = {
         waiting: "border-gold/60 bg-gold/20 text-ink",
-        ready: "border-pink bg-pink/60 text-ink",
+        ready: "border-gold/60 bg-gold/20 text-ink",
         signed: "border-green-200 bg-green-50 text-green-800",
         declined: "border-peach bg-peach/45 text-ink",
     };
@@ -154,7 +155,7 @@ function StatusBadge({state}) {
     return (
         <span
             className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-black ${styles[state]}`}>
-            <ContractIcon name={icons[state]} className="h-3.5 w-3.5"/>
+            {state !== "ready" && <ContractIcon name={icons[state]} className="h-3.5 w-3.5"/>}
             {t(`employerContracts.status.${state}`)}
         </span>
     );
@@ -172,6 +173,26 @@ export default function EmployerContractsPage({
     const [selectedContractId, setSelectedContractId] = useState(null);
     const [locallySignedContracts, setLocallySignedContracts] = useState({});
     const [demoContracts, setDemoContracts] = useState([]);
+    const [employerContracts, setEmployerContracts] = useState([]);
+    const [contractsLoadFailed, setContractsLoadFailed] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        api.employer.getContracts()
+            .then(async (response) => {
+                if (!response.ok) throw new Error("employer_contracts_load_failed");
+                const data = await response.json();
+                const list = getContractList(data);
+                if (isMounted) setEmployerContracts(list);
+            })
+            .catch(() => {
+                if (isMounted) setContractsLoadFailed(true);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (!isDemoEmployer(user)) {
@@ -197,11 +218,11 @@ export default function EmployerContractsPage({
     }, [user]);
 
     const allContracts = useMemo(() => {
-        const combined = [...getContractList(contracts), ...demoContracts];
+        const combined = [...getContractList(contracts), ...employerContracts, ...demoContracts];
         const unique = new Map();
         combined.forEach((contract, index) => unique.set(contractId(contract, index), contract));
         return [...unique.values()];
-    }, [contracts, demoContracts]);
+    }, [contracts, employerContracts, demoContracts]);
 
     const contractList = useMemo(() => allContracts.map((contract, index) => {
         const id = contractId(contract, index);
@@ -222,7 +243,16 @@ export default function EmployerContractsPage({
         declined: 0,
     });
 
-    const markContractSigned = (entry) => {
+    const markContractSigned = async (entry) => {
+        if (!entry.id.startsWith("demo-")) {
+            const response = await api.employer.signContract(entry.id);
+            if (!response.ok) throw new Error("employer_contract_sign_failed");
+            const updatedContract = await response.json();
+            setEmployerContracts((current) => current.map((contract) =>
+                contractId(contract) === entry.id ? updatedContract : contract
+            ));
+        }
+
         setLocallySignedContracts((current) => ({...current, [entry.id]: true}));
         if (isDemoEmployer(user) && entry.id.startsWith("demo-")) {
             const updated = saveDemoContract({
@@ -265,6 +295,13 @@ export default function EmployerContractsPage({
                 </header>}
 
                 {!embedded && workspaceTabs}
+
+                {contractsLoadFailed && (
+                    <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
+                       role="alert">
+                        {t("employerContracts.loadFailed", {defaultValue: "Unable to load your contracts. Please try again."})}
+                    </p>
+                )}
 
                 <div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                     {[
@@ -334,11 +371,14 @@ export default function EmployerContractsPage({
                                             </div>
                                         </dl>
 
-                                        <div className="mt-3 min-h-11 text-xs leading-5 text-ink-soft">
-                                            {state === "waiting" && <p>{t("employerContracts.waitingMessage")}</p>}
-                                            {state === "signed" && <p>{t("employerContracts.signedMessage")}</p>}
-                                            {state === "declined" && <p>{t("employerContracts.declinedMessage")}</p>}
-                                        </div>
+                                        {(state === "waiting" || state === "signed" || state === "declined") && (
+                                            <div className="mt-3 text-xs leading-5 text-ink-soft">
+                                                {state === "waiting" && <p>{t("employerContracts.waitingMessage")}</p>}
+                                                {state === "signed" && <p>{t("employerContracts.signedMessage")}</p>}
+                                                {state === "declined" &&
+                                                    <p>{t("employerContracts.declinedMessage")}</p>}
+                                            </div>
+                                        )}
 
                                         {(state === "ready" || state === "signed") && (
                                             <button type="button"

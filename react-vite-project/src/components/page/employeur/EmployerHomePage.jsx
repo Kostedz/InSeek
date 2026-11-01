@@ -1,10 +1,13 @@
+import {useCallback, useEffect, useState} from "react";
 import {useLocation, Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
+import {STUDENT_TAB_COUNTS_CHANGED_EVENT} from "../../../utils/tabCounts.js";
 import EmployeurOffres from "./EmployeurOffres.jsx";
 import EmployerContractsPage from "./EmployerContractsPage.jsx";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
-function EmployerMenu({activeTab, t, offersPath}) {
+function EmployerMenu({activeTab, t, offersPath, contractsCount}) {
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "employer-active-tab");
     const itemClass = (active) => [
         "relative z-10 inline-flex flex-1 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors duration-200 sm:flex-none",
@@ -26,7 +29,15 @@ function EmployerMenu({activeTab, t, offersPath}) {
             <Link to="/employeur/contrats" ref={(node) => {
                 tabRefs.current.contracts = node;
             }} className={itemClass(activeTab === "contracts")}>
-                {t("navigation.employerContractsTab")}
+                <span className="flex items-center justify-center gap-2">
+                    {t("navigation.employerContractsTab")}
+                    {contractsCount > 0 && (
+                        <span
+                            className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
+                            {contractsCount}
+                        </span>
+                    )}
+                </span>
             </Link>
         </nav>
     );
@@ -43,8 +54,33 @@ export default function EmployerHomePage({
                                          }) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
+    const [contractsCount, setContractsCount] = useState(null);
     const activeTab = pathname === "/employeur/contrats" ? "contracts" : "offers";
     const offersPath = pathname === "/" ? "/" : "/employeur";
+
+    const refreshContractsCount = useCallback(async () => {
+        try {
+            const response = await api.employer.getContracts();
+            if (!response.ok) throw new Error("employer_contract_count_failed");
+            const payload = await response.json();
+            const contracts = Array.isArray(payload) ? payload : payload.items ?? payload.content ?? [];
+            setContractsCount(contracts.filter((contract) =>
+                String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "SIGNED_BY_STUDENT"
+            ).length);
+        } catch {
+            setContractsCount(null);
+        }
+    }, [user?.id]);
+
+    useEffect(() => {
+        refreshContractsCount();
+        window.addEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshContractsCount);
+        window.addEventListener("focus", refreshContractsCount);
+        return () => {
+            window.removeEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshContractsCount);
+            window.removeEventListener("focus", refreshContractsCount);
+        };
+    }, [refreshContractsCount]);
 
     return (
         <section className="flex flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -62,7 +98,7 @@ export default function EmployerHomePage({
                     </p>
                 </header>
 
-                <EmployerMenu activeTab={activeTab} t={t} offersPath={offersPath}/>
+                <EmployerMenu activeTab={activeTab} t={t} offersPath={offersPath} contractsCount={contractsCount}/>
 
                 <div className="mt-6">
                     {activeTab === "offers" ? (

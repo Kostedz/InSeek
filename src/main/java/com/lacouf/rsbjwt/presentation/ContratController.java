@@ -89,6 +89,16 @@ public class ContratController {
         }
     }
 
+    @GetMapping("/employer")
+    @PreAuthorize("hasAuthority('EMPLOYEUR')")
+    public ResponseEntity<List<ContratDTO>> getEmployerContracts(HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(contratService.listerContratsEmployeur(request));
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
     @GetMapping("/eligible-students")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
     public ResponseEntity<List<EtudiantEligibleContratDTO>> getEligibleStudents() {

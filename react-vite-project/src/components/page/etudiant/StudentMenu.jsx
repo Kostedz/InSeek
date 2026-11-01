@@ -76,12 +76,12 @@ export default function StudentMenu({user}) {
         };
     }, [user?.id, pathname, refreshVersion]);
 
-    const countBadge = (count) => count === null || count === undefined ? null : (
+    const countBadge = (count) => count > 0 ? (
         <span
             className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
             {count}
         </span>
-    );
+    ) : null;
 
     const itemClass = (active) => [
         "relative z-10 inline-flex flex-1 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors duration-200 sm:flex-none",

@@ -121,11 +121,13 @@ export const api = {
 
         getContracts: () =>
             fetcher("/contracts/student", {
+                cache: "no-store",
                 headers: {Accept: "application/json"},
             }),
 
         signContract: (contractId) =>
             fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+                method: "PATCH",
                 headers: {Accept: "application/json"},
             }),
     },
@@ -137,6 +139,18 @@ export const api = {
     },
 
     employer: {
+        getContracts: () =>
+            fetcher("/contracts/employer", {
+                cache: "no-store",
+                headers: {Accept: "application/json"},
+            }),
+
+        signContract: (contractId) =>
+            fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+                method: "PATCH",
+                headers: {Accept: "application/json"},
+            }),
+
         offers: {
             list: () => fetcher("/employeur/offres", {
                 cache: "no-store",
@@ -247,6 +261,7 @@ export const api = {
 
         getContracts: () =>
             fetcher("/contracts/contracts", {
+                cache: "no-store",
                 headers: { Accept: "application/json" },
             }),
     },

@@ -84,8 +84,9 @@ export default function ContractSignaturePage({
     const internshipOffer = contract?.internshipOffer ?? {};
     const admin = contract?.admin ?? {};
     const signerIsEmployer = signer === "employer";
-    const firstName = student.prenom ?? student.firstName ?? (signerIsEmployer ? undefined : user?.firstName ?? user?.prenom);
-    const lastName = student.nom ?? student.lastName ?? (signerIsEmployer ? undefined : user?.lastName ?? user?.nom);
+    const [dtoStudentFirstName, ...dtoStudentLastName] = String(contract?.studentFullName ?? "").split(" ");
+    const firstName = student.prenom ?? student.firstName ?? (signerIsEmployer ? dtoStudentFirstName : user?.firstName ?? user?.prenom);
+    const lastName = student.nom ?? student.lastName ?? (signerIsEmployer ? dtoStudentLastName.join(" ") : user?.lastName ?? user?.nom);
     const signerFirstName = signerIsEmployer
         ? user?.firstName ?? user?.prenom ?? employee.prenom
         : firstName;
@@ -93,11 +94,11 @@ export default function ContractSignaturePage({
         ? user?.lastName ?? user?.nom ?? employee.nom
         : lastName;
     const signerName = [signerFirstName, signerLastName].filter(Boolean).join(" ");
-    const employerName = employee.nomCompagnie ?? employee.companyName ?? internshipOffer.nomEntreprise ?? internshipOffer.companyName;
-    const position = internshipOffer.position ?? internshipOffer.title ?? contract?.position;
-    const positionDescription = internshipOffer.descriptionPosition ?? internshipOffer.description ?? contract?.description;
-    const startDate = contract?.startingDate ?? contract?.startDate;
-    const endDate = contract?.endingDate ?? contract?.endDate;
+    const employerName = employee.nomCompagnie ?? employee.companyName ?? internshipOffer.nomEntreprise ?? internshipOffer.companyName ?? contract?.companyName;
+    const position = internshipOffer.position ?? internshipOffer.title ?? contract?.offerTitle ?? contract?.position;
+    const positionDescription = internshipOffer.descriptionPosition ?? internshipOffer.description ?? contract?.offerDescription ?? contract?.description;
+    const startDate = contract?.startingDate ?? contract?.startDate ?? contract?.internshipStartingDate;
+    const endDate = contract?.endingDate ?? contract?.endDate ?? contract?.internshipEndingDate;
     const weeklyHours = contract?.weeklyHours ?? contract?.hoursPerWeek;
     const hourlySalary = contract?.hourlySalary ?? contract?.salary;
     const location = contract?.internshipLocation ?? contract?.location;

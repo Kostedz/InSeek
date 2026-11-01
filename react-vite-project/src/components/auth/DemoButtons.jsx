@@ -25,6 +25,8 @@ function DemoButtons({setUser}) {
     const activateDemoAccess = async (demoRole) => {
         setLoadingRole(demoRole.value);
         setError(false);
+        setUser(null);
+        navigate("/login", {replace: true});
 
         try {
             const loginResponse = await api.auth.devLogin(demoRole.value);
@@ -62,6 +64,8 @@ function DemoButtons({setUser}) {
     const activateStudentScenario = async () => {
         setLoadingRole("STUDENT_SCENARIO");
         setError(false);
+        setUser(null);
+        navigate("/login", {replace: true});
 
         try {
             const loginResponse = await api.auth.prepareStudentDemo();
