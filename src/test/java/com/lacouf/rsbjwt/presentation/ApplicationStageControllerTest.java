@@ -75,7 +75,6 @@ class ApplicationStageControllerTest {
                 null,
                 "",
                 null
-
         );
 
         etudiantDTO = new EtudiantDTO(
