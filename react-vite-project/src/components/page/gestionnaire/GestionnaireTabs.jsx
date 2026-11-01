@@ -2,12 +2,17 @@ import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
-import {countPendingDocuments, PENDING_DOCUMENT_PROCESSED_EVENT} from "../../../utils/tabCounts.js";
+import {
+    countPendingDocuments,
+    MANAGER_CONTRACTS_CHANGED_EVENT,
+    PENDING_DOCUMENT_PROCESSED_EVENT
+} from "../../../utils/tabCounts.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
 export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
     const {t} = useTranslation();
     const [loadedCounts, setLoadedCounts] = useState({offers: null, cvs: null, students: null, assignments: null});
+    const [contractsCount, setContractsCount] = useState(null);
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "manager-active-tab");
 
     useEffect(() => {
@@ -48,6 +53,34 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
             isMounted = false;
         };
     }, [offersCount, cvsCount]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const refreshContractsCount = async () => {
+            try {
+                const response = await api.gestionnaire.getContracts();
+                if (!response.ok) throw new Error("manager_contracts_count_load_failed");
+                const data = await response.json();
+                const contracts = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+                if (isMounted) {
+                    setContractsCount(contracts.filter((contract) =>
+                        String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "SIGNED_BY_EMPLOYER"
+                    ).length);
+                }
+            } catch {
+                if (isMounted) setContractsCount(null);
+            }
+        };
+
+        refreshContractsCount();
+        window.addEventListener(MANAGER_CONTRACTS_CHANGED_EVENT, refreshContractsCount);
+        window.addEventListener("focus", refreshContractsCount);
+        return () => {
+            isMounted = false;
+            window.removeEventListener(MANAGER_CONTRACTS_CHANGED_EVENT, refreshContractsCount);
+            window.removeEventListener("focus", refreshContractsCount);
+        };
+    }, []);
 
     useEffect(() => {
         const handleProcessedDocument = (event) => {
@@ -113,7 +146,16 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
                 defaultValue: "{{count}} students without an assigned professor",
             }),
         },
-        {id: "contracts", label: t("managerContracts.tabLabel", "Suivi des contrats"), path: "/gestionnaire/contrats"},
+        {
+            id: "contracts",
+            label: t("managerContracts.tabLabel", "Suivi des contrats"),
+            path: "/gestionnaire/contrats",
+            count: contractsCount,
+            countLabel: t("managerContracts.awaitingManagerSignature", {
+                count: contractsCount,
+                defaultValue: "{{count}} contract(s) awaiting your signature",
+            }),
+        },
     ];
 
     return (

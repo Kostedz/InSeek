@@ -1,7 +1,12 @@
 import {useEffect, useState, useMemo} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
+import {notifyManagerContractsChanged} from "../../../utils/tabCounts.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
+import ContractSignaturePage from "../ContractSignaturePage.jsx";
+
+const MANAGER_SIGNABLE_STATUS = "SIGNED_BY_EMPLOYER";
+const FINAL_CONTRACT_STATUSES = new Set(["SIGNED_BY_GESTIONNAIRE", "EXECUTED"]);
 
 export default function GestionnaireContracts({embedded = false}) {
     const {t, i18n} = useTranslation();
@@ -10,6 +15,7 @@ export default function GestionnaireContracts({embedded = false}) {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedContract, setSelectedContract] = useState(null);
+    const [signatureContract, setSignatureContract] = useState(null);
     const statusLabel = (status) =>
         status ? t(`managerContracts.status.${status}`, {defaultValue: status}) : "—";
 
@@ -24,6 +30,25 @@ export default function GestionnaireContracts({embedded = false}) {
         remuneration: c.hourlySalary ?? c.remuneration,
         status: c.contractStatus ?? c.status,
     });
+
+    const signManagerContract = async (contract) => {
+        const response = await api.gestionnaire.signContract(contract.id ?? contract.contractId);
+        if (!response.ok) {
+            if (response.status === 401) throw new Error("signature_unauthorized");
+            if (response.status === 403) throw new Error("signature_forbidden");
+            throw new Error("manager_contract_sign_failed");
+        }
+
+        const updatedContract = normalizeContract(await response.json());
+        notifyManagerContractsChanged();
+        setContracts((current) => current.map((item) =>
+            String(item.id ?? item.contractId) === String(updatedContract.id ?? updatedContract.contractId)
+                ? updatedContract
+                : item
+        ));
+        setSignatureContract(updatedContract);
+        return updatedContract;
+    };
 
     const loadContracts = async () => {
         setLoading(true);
@@ -157,7 +182,7 @@ export default function GestionnaireContracts({embedded = false}) {
                                             <td className="p-4">
                                                 <span
                                                     className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                                                    {contract.status || "CRÉÉ"}
+                                                    {statusLabel(contract.status)}
                                                 </span>
                                             </td>
                                             <td className="p-4 text-right">
@@ -257,7 +282,31 @@ export default function GestionnaireContracts({embedded = false}) {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end pt-4 border-t border-line">
+                                <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-line">
+                                    {selectedContract.status === MANAGER_SIGNABLE_STATUS && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSignatureContract(selectedContract);
+                                                setSelectedContract(null);
+                                            }}
+                                            className="rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-ink-soft"
+                                        >
+                                            {t("managerContracts.signContract", "Signer le contrat")}
+                                        </button>
+                                    )}
+                                    {FINAL_CONTRACT_STATUSES.has(selectedContract.status) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSignatureContract(selectedContract);
+                                                setSelectedContract(null);
+                                            }}
+                                            className="rounded-xl bg-ink px-5 py-2.5 text-sm font-bold text-white hover:bg-ink-soft"
+                                        >
+                                            {t("managerContracts.downloadPrint", "Télécharger / Imprimer")}
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => setSelectedContract(null)}
@@ -268,6 +317,52 @@ export default function GestionnaireContracts({embedded = false}) {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {signatureContract && (
+                    <div
+                        className="fixed inset-0 z-[95] flex items-center justify-center bg-ink/70 p-3 backdrop-blur-sm sm:p-6"
+                        role="presentation"
+                        onMouseDown={(event) => {
+                            if (event.target === event.currentTarget) setSignatureContract(null);
+                        }}
+                    >
+                        <section
+                            className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-line bg-canvas shadow-2xl sm:max-h-[calc(100vh-3rem)]"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label={t("managerContracts.signaturePreview", "Aperçu et signature du contrat")}
+                        >
+                            <header
+                                className="flex items-center justify-between gap-4 border-b border-line bg-surface px-5 py-4 sm:px-7 print:hidden">
+                                <h2 className="text-base font-black text-ink sm:text-lg">
+                                    {t("managerContracts.signaturePreview", "Aperçu et signature du contrat")}
+                                </h2>
+                                <button
+                                    type="button"
+                                    onClick={() => setSignatureContract(null)}
+                                    aria-label={t("common.close", "Fermer")}
+                                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line text-ink-soft hover:bg-canvas hover:text-ink"
+                                >
+                                    ×
+                                </button>
+                            </header>
+                            <div className="min-h-0 overflow-y-auto p-3 sm:p-5">
+                                <ContractSignaturePage
+                                    key={signatureContract.id ?? signatureContract.contractId}
+                                    user={{
+                                        prenom: signatureContract.managerFullName?.split(" ")[0] ?? "",
+                                        nom: signatureContract.managerFullName?.split(" ").slice(1).join(" ") ?? "",
+                                    }}
+                                    contract={signatureContract}
+                                    signer="manager"
+                                    readOnly={signatureContract.status !== MANAGER_SIGNABLE_STATUS && !FINAL_CONTRACT_STATUSES.has(signatureContract.status)}
+                                    allowPrint={FINAL_CONTRACT_STATUSES.has(signatureContract.status)}
+                                    onSigned={signManagerContract}
+                                />
+                            </div>
+                        </section>
                     </div>
                 )}
             </div>
