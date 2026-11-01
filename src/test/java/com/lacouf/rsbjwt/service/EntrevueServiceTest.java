@@ -1,4 +1,4 @@
-/*package com.lacouf.rsbjwt.service;
+package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
@@ -82,7 +82,7 @@ public class EntrevueServiceTest {
 
         when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(employer);
         when(userRepository.findById(STUDENT_ID)).thenReturn(Optional.of(student));
-        when(documentRepository.findInternshipOfferById(OFFER_ID)).thenReturn(Optional.of(offer));
+        when(documentRepository.findOffreStageById(OFFER_ID)).thenReturn(Optional.of(offer));
         when(interviewRepository.save(any(Entrevue.class))).thenAnswer(inv -> inv.getArgument(0));
 
         EntrevueDTO result = entrevueService.scheduleInterview(request, validDto);
@@ -113,12 +113,11 @@ public class EntrevueServiceTest {
     static Stream<CreateEntrevueDTO> invalidDtos() {
         LocalDateTime future = LocalDateTime.now().plusDays(1);
         return Stream.of(
-                new CreateEntrevueDTO(null, OFFER_ID, future, ModeEntrevue.IN_PERSON, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, null, future, ModeEntrevue.IN_PERSON, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, null, ModeEntrevue.IN_PERSON, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, future, null, "Salle 101", "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, future, ModeEntrevue.IN_PERSON, null, "Veuillez nous rejoindre ici"),
-                new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, future, ModeEntrevue.IN_PERSON, "Salle 101", null)
+                new CreateEntrevueDTO(null, 1L, future, ModeEntrevue.IN_PERSON, "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, null, future, ModeEntrevue.IN_PERSON, "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, 1L, null,   ModeEntrevue.IN_PERSON, "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, 1L, future, null,                   "Bureau 1", "msg"),
+                new CreateEntrevueDTO(1L, 1L, future, ModeEntrevue.IN_PERSON, null,       "msg")
         );
     }
 
@@ -180,7 +179,7 @@ public class EntrevueServiceTest {
     void scheduleInterview_offerNotFound_throwsNotFound() {
         when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(mock(Employeur.class));
         when(userRepository.findById(STUDENT_ID)).thenReturn(Optional.of(mock(Etudiant.class)));
-        when(documentRepository.findInternshipOfferById(OFFER_ID)).thenReturn(Optional.empty());
+        when(documentRepository.findOffreStageById(OFFER_ID)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
                 () -> entrevueService.scheduleInterview(request, validDto));
@@ -429,4 +428,3 @@ public class EntrevueServiceTest {
     }
 
 }
-*/
