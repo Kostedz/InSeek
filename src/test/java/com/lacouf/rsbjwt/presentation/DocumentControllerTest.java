@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
@@ -37,6 +38,9 @@ public class DocumentControllerTest {
 
     @MockitoBean
     UtilisateurService utilisateurService;
+
+    @MockitoBean
+    UtilisateurRepository utilisateurRepository;
 
     @MockitoBean
     AuthService authService;
