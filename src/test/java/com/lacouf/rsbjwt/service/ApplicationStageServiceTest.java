@@ -5,6 +5,7 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
@@ -37,6 +38,9 @@ class ApplicationStageServiceTest {
 
     @Mock
     private UtilisateurRepository utilisateurRepository;
+
+    @Mock
+    private EntrevueRepository entrevueRepository;
 
     @InjectMocks
     private ApplicationStageService applicationStageService;
@@ -267,6 +271,7 @@ class ApplicationStageServiceTest {
         ApplicationStage application = mock(ApplicationStage.class);
         when(application.getId()).thenReturn(10L);
         when(application.getDateApplique()).thenReturn(LocalDate.of(2026, 10, 16));
+        when(application.getEtudiant()).thenReturn(etudiant);
         when(application.getOffreDeStage()).thenReturn(offre);
         when(application.getStatutValidation())
                 .thenReturn(StatutValidation.EN_ATTENTE);
@@ -296,11 +301,11 @@ class ApplicationStageServiceTest {
                     applicationStageService.findApplicationsForStudent(etudiant);
 
             assertEquals(1, resultat.size());
-            assertEquals(10L, resultat.get(0).id());
-            assertSame(etudiantDTO, resultat.get(0).etudiantDTO());
-            assertSame(offreDTO, resultat.get(0).offreDeStageDTO());
+            assertEquals(10L, resultat.getFirst().id());
+            assertSame(etudiantDTO, resultat.getFirst().etudiantDTO());
+            assertSame(offreDTO, resultat.getFirst().offreDeStageDTO());
             assertEquals(StatutValidation.EN_ATTENTE,
-                    resultat.get(0).statutValidation());
+                    resultat.getFirst().statutValidation());
         }
     }
 
@@ -360,9 +365,9 @@ class ApplicationStageServiceTest {
                             employeur, 5L);
 
             assertEquals(1, resultat.size());
-            assertEquals(10L, resultat.get(0).id());
-            assertSame(etudiantDTO, resultat.get(0).etudiantDTO());
-            assertSame(offreDTO, resultat.get(0).offreDeStageDTO());
+            assertEquals(10L, resultat.getFirst().id());
+            assertSame(etudiantDTO, resultat.getFirst().etudiantDTO());
+            assertSame(offreDTO, resultat.getFirst().offreDeStageDTO());
         }
     }
 
@@ -433,7 +438,7 @@ class ApplicationStageServiceTest {
                     applicationStageService.findEtudiantsByOffreDeStage(5L);
 
             assertEquals(1, resultat.size());
-            assertSame(etudiantDTO, resultat.get(0));
+            assertSame(etudiantDTO, resultat.getFirst());
         }
     }
 
