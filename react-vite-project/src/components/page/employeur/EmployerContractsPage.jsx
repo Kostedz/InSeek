@@ -50,6 +50,8 @@ function hasStudentSigned(contract) {
             "EMPLOYER_SIGNING",
             "EMPLOYER_SIGNED",
             "SIGNED_BY_EMPLOYER",
+            "SIGNED_BY_GESTIONNAIRE",
+            "EXECUTED",
             "FULLY_SIGNED",
             "COMPLETED",
         ].includes(status);
@@ -66,7 +68,7 @@ function hasEmployerSigned(contract) {
         ?? contract?.signatures?.employer;
 
     return isSignedValue(explicitSignature)
-        || ["EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "FULLY_SIGNED", "COMPLETED"].includes(status);
+        || ["EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(status);
 }
 
 function hasStudentDeclined(contract) {
@@ -155,7 +157,7 @@ function StatusBadge({state}) {
     return (
         <span
             className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-black ${styles[state]}`}>
-            {state !== "ready" && <ContractIcon name={icons[state]} className="h-3.5 w-3.5"/>}
+            {state !== "ready" && state !== "signed" && <ContractIcon name={icons[state]} className="h-3.5 w-3.5"/>}
             {t(`employerContracts.status.${state}`)}
         </span>
     );

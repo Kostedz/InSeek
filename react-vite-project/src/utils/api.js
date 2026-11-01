@@ -264,6 +264,12 @@ export const api = {
                 cache: "no-store",
                 headers: { Accept: "application/json" },
             }),
+
+        signContract: (contractId) =>
+            fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+                method: "PATCH",
+                headers: {Accept: "application/json"},
+            }),
     },
 
     professor: {

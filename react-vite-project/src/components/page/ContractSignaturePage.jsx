@@ -1,4 +1,5 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import {createPortal} from "react-dom";
 import {useTranslation} from "react-i18next";
 
 const DEMO_CONTRACTS_KEY = "inseek.demo.contracts";
@@ -70,6 +71,7 @@ export default function ContractSignaturePage({
                                                   contract,
                                                   signer = "student",
                                                   onSigned,
+                                                  allowPrint = false,
                                                   readOnly = false,
                                                   readOnlyMessage
                                               }) {
@@ -84,17 +86,28 @@ export default function ContractSignaturePage({
     const internshipOffer = contract?.internshipOffer ?? {};
     const admin = contract?.admin ?? {};
     const signerIsEmployer = signer === "employer";
+    const signerIsManager = signer === "manager";
     const [dtoStudentFirstName, ...dtoStudentLastName] = String(contract?.studentFullName ?? "").split(" ");
-    const firstName = student.prenom ?? student.firstName ?? (signerIsEmployer ? dtoStudentFirstName : user?.firstName ?? user?.prenom);
-    const lastName = student.nom ?? student.lastName ?? (signerIsEmployer ? dtoStudentLastName.join(" ") : user?.lastName ?? user?.nom);
+    const [dtoEmployerFirstName, ...dtoEmployerLastName] = String(contract?.employerFullName ?? "").split(" ");
+    const [dtoManagerFirstName, ...dtoManagerLastName] = String(contract?.managerFullName ?? "").split(" ");
+    const firstName = student.prenom ?? student.firstName ?? (signer === "student" ? user?.firstName ?? user?.prenom : dtoStudentFirstName);
+    const lastName = student.nom ?? student.lastName ?? (signer === "student" ? user?.lastName ?? user?.nom : dtoStudentLastName.join(" "));
     const signerFirstName = signerIsEmployer
         ? user?.firstName ?? user?.prenom ?? employee.prenom
-        : firstName;
+        : signerIsManager
+            ? user?.firstName ?? user?.prenom ?? admin.prenom ?? dtoManagerFirstName
+            : firstName;
     const signerLastName = signerIsEmployer
         ? user?.lastName ?? user?.nom ?? employee.nom
-        : lastName;
+        : signerIsManager
+            ? user?.lastName ?? user?.nom ?? admin.nom ?? dtoManagerLastName.join(" ")
+            : lastName;
     const signerName = [signerFirstName, signerLastName].filter(Boolean).join(" ");
     const employerName = employee.nomCompagnie ?? employee.companyName ?? internshipOffer.nomEntreprise ?? internshipOffer.companyName ?? contract?.companyName;
+    const employerFirstName = employee.prenom ?? employee.firstName ?? dtoEmployerFirstName;
+    const employerLastName = employee.nom ?? employee.lastName ?? dtoEmployerLastName.join(" ");
+    const managerFirstName = admin.prenom ?? admin.firstName ?? dtoManagerFirstName;
+    const managerLastName = admin.nom ?? admin.lastName ?? dtoManagerLastName.join(" ");
     const position = internshipOffer.position ?? internshipOffer.title ?? contract?.offerTitle ?? contract?.position;
     const positionDescription = internshipOffer.descriptionPosition ?? internshipOffer.description ?? contract?.offerDescription ?? contract?.description;
     const startDate = contract?.startingDate ?? contract?.startDate ?? contract?.internshipStartingDate;
@@ -111,7 +124,7 @@ export default function ContractSignaturePage({
         ?? contract?.employerSignature
         ?? contract?.signatureEmployeur
         ?? contract?.signatures?.employer
-    ) || ["EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "FULLY_SIGNED", "COMPLETED"].includes(backendStatus);
+    ) || ["EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(backendStatus);
     const studentSignatureRecorded = hasRecordedSignature(
         contract?.studentSigned
         ?? contract?.isStudentSigned
@@ -119,10 +132,20 @@ export default function ContractSignaturePage({
         ?? contract?.studentSignature
         ?? contract?.signatureEtudiant
         ?? contract?.signatures?.student
-    ) || ["STUDENT_SIGNED", "SIGNED_BY_STUDENT", "PENDING_EMPLOYER_SIGNATURE", "EMPLOYER_SIGNATURE_REQUIRED", "EMPLOYER_SIGNING", "EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "FULLY_SIGNED", "COMPLETED"].includes(backendStatus);
+    ) || ["STUDENT_SIGNED", "SIGNED_BY_STUDENT", "PENDING_EMPLOYER_SIGNATURE", "EMPLOYER_SIGNATURE_REQUIRED", "EMPLOYER_SIGNING", "EMPLOYER_SIGNED", "SIGNED_BY_EMPLOYER", "SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(backendStatus);
+    const managerSignatureRecorded = hasRecordedSignature(
+        contract?.managerSigned
+        ?? contract?.isManagerSigned
+        ?? contract?.signedByManager
+        ?? contract?.managerSignature
+        ?? contract?.signatureGestionnaire
+        ?? contract?.signatures?.manager
+    ) || ["SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(backendStatus);
     const isSigned = (signerIsEmployer
         ? employerSignatureRecorded
-        : studentSignatureRecorded || backendStatus === "SIGNED") || isLocallySigned;
+        : signerIsManager
+            ? managerSignatureRecorded
+            : studentSignatureRecorded || backendStatus === "SIGNED") || isLocallySigned;
     const isLocked = readOnly && !isSigned;
     const isWaitingForStudent = signerIsEmployer && !studentSignatureRecorded && !employerSignatureRecorded && !isLocallySigned;
 
@@ -151,6 +174,70 @@ export default function ContractSignaturePage({
     const formattedWeeklyHours = weeklyHours === null || weeklyHours === undefined || weeklyHours === ""
         ? ""
         : `${weeklyHours} h`;
+    const studentHasSigned = studentSignatureRecorded;
+    const employerHasSigned = employerSignatureRecorded;
+    const managerHasSigned = managerSignatureRecorded || (signerIsManager && isLocallySigned);
+
+    useEffect(() => {
+        if (!allowPrint || !isSigned) return undefined;
+        const appRoot = document.getElementById("root");
+        appRoot?.classList.add("print:hidden");
+        return () => appRoot?.classList.remove("print:hidden");
+    }, [allowPrint, isSigned]);
+
+    const printableDocument = allowPrint && isSigned ? createPortal(
+        <article className="hidden print:block mx-auto w-full max-w-none bg-white p-10 font-sans text-black">
+            <header className="mb-8 border-b border-black pb-4">
+                <h1 className="text-2xl font-bold">{t("contractSignature.preview")}</h1>
+                <p className="mt-2 text-sm">{t("contractSignature.contractNumber")}: {contractNumber}</p>
+            </header>
+            <div className="space-y-5 text-sm leading-7">
+                <p>
+                    {t("contractSignature.contractIntro")}
+                    <strong>{firstName} {lastName}</strong> {t("contractSignature.and")}
+                    <strong>{employerName}</strong> {t("contractSignature.representedBy")}
+                    <strong>{employerFirstName} {employerLastName}</strong>. {t("contractSignature.supervisorIntro")}
+                    <strong>{contract?.supervisorName || "—"}</strong> {t("contractSignature.managerIntro")}
+                    <strong>{managerFirstName} {managerLastName}</strong>.
+                </p>
+                <p>
+                    {t("contractSignature.internshipIntro")}
+                    <strong>{position || "—"}</strong>. {t("contractSignature.descriptionIntro")}
+                    <strong>{positionDescription || "—"}</strong>
+                </p>
+                <p>
+                    {t("contractSignature.periodIntro")}
+                    <strong>{formattedStartDate || "—"}</strong> {t("contractSignature.periodSeparator")}
+                    <strong>{formattedEndDate || "—"}</strong>. {t("contractSignature.locationIntro")}
+                    <strong>{location || "—"}</strong>. {t("contractSignature.hoursIntro")}
+                    <strong>{formattedWeeklyHours || "—"}</strong> {t("contractSignature.hoursSuffix")} {t("contractSignature.salaryIntro")}
+                    <strong>{formattedSalary || "—"}</strong> {t("contractSignature.salarySuffix")}
+                </p>
+                <section className="border-t border-black pt-4">
+                    <h2 className="font-bold">{t("contractSignature.commitmentsTitle")}</h2>
+                    <p className="mt-2">{t("contractSignature.studentCommitment")}</p>
+                    <p className="mt-2">{t("contractSignature.employerCommitment")}</p>
+                    <p className="mt-2">{t("contractSignature.modificationCommitment")}</p>
+                </section>
+                <section className="border-t border-black pt-4">
+                    <h2 className="font-bold">{t("contractSignature.signaturesTitle")}</h2>
+                    {[
+                        [t("contractSignature.studentSigner"), [firstName, lastName].filter(Boolean).join(" "), studentHasSigned],
+                        [t("contractSignature.employerSigner"), [employerFirstName, employerLastName].filter(Boolean).join(" "), employerHasSigned],
+                        [t("contractSignature.managerSigner"), [managerFirstName, managerLastName].filter(Boolean).join(" "), managerHasSigned],
+                    ].map(([label, name, signed]) => (
+                        <p key={label} className="mt-3 border-b border-gray-400 pb-2">
+                            <span className="font-semibold">{label}: </span>
+                            <span className="font-serif italic">{signed ? name : "—"}</span>
+                            <span
+                                className="ml-2 text-xs">{signed ? t("contractSignature.signatureRecorded") : t("contractSignature.signaturePending")}</span>
+                        </p>
+                    ))}
+                </section>
+            </div>
+        </article>,
+        document.body
+    ) : null;
 
     const signWithName = () => {
         if (isSigned || isSigning) return;
@@ -166,16 +253,22 @@ export default function ContractSignaturePage({
         try {
             await onSigned?.(contract);
             setIsLocallySigned(true);
-        } catch {
-            setSignatureError(t("contractSignature.signingError"));
+        } catch (error) {
+            const messageKey = error?.message === "signature_unauthorized"
+                ? "contractSignature.reauthenticate"
+                : error?.message === "signature_forbidden"
+                    ? "contractSignature.signatureForbidden"
+                    : "contractSignature.signingError";
+            setSignatureError(t(messageKey));
         } finally {
             setIsSigning(false);
         }
     };
 
     return (
+        <>
         <div
-            className="mt-7 overflow-hidden rounded-[1.75rem] border border-line bg-canvas shadow-[0_18px_50px_rgba(48,35,55,0.07)]">
+            className="mt-7 overflow-hidden rounded-[1.75rem] border border-line bg-canvas shadow-[0_18px_50px_rgba(48,35,55,0.07)] print:hidden">
             <div
                 className="flex flex-col gap-4 bg-gradient-to-br from-ink via-ink to-[#5d426b] px-5 py-5 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div className="flex items-center gap-3">
@@ -224,15 +317,15 @@ export default function ContractSignaturePage({
                                            label={t("contractSignature.lastName")}/> {t("contractSignature.and")}{" "}
                             <ContractValue value={employerName}
                                            label={t("contractSignature.company")}/> {t("contractSignature.representedBy")}{" "}
-                            <ContractValue value={employee.prenom}
+                            <ContractValue value={employerFirstName}
                                            label={t("contractSignature.employerFirstName")}/>{" "}<ContractValue
-                            value={employee.nom}
+                            value={employerLastName}
                             label={t("contractSignature.employerLastName")}/>. {t("contractSignature.supervisorIntro")}{" "}
                             <ContractValue value={contract?.supervisorName}
                                            label={t("contractSignature.supervisor")}/> {t("contractSignature.managerIntro")}{" "}
-                            <ContractValue value={admin.prenom}
+                            <ContractValue value={managerFirstName}
                                            label={t("contractSignature.managerFirstName")}/>{" "}<ContractValue
-                            value={admin.nom} label={t("contractSignature.managerLastName")}/>.
+                            value={managerLastName} label={t("contractSignature.managerLastName")}/>.
                         </p>
 
                         <p>
@@ -259,6 +352,19 @@ export default function ContractSignaturePage({
                             <p className="mt-2">{t("contractSignature.studentCommitment")}</p>
                             <p className="mt-2">{t("contractSignature.employerCommitment")}</p>
                             <p className="mt-2">{t("contractSignature.modificationCommitment")}</p>
+                        </div>
+                        <div className="border-t border-line pt-4">
+                            <h2 className="text-sm font-black text-ink">{t("contractSignature.signaturesTitle")}</h2>
+                            {[
+                                [t("contractSignature.studentSigner"), [firstName, lastName].filter(Boolean).join(" "), studentHasSigned],
+                                [t("contractSignature.employerSigner"), [employerFirstName, employerLastName].filter(Boolean).join(" "), employerHasSigned],
+                                [t("contractSignature.managerSigner"), [managerFirstName, managerLastName].filter(Boolean).join(" "), managerHasSigned],
+                            ].map(([label, name, signed]) => (
+                                <p key={label} className="mt-2 text-xs">
+                                    <strong
+                                        className="text-ink">{label}:</strong> {name || "—"} · {signed ? t("contractSignature.signatureRecorded") : t("contractSignature.signaturePending")}
+                                </p>
+                            ))}
                         </div>
                     </div>
                 </article>
@@ -343,14 +449,26 @@ export default function ContractSignaturePage({
                         </form>
                     )}
 
+                    {allowPrint && isSigned && (
+                        <button
+                            type="button"
+                            onClick={() => window.print()}
+                            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-black text-white hover:bg-ink-soft print:hidden"
+                        >
+                            {t("contractSignature.downloadPrint")}
+                        </button>
+                    )}
+
                     {!isSigned && (
                         <div className="mt-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-xs">
                             <p className="font-black uppercase tracking-[0.1em] text-ink-soft">{t("contractSignature.signingOrderLabel")}</p>
-                            <p className="mt-1 font-bold text-ink">{signerIsEmployer ? t("contractSignature.employerSigningOrder") : t("contractSignature.signingOrder")}</p>
+                            <p className="mt-1 font-bold text-ink">{signerIsEmployer ? t("contractSignature.employerSigningOrder") : signerIsManager ? t("contractSignature.managerSigningOrder") : t("contractSignature.signingOrder")}</p>
                         </div>
                     )}
                 </aside>
             </div>
         </div>
+            {printableDocument}
+        </>
     );
 }
