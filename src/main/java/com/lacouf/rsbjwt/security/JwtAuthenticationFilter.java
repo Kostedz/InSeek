@@ -3,6 +3,7 @@ package com.lacouf.rsbjwt.security;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.security.exception.InvalidJwtTokenException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,6 +59,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else {
                     logger.warn("JWT token provided for non-existent user: " + email);
                 }
+            } catch (InvalidJwtTokenException e) {
+                // Expired or malformed bearer tokens are expected client auth failures.
+                // Leave the request anonymous and let Spring Security return 401 when needed.
+                logger.debug("Ignoring invalid JWT token: " + e.getMessage());
             } catch (Exception e) {
                 logger.error("Could not set user authentication in security context", e);
             }
