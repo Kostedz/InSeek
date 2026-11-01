@@ -73,7 +73,8 @@ class ApplicationStageControllerTest {
                 StatutValidation.EN_ATTENTE,
                 null,
                 null,
-                ""
+                "",
+                false
         );
 
         etudiantDTO = new EtudiantDTO(
