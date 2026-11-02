@@ -16,8 +16,6 @@ export default function GestionnaireContracts({embedded = false}) {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedContract, setSelectedContract] = useState(null);
-    const [signingContract, setSigningContract] = useState(false);
-    const [signingError, setSigningError] = useState(false);
     const [signatureContract, setSignatureContract] = useState(null);
     const statusLabel = (status) =>
         status ? t(`managerContracts.status.${status}`, {defaultValue: status}) : "—";
@@ -88,23 +86,6 @@ export default function GestionnaireContracts({embedded = false}) {
         return new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {
             day: "numeric", month: "short", year: "numeric",
         }).format(d);
-    };
-
-    const signSelectedContract = async () => {
-        if (!selectedContract?.id) return;
-        setSigningContract(true);
-        setSigningError(false);
-        try {
-            const response = await api.gestionnaire.signContract(selectedContract.id);
-            if (!response.ok) throw new Error("sign_failed");
-            const signedContract = normalizeContract(await response.json());
-            setSelectedContract(signedContract);
-            await loadContracts();
-        } catch {
-            setSigningError(true);
-        } finally {
-            setSigningContract(false);
-        }
     };
 
     return (
@@ -309,26 +290,6 @@ export default function GestionnaireContracts({embedded = false}) {
                                         fileName={`Contrat ${selectedContract.id}.pdf`}
                                         className="border-0 bg-transparent p-0"
                                     />
-                                )}
-
-                                {signingError && (
-                                    <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-semibold text-error"
-                                       role="alert">
-                                        {t("managerContracts.errors.signFailed", "Impossible d’enregistrer la signature du gestionnaire.")}
-                                    </p>
-                                )}
-
-                                {selectedContract.status === "SIGNED_BY_EMPLOYER" && (
-                                    <button
-                                        type="button"
-                                        onClick={signSelectedContract}
-                                        disabled={signingContract}
-                                        className="w-full rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white hover:bg-ink-soft disabled:opacity-60"
-                                    >
-                                        {signingContract
-                                            ? t("managerContracts.signing", "Signature en cours…")
-                                            : t("managerContracts.signContract", "Signer le contrat")}
-                                    </button>
                                 )}
 
                                 <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-line">

@@ -30,7 +30,7 @@ describe("authentication forms", () => {
         renderWithProviders(
             <Routes>
                 <Route path="/login" element={<LoginForm authChecked user={null} setUser={setUser}/>}/>
-                <Route path="/employeur" element={<p>Employeur workspace</p>}/>
+                <Route path="/" element={<p>Employeur workspace</p>}/>
             </Routes>,
             {route: "/login"},
         );

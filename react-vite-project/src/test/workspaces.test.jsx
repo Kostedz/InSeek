@@ -132,7 +132,7 @@ describe("role workspaces", () => {
             }]), {status: 200}),
         );
 
-        renderWithProviders(<GestionnaireOffresValidation/>);
+        renderWithProviders(<GestionnaireValidation/>);
 
         expect(await screen.findByRole("heading", {name: "Validation des offres"})).toBeInTheDocument();
         expect((await screen.findAllByText("Stagiaire en développement web")).length).toBeGreaterThan(0);

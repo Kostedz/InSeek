@@ -239,6 +239,15 @@ export default function ApplicationDetails({
                                     {t("employerOffers.applications.reject", "Refuser")}
                                 </button>
                             )}
+                            {isPending && isInterviewScheduled && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenDecisionModal("ACCEPTED")}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
+                                >
+                                    {t("employerOffers.applications.accept", "Accepter")}
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 disabled={!isPending || isInterviewScheduled}

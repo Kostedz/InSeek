@@ -53,7 +53,7 @@ describe("StudentInterviews", () => {
 
         // Switch to history.
         fireEvent.click(
-            screen.getByRole("button", { name: /Historique/i }),
+            screen.getByRole("tab", {name: /Historique/i}),
         );
 
         // The expired convocation should appear in history.
@@ -99,7 +99,7 @@ describe("StudentInterviews", () => {
         );
 
         fireEvent.click(
-            screen.getByRole("button", { name: /Historique/i }),
+            screen.getByRole("tab", {name: /Historique/i}),
         );
 
         const expiredItem = await screen.findByText("Ancienne convocation");

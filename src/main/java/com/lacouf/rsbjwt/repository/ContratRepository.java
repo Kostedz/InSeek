@@ -16,7 +16,7 @@ public interface ContratRepository extends JpaRepository<Contract, Long> {
 
     Optional<Contract> findByStudentIdAndInternshipOfferId(Long studentId, Long internshipOfferId);
 
-    boolean existsByStudentIdAndContractStatusInAndContractIdNot(
+    boolean existsByStudentIdAndContractStatusInAndIdNot(
             Long studentId, Collection<StatutContrat> statuses, Long contractId);
 
     List<Contract> findByStudentIdOrderByDateCreationDesc(Long studentId);

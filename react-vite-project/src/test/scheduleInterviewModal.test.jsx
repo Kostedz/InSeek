@@ -30,7 +30,7 @@ function renderModal(props = {}) {
     return { onSuccess };
 }
 
-function fillForm({ date = FUTURE_DATE, lieuOuLien = "123 rue Test" } = {}) {
+function fillForm({date = FUTURE_DATE, lieuOuLien = "https://meet.example.com/room"} = {}) {
     fireEvent.change(fieldOf("date"), { target: { value: date } });
     fireEvent.change(fieldOf("heure"), { target: { value: "10:00" } });
     fireEvent.change(fieldOf("lieuOuLien"), { target: { value: lieuOuLien } });
@@ -48,7 +48,7 @@ describe("En tant qu'employeur, je planifie une entrevue (formulaire)", () => {
 
         expect(screen.getByText("La date est requise.")).toBeInTheDocument();
         expect(screen.getByText("L'heure est requise.")).toBeInTheDocument();
-        expect(screen.getByText("Le lieu ou le lien est requis.")).toBeInTheDocument();
+        expect(screen.getByText("Le lien de visioconférence est requis.")).toBeInTheDocument();
         expect(planifier).not.toHaveBeenCalled();
     });
 
@@ -57,20 +57,20 @@ describe("En tant qu'employeur, je planifie une entrevue (formulaire)", () => {
         fillForm({ date: "2020-01-01" });
         confirm();
 
-        expect(screen.getByText("La date doit être située dans le futur.")).toBeInTheDocument();
+        expect(screen.getByText("La date et l'heure de l'entrevue doivent être situées dans le futur.")).toBeInTheDocument();
         expect(planifier).not.toHaveBeenCalled();
     });
 
     it("envoie un POST avec les bonnes données", async () => {
         planifier.mockResolvedValue({ ok: true });
         renderModal();
-        fillForm({ lieuOuLien: "  Salle 204  " });
+        fillForm({lieuOuLien: "  https://meet.example.com/room  "});
         confirm();
 
         await waitFor(() => expect(planifier).toHaveBeenCalledWith(3, 7, {
             dateHeure: `${FUTURE_DATE}T10:00:00`,
             mode: "VIDEO_CALL",
-            lieuOuLien: "Salle 204",
+            lieuOuLien: "https://meet.example.com/room",
             messageOptionnel: "",
         }));
         expect(modifier).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe("En tant qu'employeur, je planifie une entrevue (formulaire)", () => {
         confirm();
 
         expect(await screen.findByText("Entrevue planifiée avec succès !")).toBeInTheDocument();
-        expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ lieuOuLien: "123 rue Test" }));
+        expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({lieuOuLien: "https://meet.example.com/room"}));
         expect(sessionStorage.getItem("interview_draft_3_7")).toBeNull();
     });
 
@@ -99,13 +99,13 @@ describe("En tant qu'employeur, je planifie une entrevue (formulaire)", () => {
 
     it("affiche l'erreur du serveur et garde le formulaire", async () => {
         const message = "Une entrevue a déjà été planifiée pour cet étudiant et cette offre de stage.";
-        planifier.mockResolvedValue({ ok: false, json: async () => ({ message }) });
+        planifier.mockResolvedValue({ok: false, text: async () => JSON.stringify({message})});
         renderModal();
         fillForm();
         confirm();
 
         expect(await screen.findByText(message)).toBeInTheDocument();
         expect(screen.queryByText("Entrevue planifiée avec succès !")).not.toBeInTheDocument();
-        expect(fieldOf("lieuOuLien")).toHaveValue("123 rue Test");
+        expect(fieldOf("lieuOuLien")).toHaveValue("https://meet.example.com/room");
     });
 });

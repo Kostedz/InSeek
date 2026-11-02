@@ -93,17 +93,6 @@ public class ContratService {
     }
 
     @Transactional(readOnly = true)
-    public List<ContratDTO> listerContratsEmployeur(HttpServletRequest request) throws BadRequestException {
-        Utilisateur user = getAuthUser(request);
-        if (!(user instanceof Employeur employer)) {
-            throw new BadRequestException("Seul un employeur peut consulter ses contrats.");
-        }
-        return contratRepository.findByEmployerId(employer.getId()).stream()
-                .map(ContratDTO::of)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
     public List<ContratDTO> listerContratsEtudiant(HttpServletRequest request) throws BadRequestException {
         Utilisateur user = getAuthUser(request);
         if (!(user instanceof Etudiant student)) {
@@ -141,7 +130,8 @@ public class ContratService {
         if (!(user instanceof Etudiant student)) {
             throw new BadRequestException("Seul l'étudiant associé peut consulter son contrat.");
         }
-        Contract contract = contratRepository.findByStudentId(student.getId())
+        Contract contract = contratRepository.findByStudentIdOrderByDateCreationDesc(student.getId()).stream()
+                .findFirst()
                 .orElseThrow(() -> new NotFoundException("Aucun contrat trouvé pour cet étudiant."));
         return ContratDTO.of(contract);
     }
@@ -157,7 +147,7 @@ public class ContratService {
         if (contract.getDateCreation() != null) {
             data.anneeContrat = Integer.toString(contract.getDateCreation().getYear());
         }
-        data.referenceContrat = String.valueOf(contract.getContractId());
+        data.referenceContrat = String.valueOf(contract.getId());
         data.nomGestionnaire = fullName(contract.getAdmin(), "");
         data.nomEmployeur = fullName(contract.getEmployer(), "");
         data.nomEtudiant = fullName(contract.getStudent(), "");
@@ -355,6 +345,10 @@ public class ContratService {
             if (!student.getId().equals(contract.getStudent().getId())) {
                 throw new BadRequestException("L'utilisateur connecté n'est pas l'étudiant associé à ce contrat.");
             }
+        } else if (user instanceof Employeur employer) {
+            if (contract.getEmployer() == null || !employer.getId().equals(contract.getEmployer().getId())) {
+                throw new BadRequestException("L'utilisateur connecté n'est pas l'employeur associé à ce contrat.");
+            }
         } else if (user instanceof Gestionnaire admin) {
             if (!admin.getId().equals(contract.getAdmin().getId())) {
                 throw new BadRequestException("L'utilisateur connecté n'est pas le gestionnaire associé à ce contrat.");
@@ -385,30 +379,6 @@ public class ContratService {
             contract.setManagerSignedAt(LocalDateTime.now());
         } else {
             throw new BadRequestException("Utilisateur non reconnu.");
-       switch (user.getClass().getSimpleName()) {
-            case "Etudiant":
-                if (contract.getContractStatus() != StatutContrat.PENDING_SIGNATURE) {
-                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
-                } else {
-                    contract.setContractStatus(StatutContrat.SIGNED_BY_STUDENT);
-                }
-                break;
-            case "Employeur":
-                if (contract.getContractStatus() != StatutContrat.SIGNED_BY_STUDENT) {
-                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
-                } else {
-                    contract.setContractStatus(StatutContrat.SIGNED_BY_EMPLOYER);
-                }
-                break;
-            case "Gestionnaire":
-                if (contract.getContractStatus() != StatutContrat.SIGNED_BY_EMPLOYER) {
-                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
-                } else {
-                    contract.setContractStatus(StatutContrat.SIGNED_BY_GESTIONNAIRE);
-                }
-                break;
-            default:
-                throw new BadRequestException("Utilisateur non reconnu.");
         }
     }
 
@@ -423,7 +393,7 @@ public class ContratService {
         utilisateurRepository.lockEtudiantById(student.getId())
                 .orElseThrow(() -> new NotFoundException("Étudiant introuvable."));
 
-        boolean alreadySigned = contratRepository.existsByStudentIdAndContractStatusInAndContractIdNot(
+        boolean alreadySigned = contratRepository.existsByStudentIdAndContractStatusInAndIdNot(
                 student.getId(),
                 List.of(StatutContrat.SIGNED_BY_STUDENT, StatutContrat.SIGNED_BY_EMPLOYER,
                         StatutContrat.SIGNED_BY_GESTIONNAIRE, StatutContrat.EXECUTED),

@@ -43,7 +43,7 @@ public record ContratDTO(
         String managerName = contract.getAdmin() != null
                 ? contract.getAdmin().getPrenom() + " " + contract.getAdmin().getNom() : null;
         return ContratDTO.builder()
-                .id(contract.getContractId())
+                .id(contract.getId())
                 .studentFullName(studentFullName)
                 .studentEmail(contract.getStudent().getEmail())
                 .fieldOfStudy(discipline)
