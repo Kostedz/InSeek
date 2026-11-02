@@ -110,7 +110,7 @@ class ContratServiceTest {
 
     private CreateContratDTO dto(Long studentId, LocalDate debut, LocalDate fin,
                                  int heures, Double salaire, String lieu) {
-        return new CreateContratDTO(studentId, 10L, debut, fin, heures, salaire, lieu);
+        return new CreateContratDTO(studentId, 10L, debut, fin, "De 9 h à 17 h du lundi au jeudi", heures, salaire, lieu);
     }
 
     private MockHttpServletRequest requeteAvecToken() {
@@ -187,6 +187,7 @@ class ContratServiceTest {
         assertEquals("Will Gates", result.employerName());
         assertEquals("Développeur Java", result.offerTitle());
         assertEquals("Bob Gagnon", result.assignedTeacherName());
+        assertEquals("09:00 - 17:00", result.schedule());
         assertEquals(35, result.weeklyHours());
         assertEquals(25.0, result.hourlySalary());
         assertEquals("123 rue Principale", result.location());

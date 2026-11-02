@@ -100,6 +100,7 @@ class ContratControllerTest {
                   "offerId": 10,
                   "internshipStartingDate": "%s",
                   "internshipEndingDate": "%s",
+                    "schedule": "De 9 h à 17 h du lundi au Jeudi",
                   "weeklyHours": 35,
                   "hourlySalary": 22.5,
                   "internshipLocation": "Montréal"
@@ -117,6 +118,7 @@ class ContratControllerTest {
                 .supervisorName("Alice Tech")
                 .internshipStartingDate(debut)
                 .internshipEndingDate(fin)
+                .schedule("De 9 h à 17 h du lundi au jeudi")
                 .weeklyHours(35)
                 .hourlySalary(22.5)
                 .internshipLocation("Montréal")
