@@ -1,6 +1,7 @@
 import {useEffect, useState, useMemo} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
+import PdfPreview from "../../PdfPreview.jsx";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 
 export default function GestionnaireContracts({embedded = false}) {
@@ -10,6 +11,8 @@ export default function GestionnaireContracts({embedded = false}) {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedContract, setSelectedContract] = useState(null);
+    const [signingContract, setSigningContract] = useState(false);
+    const [signingError, setSigningError] = useState(false);
     const STATUS_DEFAULTS = {PENDING_SIGNATURE: "En attente de signature"};
     const statusLabel = (status) =>
         status ? t(`managerContracts.status.${status}`, STATUS_DEFAULTS[status] ?? status) : "—";
@@ -61,6 +64,23 @@ export default function GestionnaireContracts({embedded = false}) {
         return new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {
             day: "numeric", month: "short", year: "numeric",
         }).format(d);
+    };
+
+    const signSelectedContract = async () => {
+        if (!selectedContract?.id) return;
+        setSigningContract(true);
+        setSigningError(false);
+        try {
+            const response = await api.gestionnaire.signContract(selectedContract.id);
+            if (!response.ok) throw new Error("sign_failed");
+            const signedContract = normalizeContract(await response.json());
+            setSelectedContract(signedContract);
+            await loadContracts();
+        } catch {
+            setSigningError(true);
+        } finally {
+            setSigningContract(false);
+        }
     };
 
     return (
@@ -257,6 +277,35 @@ export default function GestionnaireContracts({embedded = false}) {
                                         </div>
                                     </div>
                                 </div>
+
+                                {selectedContract.id && (
+                                    <PdfPreview
+                                        key={`${selectedContract.id}-${selectedContract.status}`}
+                                        contractId={selectedContract.id}
+                                        fileName={`Contrat ${selectedContract.id}.pdf`}
+                                        className="border-0 bg-transparent p-0"
+                                    />
+                                )}
+
+                                {signingError && (
+                                    <p className="rounded-xl border border-error bg-blush/30 px-4 py-3 text-sm font-semibold text-error"
+                                       role="alert">
+                                        {t("managerContracts.errors.signFailed", "Impossible d’enregistrer la signature du gestionnaire.")}
+                                    </p>
+                                )}
+
+                                {selectedContract.status === "SIGNED_BY_EMPLOYER" && (
+                                    <button
+                                        type="button"
+                                        onClick={signSelectedContract}
+                                        disabled={signingContract}
+                                        className="w-full rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white hover:bg-ink-soft disabled:opacity-60"
+                                    >
+                                        {signingContract
+                                            ? t("managerContracts.signing", "Signature en cours…")
+                                            : t("managerContracts.signContract", "Signer le contrat")}
+                                    </button>
+                                )}
 
                                 <div className="flex justify-end pt-4 border-t border-line">
                                     <button

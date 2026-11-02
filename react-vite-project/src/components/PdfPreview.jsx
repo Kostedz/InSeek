@@ -14,13 +14,18 @@ function isDocumentId(value) {
     return value !== null && value !== undefined && /^\d+$/.test(String(value)) && Number(value) > 0;
 }
 
-export default function PdfPreview({file = null, documentId = null, fileName = "", className = ""}) {
+export default function PdfPreview({
+                                       file = null, documentId = null, contractId = null, demoContract = false,
+                                       studentSignedAt = "", employerSignedAt = "", managerSignedAt = "",
+                                       fileName = "", className = ""
+                                   }) {
     const {t} = useTranslation();
     const previewContainerRef = useRef(null);
     const [localUrl, setLocalUrl] = useState("");
     const [localFile, setLocalFile] = useState(null);
     const [remoteUrl, setRemoteUrl] = useState("");
-    const [remoteDocumentId, setRemoteDocumentId] = useState("");
+    const [remoteSourceId, setRemoteSourceId] = useState("");
+    const [remoteSourceType, setRemoteSourceType] = useState("");
     const [isFetching, setIsFetching] = useState(false);
     const [fetchError, setFetchError] = useState(false);
     const [documentError, setDocumentError] = useState(false);
@@ -28,9 +33,12 @@ export default function PdfPreview({file = null, documentId = null, fileName = "
     const [pageCount, setPageCount] = useState(null);
     const [containerWidth, setContainerWidth] = useState(0);
     const canFetchDocument = isDocumentId(documentId);
+    const canFetchContract = isDocumentId(contractId);
+    const remoteSourceTypeWanted = demoContract ? "demo-contract" : canFetchContract ? "contract" : canFetchDocument ? "document" : "";
+    const remoteSourceIdWanted = demoContract ? "demo-contract" : canFetchContract ? String(contractId) : canFetchDocument ? String(documentId) : "";
     const source = file
         ? localFile === file ? localUrl : ""
-        : remoteDocumentId === String(documentId) ? remoteUrl : "";
+        : remoteSourceId === remoteSourceIdWanted && remoteSourceType === remoteSourceTypeWanted ? remoteUrl : "";
     const isPreparingLocalFile = Boolean(file && localFile !== file);
 
     useEffect(() => {
@@ -67,13 +75,14 @@ export default function PdfPreview({file = null, documentId = null, fileName = "
         let createdUrl = "";
 
         setRemoteUrl("");
-        setRemoteDocumentId("");
+        setRemoteSourceId("");
+        setRemoteSourceType("");
         setFetchError(false);
         setDocumentError(false);
         setPageNumber(1);
         setPageCount(null);
 
-        if (file || !canFetchDocument) {
+        if (file || !remoteSourceTypeWanted) {
             setIsFetching(false);
             return () => {
                 isMounted = false;
@@ -81,14 +90,20 @@ export default function PdfPreview({file = null, documentId = null, fileName = "
         }
 
         setIsFetching(true);
-        api.documents.getFile(documentId)
+        const fetchPdf = demoContract
+            ? api.student.getDemoContractPdf({studentSignedAt, employerSignedAt, managerSignedAt})
+            : canFetchContract
+                ? api.student.getContractPdf(contractId)
+                : api.documents.getFile(documentId);
+        fetchPdf
             .then(async (response) => {
                 if (!response.ok) throw new Error("pdf_fetch_failed");
                 const blob = await response.blob();
                 createdUrl = URL.createObjectURL(blob);
                 if (isMounted) {
                     setRemoteUrl(createdUrl);
-                    setRemoteDocumentId(String(documentId));
+                    setRemoteSourceId(remoteSourceIdWanted);
+                    setRemoteSourceType(remoteSourceTypeWanted);
                 }
             })
             .catch(() => {
@@ -102,7 +117,8 @@ export default function PdfPreview({file = null, documentId = null, fileName = "
             isMounted = false;
             if (createdUrl) URL.revokeObjectURL(createdUrl);
         };
-    }, [file, documentId, canFetchDocument]);
+    }, [file, documentId, contractId, demoContract, studentSignedAt, employerSignedAt, managerSignedAt,
+        canFetchDocument, canFetchContract, remoteSourceIdWanted, remoteSourceTypeWanted]);
 
     const isLoading = isFetching || isPreparingLocalFile;
     if (!source && !isLoading && !fetchError) return null;

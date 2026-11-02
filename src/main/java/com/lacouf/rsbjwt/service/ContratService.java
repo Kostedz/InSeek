@@ -19,17 +19,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ContratService {
+    private static final DateTimeFormatter SIGNATURE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final ContratRepository contratRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final ApplicationStageRepository applicationStageRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final ContratStageGenerator contratStageGenerator;
 
     @Transactional
     public ContratDTO signContract(Long contractId, HttpServletRequest request) throws NotFoundException, BadRequestException {
@@ -112,12 +115,67 @@ public class ContratService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ContratDTO> listerContratsEmployeur(HttpServletRequest request) throws BadRequestException {
+        Utilisateur user = getAuthUser(request);
+        if (!(user instanceof Employeur employer)) {
+            throw new BadRequestException("Seul un employeur peut consulter ses contrats.");
+        }
+        return contratRepository.findByEmployerId(employer.getId()).stream()
+                .map(ContratDTO::of)
+                .toList();
+    }
+
     //donne le detail d'un contrat
     @Transactional(readOnly = true)
     public ContratDTO getContrat(Long id) throws NotFoundException {
         Contract contract = contratRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Contrat non trouvé "));
         return ContratDTO.of(contract);
+    }
+
+    @Transactional(readOnly = true)
+    public ContratDTO getContratEtudiant(HttpServletRequest request) throws NotFoundException, BadRequestException {
+        Utilisateur user = getAuthUser(request);
+        if (!(user instanceof Etudiant student)) {
+            throw new BadRequestException("Seul l'étudiant associé peut consulter son contrat.");
+        }
+        Contract contract = contratRepository.findByStudentId(student.getId())
+                .orElseThrow(() -> new NotFoundException("Aucun contrat trouvé pour cet étudiant."));
+        return ContratDTO.of(contract);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] genererPdfContrat(Long id, HttpServletRequest request)
+            throws NotFoundException, BadRequestException, java.io.IOException {
+        Contract contract = contratRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Contrat non trouvé."));
+        validateUserRelatedToContract(getAuthUser(request), contract);
+
+        ContratStageGenerator.ContratData data = new ContratStageGenerator.ContratData();
+        if (contract.getDateCreation() != null) {
+            data.anneeContrat = Integer.toString(contract.getDateCreation().getYear());
+        }
+        data.referenceContrat = String.valueOf(contract.getContractId());
+        data.nomGestionnaire = fullName(contract.getAdmin(), "");
+        data.nomEmployeur = fullName(contract.getEmployer(), "");
+        data.nomEtudiant = fullName(contract.getStudent(), "");
+        data.offreLieuStage = contract.getInternshipLocation();
+        data.dateDebut = contract.getStartingDate() == null ? "" : contract.getStartingDate().toString();
+        data.dateFin = contract.getEndingDate() == null ? "" : contract.getEndingDate().toString();
+        data.nombreSemaines = ContratStageGenerator.weeksBetween(
+                contract.getStartingDate(), contract.getEndingDate());
+        data.heuresSemaine = contract.getWeeklyHours() + " h";
+        data.tauxHoraire = contract.getHourlySalary() == null ? "" : contract.getHourlySalary() + " $/h";
+        data.offreDescription = contract.getInternshipOffer() == null
+                ? "" : contract.getInternshipOffer().getDescriptionPosition();
+        data.signatureEtudiant = signatureLabel("l’étudiant(e)", contract.getStudentSignedAt(), contract.getStudent());
+        data.signatureEmployeur = signatureLabel("l’employeur", contract.getEmployerSignedAt(), contract.getEmployer());
+        data.signatureGestionnaire = signatureLabel("le gestionnaire", contract.getManagerSignedAt(), contract.getAdmin());
+        data.dateSignatureEtudiant = formatSignatureDate(contract.getStudentSignedAt());
+        data.dateSignatureEmployeur = formatSignatureDate(contract.getEmployerSignedAt());
+        data.dateSignatureGestionnaire = formatSignatureDate(contract.getManagerSignedAt());
+        return contratStageGenerator.generate(data);
     }
 
 
@@ -163,6 +221,17 @@ public class ContratService {
             return valueIfMissing;
         }
         return (user.getPrenom() + " " + user.getNom()).trim();
+    }
+
+    private String signatureLabel(String party, LocalDateTime signedAt, Utilisateur signer) {
+        if (signedAt == null) {
+            return "Signature de " + party;
+        }
+        return "Signé électroniquement par " + fullName(signer, party);
+    }
+
+    private String formatSignatureDate(LocalDateTime signedAt) {
+        return signedAt == null ? "" : SIGNATURE_DATE_FORMAT.format(signedAt);
     }
 
         //utile pour toPreRemplirContratDTO
@@ -268,6 +337,10 @@ public class ContratService {
             if (!student.getId().equals(contract.getStudent().getId())) {
                 throw new BadRequestException("L'utilisateur connecté n'est pas l'étudiant associé à ce contrat.");
             }
+        } else if (user instanceof Employeur employer) {
+            if (contract.getEmployer() == null || !employer.getId().equals(contract.getEmployer().getId())) {
+                throw new BadRequestException("L'utilisateur connecté n'est pas l'employeur associé à ce contrat.");
+            }
         } else if (user instanceof Gestionnaire admin) {
             if (!admin.getId().equals(contract.getAdmin().getId())) {
                 throw new BadRequestException("L'utilisateur connecté n'est pas le gestionnaire associé à ce contrat.");
@@ -278,23 +351,26 @@ public class ContratService {
     }
 
     private void updateContractStatusBasedOnUser(Utilisateur user, Contract contract) throws BadRequestException {
-       switch (user.getClass().getSimpleName()) {
-            case "Etudiant":
-                if (contract.getContractStatus() != StatutContrat.PENDING_SIGNATURE) {
-                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
-                } else {
-                    contract.setContractStatus(StatutContrat.SIGNED_BY_STUDENT);
-                }
-                break;
-            case "Gestionnaire":
-                if (contract.getContractStatus() != StatutContrat.SIGNED_BY_EMPLOYER) {
-                    throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
-                } else {
-                    contract.setContractStatus(StatutContrat.SIGNED_BY_GESTIONNAIRE);
-                }
-                break;
-            default:
-                throw new BadRequestException("Utilisateur non reconnu.");
+        if (user instanceof Etudiant) {
+            if (contract.getContractStatus() != StatutContrat.PENDING_SIGNATURE) {
+                throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
+            }
+            contract.setContractStatus(StatutContrat.SIGNED_BY_STUDENT);
+            contract.setStudentSignedAt(LocalDateTime.now());
+        } else if (user instanceof Employeur) {
+            if (contract.getContractStatus() != StatutContrat.SIGNED_BY_STUDENT) {
+                throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
+            }
+            contract.setContractStatus(StatutContrat.SIGNED_BY_EMPLOYER);
+            contract.setEmployerSignedAt(LocalDateTime.now());
+        } else if (user instanceof Gestionnaire) {
+            if (contract.getContractStatus() != StatutContrat.SIGNED_BY_EMPLOYER) {
+                throw new BadRequestException("Le contrat ne peut pas être signé dans son état actuel.");
+            }
+            contract.setContractStatus(StatutContrat.SIGNED_BY_GESTIONNAIRE);
+            contract.setManagerSignedAt(LocalDateTime.now());
+        } else {
+            throw new BadRequestException("Utilisateur non reconnu.");
         }
     }
 

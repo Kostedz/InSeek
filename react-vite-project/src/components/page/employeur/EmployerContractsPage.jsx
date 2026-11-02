@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
+import api from "../../../utils/api.js";
 import ContractSignaturePage, {
     DEMO_CONTRACTS_UPDATED_EVENT,
     getDemoContracts,
@@ -83,16 +84,16 @@ function studentName(contract) {
         student.nom ?? student.lastName,
     ].filter(Boolean).join(" ");
 
-    return name || student.name || contract?.studentName || contract?.etudiantName || "";
+    return name || student.name || contract?.studentFullName || contract?.studentName || contract?.etudiantName || "";
 }
 
 function contractPosition(contract) {
     const offer = contract?.internshipOffer ?? contract?.offreDeStage ?? contract?.offer ?? {};
-    return offer.position ?? offer.title ?? contract?.position ?? "";
+    return offer.position ?? offer.title ?? contract?.offerTitle ?? contract?.position ?? "";
 }
 
 function contractStartDate(contract) {
-    return contract?.startingDate ?? contract?.startDate ?? contract?.dateDebutStage;
+    return contract?.startingDate ?? contract?.internshipStartingDate ?? contract?.startDate ?? contract?.dateDebutStage;
 }
 
 function formatDate(value, language) {
@@ -241,6 +242,23 @@ export default function EmployerContractsPage({
     const [selectedContractId, setSelectedContractId] = useState(null);
     const [locallySignedContracts, setLocallySignedContracts] = useState({});
     const [demoContracts, setDemoContracts] = useState([]);
+    const [remoteContracts, setRemoteContracts] = useState([]);
+
+    useEffect(() => {
+        let isMounted = true;
+        api.employer.getContracts()
+            .then(async (response) => {
+                if (!response.ok) return;
+                const data = await response.json();
+                const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+                if (isMounted) setRemoteContracts(list);
+            })
+            .catch(() => {
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (!isDemoEmployer(user)) {
@@ -266,11 +284,11 @@ export default function EmployerContractsPage({
     }, [user]);
 
     const allContracts = useMemo(() => {
-        const combined = [...getContractList(contracts), ...demoContracts];
+        const combined = [...getContractList(contracts), ...remoteContracts, ...demoContracts];
         const unique = new Map();
         combined.forEach((contract, index) => unique.set(contractId(contract, index), contract));
         return [...unique.values()];
-    }, [contracts, demoContracts]);
+    }, [contracts, remoteContracts, demoContracts]);
 
     const contractList = useMemo(() => allContracts.map((contract, index) => {
         const id = contractId(contract, index);
@@ -291,7 +309,14 @@ export default function EmployerContractsPage({
         declined: 0,
     });
 
-    const markContractSigned = (entry) => {
+    const markContractSigned = async (entry) => {
+        if (/^\d+$/.test(entry.id)) {
+            const response = await api.employer.signContract(entry.id);
+            if (!response.ok) throw new Error("contract_sign_failed");
+            const signedContract = await response.json();
+            setRemoteContracts((current) => current.map((item) =>
+                String(item.id ?? item.contractId) === entry.id ? {...item, ...signedContract} : item));
+        }
         setLocallySignedContracts((current) => ({...current, [entry.id]: true}));
         if (isDemoEmployer(user) && entry.id.startsWith("demo-")) {
             const updated = saveDemoContract({
@@ -302,7 +327,7 @@ export default function EmployerContractsPage({
             });
             setDemoContracts(updated);
         }
-        onContractSigned?.(entry.contract);
+        await onContractSigned?.(entry.contract);
     };
 
     useEffect(() => {

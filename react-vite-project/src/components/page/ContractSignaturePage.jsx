@@ -1,5 +1,6 @@
 import {useState} from "react";
 import {useTranslation} from "react-i18next";
+import PdfPreview from "../PdfPreview.jsx";
 
 const DEMO_CONTRACTS_KEY = "inseek.demo.contracts";
 const DEMO_STUDENT_EMAIL = "camille.gagnon@inseek.local";
@@ -180,11 +181,6 @@ const CONTRACT_COPY = {
     },
 };
 
-function ContractValue({value, label}) {
-    const isMissing = value === null || value === undefined || value === "";
-    return <strong className="font-black text-ink">{isMissing ? label : value}</strong>;
-}
-
 function CheckIcon() {
     return (
         <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -204,17 +200,17 @@ function hasRecordedSignature(value) {
     return ["TRUE", "SIGNED", "COMPLETE", "COMPLETED"].includes(String(value).trim().toUpperCase());
 }
 
-export default function ContractSignaturePage({user, contract, signer = "student", onSigned}) {
-    const {i18n} = useTranslation();
+export default function ContractSignaturePage({user, contract, contractLoading = false, signer = "student", onSigned}) {
+    const {i18n, t} = useTranslation();
     const copy = CONTRACT_COPY[i18n.resolvedLanguage === "en" ? "en" : "fr"];
     const [hasSignature, setHasSignature] = useState(false);
     const [isSigning, setIsSigning] = useState(false);
     const [isLocallySigned, setIsLocallySigned] = useState(false);
+    const [signatureError, setSignatureError] = useState(false);
+    const [pdfRevision, setPdfRevision] = useState(0);
 
     const student = contract?.student ?? {};
     const employee = contract?.employee ?? {};
-    const internshipOffer = contract?.internshipOffer ?? {};
-    const admin = contract?.admin ?? {};
     const signerIsEmployer = signer === "employer";
     const firstName = student.prenom ?? student.firstName ?? (signerIsEmployer ? undefined : user?.firstName ?? user?.prenom);
     const lastName = student.nom ?? student.lastName ?? (signerIsEmployer ? undefined : user?.lastName ?? user?.nom);
@@ -225,14 +221,6 @@ export default function ContractSignaturePage({user, contract, signer = "student
         ? user?.lastName ?? user?.nom ?? employee.nom
         : lastName;
     const signerName = [signerFirstName, signerLastName].filter(Boolean).join(" ");
-    const employerName = employee.nomCompagnie ?? employee.companyName ?? internshipOffer.nomEntreprise ?? internshipOffer.companyName;
-    const position = internshipOffer.position ?? internshipOffer.title ?? contract?.position;
-    const positionDescription = internshipOffer.descriptionPosition ?? internshipOffer.description ?? contract?.description;
-    const startDate = contract?.startingDate ?? contract?.startDate;
-    const endDate = contract?.endingDate ?? contract?.endDate;
-    const weeklyHours = contract?.weeklyHours ?? contract?.hoursPerWeek;
-    const hourlySalary = contract?.hourlySalary ?? contract?.salary;
-    const location = contract?.internshipLocation ?? contract?.location;
     const contractNumber = contract?.contractId ?? contract?.id;
     const backendStatus = String(contract?.contractStatus ?? "").toUpperCase();
     const employerSignatureRecorded = hasRecordedSignature(
@@ -255,32 +243,8 @@ export default function ContractSignaturePage({user, contract, signer = "student
         ? employerSignatureRecorded
         : studentSignatureRecorded || backendStatus === "SIGNED") || isLocallySigned;
     const isWaitingForStudent = signerIsEmployer && !studentSignatureRecorded && !employerSignatureRecorded && !isLocallySigned;
-
-    const formatDate = (value) => {
-        if (!value) return "";
-        const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-        return Number.isNaN(date.getTime())
-            ? String(value)
-            : new Intl.DateTimeFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {dateStyle: "medium"}).format(date);
-    };
-
-    const formatSalary = (value) => {
-        if (value === null || value === undefined || value === "") return "";
-        const amount = Number(value);
-        return Number.isNaN(amount)
-            ? String(value)
-            : new Intl.NumberFormat(i18n.resolvedLanguage === "en" ? "en-CA" : "fr-CA", {
-                style: "currency",
-                currency: "CAD"
-            }).format(amount);
-    };
-
-    const formattedStartDate = formatDate(startDate);
-    const formattedEndDate = formatDate(endDate);
-    const formattedSalary = formatSalary(hourlySalary);
-    const formattedWeeklyHours = weeklyHours === null || weeklyHours === undefined || weeklyHours === ""
-        ? ""
-        : `${weeklyHours} h`;
+    const hasGeneratedPdf = /^\d+$/.test(String(contractNumber ?? "")) && Number(contractNumber) > 0;
+    const isDemoContract = contractNumber === "demo-camille-nexora-1";
 
     const signWithName = () => {
         if (isSigned || isSigning) return;
@@ -292,10 +256,17 @@ export default function ContractSignaturePage({user, contract, signer = "student
         if (isSigned || !hasSignature) return;
 
         setIsSigning(true);
-        window.setTimeout(() => {
-            setIsLocallySigned(true);
-            setIsSigning(false);
-            onSigned?.(contract);
+        setSignatureError(false);
+        window.setTimeout(async () => {
+            try {
+                await onSigned?.(contract);
+                setPdfRevision((revision) => revision + 1);
+                setIsLocallySigned(true);
+            } catch {
+                setSignatureError(true);
+            } finally {
+                setIsSigning(false);
+            }
         }, 650);
     };
 
@@ -315,8 +286,7 @@ export default function ContractSignaturePage({user, contract, signer = "student
                     <div>
                         <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/60">{copy.eyebrow}</p>
                         <p className="mt-1 text-lg font-black tracking-tight">{copy.preview}</p>
-                        <p className="mt-0.5 text-xs font-semibold text-white/60">{copy.contractNumber}: <ContractValue
-                            value={contractNumber} label={copy.contractNumber}/></p>
+                        <p className="mt-0.5 text-xs font-semibold text-white/60">{copy.contractNumber}: {contractNumber ?? "—"}</p>
                     </div>
                 </div>
                 <div
@@ -342,42 +312,23 @@ export default function ContractSignaturePage({user, contract, signer = "student
                         </div>
                     </div>
 
-                    <div className="mt-5 space-y-4 text-sm leading-7 text-ink-soft">
-                        <p>
-                            {copy.contractIntro} <ContractValue value={firstName} label={copy.firstName}/>{" "}
-                            <ContractValue value={lastName} label={copy.lastName}/> {copy.and}{" "}
-                            <ContractValue value={employerName} label={copy.company}/> {copy.representedBy}{" "}
-                            <ContractValue value={employee.prenom} label={copy.employerFirstName}/>{" "}<ContractValue
-                            value={employee.nom} label={copy.employerLastName}/>. {copy.supervisorIntro}{" "}
-                            <ContractValue value={contract?.supervisorName}
-                                           label={copy.supervisor}/> {copy.managerIntro}{" "}
-                            <ContractValue value={admin.prenom} label={copy.managerFirstName}/>{" "}<ContractValue
-                            value={admin.nom} label={copy.managerLastName}/>.
+                    {contractLoading ? (
+                        <p className="mt-5 rounded-xl bg-lavender/30 px-4 py-6 text-center text-sm text-ink-soft">
+                            {t("pdfPreview.loading")}
                         </p>
-
-                        <p>
-                            {copy.internshipIntro} <ContractValue value={position}
-                                                                  label={copy.position}/>. {copy.descriptionIntro}{" "}
-                            <ContractValue value={positionDescription} label={copy.description}/>
+                    ) : hasGeneratedPdf || isDemoContract ? (
+                        <PdfPreview key={`${contractNumber}-${backendStatus}-${pdfRevision}`}
+                                    contractId={hasGeneratedPdf ? contractNumber : null} demoContract={isDemoContract}
+                                    studentSignedAt={contract?.studentSignedAt ?? ""}
+                                    employerSignedAt={contract?.employerSignedAt ?? ""}
+                                    managerSignedAt={contract?.managerSignedAt ?? ""}
+                                    fileName={`${copy.eyebrow} ${contractNumber}.pdf`}
+                                    className="mt-5 border-0 bg-transparent p-0"/>
+                    ) : (
+                        <p className="mt-5 rounded-xl border border-line px-4 py-6 text-center text-sm text-ink-soft">
+                            {t("studentContract.noContract")}
                         </p>
-
-                        <p>
-                            {copy.periodIntro} <ContractValue value={formattedStartDate}
-                                                              label={copy.startDate}/> {copy.periodSeparator}{" "}
-                            <ContractValue value={formattedEndDate} label={copy.endDate}/>. {copy.locationIntro}{" "}
-                            <ContractValue value={location} label={copy.location}/>. {copy.hoursIntro}{" "}
-                            <ContractValue value={formattedWeeklyHours}
-                                           label={copy.weeklyHours}/> {copy.hoursSuffix} {copy.salaryIntro}{" "}
-                            <ContractValue value={formattedSalary} label={copy.hourlySalary}/> {copy.salarySuffix}
-                        </p>
-
-                        <div className="border-t border-line pt-4">
-                            <h2 className="text-sm font-black text-ink">{copy.commitmentsTitle}</h2>
-                            <p className="mt-2">{copy.studentCommitment}</p>
-                            <p className="mt-2">{copy.employerCommitment}</p>
-                            <p className="mt-2">{copy.modificationCommitment}</p>
-                        </div>
-                    </div>
+                    )}
                 </article>
 
                 <aside className="lg:sticky lg:top-6">
@@ -420,6 +371,13 @@ export default function ContractSignaturePage({user, contract, signer = "student
                                 <p className="text-xs font-black text-ink">{copy.secure}</p>
                                 <p className="mt-0.5 text-[11px] leading-5 text-ink-soft">{copy.secureText}</p>
                             </div>
+
+                            {signatureError && (
+                                <p className="mt-3 rounded-xl border border-error bg-blush/30 px-3 py-2 text-xs font-semibold text-error"
+                                   role="alert">
+                                    {t("studentContract.signatureError")}
+                                </p>
+                            )}
 
                             <div
                                 className="relative mt-4 h-32 overflow-hidden rounded-xl border-2 border-line bg-canvas">

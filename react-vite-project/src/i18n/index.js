@@ -314,10 +314,12 @@ const resources = {
             studentContract: {
                 title: "Mon contrat de stage",
                 description: "Consultez les modalités de votre stage et signez votre entente électroniquement.",
+                noContract: "Aucun contrat PDF n’est disponible pour le moment.",
+                signatureError: "Impossible d’enregistrer la signature. Réessayez.",
             },
             pdfPreview: {
                 title: "Aperçu du PDF",
-                loading: "Chargement deF l’aperçu…",
+                loading: "Chargement de l’aperçu…",
                 loadError: "Impossible de charger l’aperçu du PDF.",
                 noDocument: "Aucun document PDF disponible.",
                 pageOf: "Page {{page}} sur {{total}}",
@@ -1277,6 +1279,8 @@ const resources = {
             studentContract: {
                 title: "My internship contract",
                 description: "Review your internship terms and sign your agreement electronically.",
+                noContract: "No contract PDF is available yet.",
+                signatureError: "Could not record the signature. Please try again.",
             },
             pdfPreview: {
                 title: "PDF preview",

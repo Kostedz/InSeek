@@ -49,6 +49,12 @@ public class Contract {
     @Builder.Default
     private StatutContrat contractStatus = StatutContrat.PENDING_SIGNATURE;
 
+    private LocalDateTime studentSignedAt;
+
+    private LocalDateTime employerSignedAt;
+
+    private LocalDateTime managerSignedAt;
+
     private LocalDateTime dateCreation = LocalDateTime.now();
 
 }

@@ -24,7 +24,10 @@ public record ContratDTO(
         Double hourlySalary,
         String internshipLocation,
         StatutContrat contractStatus,
-        LocalDateTime contractDateCreation
+        LocalDateTime contractDateCreation,
+        LocalDateTime studentSignedAt,
+        LocalDateTime employerSignedAt,
+        LocalDateTime managerSignedAt
 ) {
     public static ContratDTO of(Contract contract) {
         String studentFullName = contract.getStudent() != null ? contract.getStudent().getPrenom() + " " +
@@ -52,6 +55,9 @@ public record ContratDTO(
                 .internshipLocation(contract.getInternshipLocation())
                 .contractStatus(contract.getContractStatus())
                 .contractDateCreation(contract.getDateCreation())
+                .studentSignedAt(contract.getStudentSignedAt())
+                .employerSignedAt(contract.getEmployerSignedAt())
+                .managerSignedAt(contract.getManagerSignedAt())
                 .build();
     }
 }
