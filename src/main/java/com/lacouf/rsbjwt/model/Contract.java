@@ -35,6 +35,8 @@ public class Contract extends Document {
 
     private LocalDate endingDate;
 
+    private String schedule;
+
     private double weeklyHours;
 
     private Double hourlySalary;
