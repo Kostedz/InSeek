@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {api} from "../../../utils/api.js";
-import {notifyPendingDocumentProcessed} from "../../../utils/gestionnaireCounts.js";
+import {notifyPendingDocumentProcessed} from "../../../utils/tabCounts.js";
 import StatusBadge from "../../componentUtils/gestionnaire/cvValidation/CvStatusBadge.jsx";
 import {InfoItem} from "../../componentUtils/gestionnaire/ValidationComponents.jsx";
 import {

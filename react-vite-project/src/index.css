@@ -15,7 +15,6 @@
     --color-error: #a43d5d;
     --font-sans: "Plus Jakarta Sans", "Avenir Next", Avenir, "Segoe UI", sans-serif;
 }
-
 @layer base {
     * {
         box-sizing: border-box;

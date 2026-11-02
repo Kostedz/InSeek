@@ -142,6 +142,12 @@ export const api = {
             fetcher("/api/applications/my-applications/details", {
                 headers: {Accept: "application/json"},
             }),
+
+        getContracts: () =>
+            fetcher("/contracts/student", {
+                cache: "no-store",
+                headers: {Accept: "application/json"},
+            }),
     },
 
     documents: {
@@ -151,15 +157,17 @@ export const api = {
     },
 
     employer: {
-        getContracts: () => fetcher("/contracts/employer/me", {
-            cache: "no-store",
-            headers: {Accept: "application/json"},
-        }),
+        getContracts: () =>
+            fetcher("/contracts/employer", {
+                cache: "no-store",
+                headers: {Accept: "application/json"},
+            }),
 
-        signContract: (contractId) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
-            method: "POST",
-            headers: {Accept: "application/json"},
-        }),
+        signContract: (contractId) =>
+            fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+                method: "PATCH",
+                headers: {Accept: "application/json"},
+            }),
 
         offers: {
             list: () => fetcher("/employeur/offres", {
@@ -271,13 +279,9 @@ export const api = {
 
         getContracts: () =>
             fetcher("/contracts/contracts", {
+                cache: "no-store",
                 headers: { Accept: "application/json" },
             }),
-
-        signContract: (contractId) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
-            method: "POST",
-            headers: {Accept: "application/json"},
-        }),
     },
 
     professor: {

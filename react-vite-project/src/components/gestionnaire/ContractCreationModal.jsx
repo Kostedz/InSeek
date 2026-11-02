@@ -3,17 +3,6 @@ import { useTranslation } from "react-i18next";
 import api from "../../utils/api.js";
 import { translateMessage } from "../../utils/i18nMessage.js";
 
-const ERROR_DEFAULTS = {
-    startDateRequired: "La date de début est requise.",
-    startDateInPast: "La date de début ne peut pas être dans le passé.",
-    endDateRequired: "La date de fin est requise.",
-    endDateBeforeStart: "La date de fin doit être postérieure à la date de début.",
-    scheduleRequired: "L'horaire est requis.",
-    weeklyHoursInvalid: "Le nombre d'heures doit être supérieur à 0.",
-    locationRequired: "Le lieu du stage est requis.",
-    remunerationInvalid: "La rémunération ne peut pas être négative.",
-};
-
 const INITIAL_FORM_STATE = {
     studentName: "",
     discipline: "",
@@ -53,7 +42,7 @@ export default function ContractCreationModal({ student, onClose, onSuccess }) {
     const [fieldErrors, setFieldErrors] = useState({});
     const [formData, setFormData] = useState(INITIAL_FORM_STATE);
 
-    const errorText = (code) => t(`contracts.errors.${code}`, ERROR_DEFAULTS[code]);
+    const errorText = (code) => t(`contracts.errors.${code}`);
 
     useEffect(() => {
         let isMounted = true;

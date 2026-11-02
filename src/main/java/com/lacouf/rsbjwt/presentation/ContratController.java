@@ -108,11 +108,34 @@ public class ContratController {
     }
 
     @GetMapping("/sign/{contractId}")
+    @PatchMapping("/sign/{contractId}")
     public ResponseEntity<ContratDTO> signContract(@PathVariable Long contractId, HttpServletRequest request) {
         try {
             return ResponseEntity.ok(contratService.signContract(contractId, request));
+        } catch (ConflictException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
         } catch (NotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+    @GetMapping("/student")
+    @PreAuthorize("hasAuthority('ETUDIANT')")
+    public ResponseEntity<List<ContratDTO>> getStudentContracts(HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(contratService.listerContratsEtudiant(request));
+        } catch (BadRequestException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
+    @GetMapping("/employer")
+    @PreAuthorize("hasAuthority('EMPLOYEUR')")
+    public ResponseEntity<List<ContratDTO>> getEmployerContracts(HttpServletRequest request) {
+        try {
+            return ResponseEntity.ok(contratService.listerContratsEmployeur(request));
         } catch (BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }

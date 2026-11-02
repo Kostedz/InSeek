@@ -3,34 +3,37 @@ import {Link, useLocation} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
 import {normalizeOffer} from "../../componentUtils/offresUtils.js";
+import {getInterviewDate, normalizeInterview} from "../../componentUtils/etudiant/convocationsUtils/InterviewUtils.jsx";
+import {STUDENT_TAB_COUNTS_CHANGED_EVENT} from "../../../utils/tabCounts.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
 
 function isPendingInterview(item) {
-    const status = String(
-        item?.interviewInvitationStatus ?? item?.statut ?? item?.status ?? ""
-    ).toUpperCase();
-    const dateValue = item?.DateAndTime ?? item?.dateAndTime ?? item?.dateInterview ?? item?.date;
-    const date = dateValue ? new Date(dateValue) : null;
+    const interview = normalizeInterview(item);
+    const date = getInterviewDate(interview);
 
-    return status === "PENDING"
-        && date !== null
-        && !Number.isNaN(date.getTime())
-        && date.getTime() > Date.now();
+    return interview.status === "PENDING" && date !== null && date.getTime() > Date.now();
 }
 
 export default function StudentMenu({user}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
     const [counts, setCounts] = useState({});
+    const [refreshVersion, setRefreshVersion] = useState(0);
     const offersActive = pathname === "/" || pathname === "/etudiant/offres";
     const applicationsActive = pathname === "/etudiant/candidatures";
     const interviewsActive = pathname === "/etudiant/convocations";
     const contractActive = pathname === "/etudiant/contrat";
-    const {offersCount, applicationsCount, interviewsCount} = counts;
+    const {offersCount, applicationsCount, interviewsCount, contractsCount} = counts;
     const activeTab = contractActive ? "contract" : interviewsActive ? "interviews" : applicationsActive ? "applications" : "offers";
 
     const {navRef, tabRefs, indicator, indicatorClassName} = useSlidingTabIndicator(activeTab, "student-active-tab");
     const offersPath = offersActive && pathname === "/" ? "/" : "/etudiant/offres";
+
+    useEffect(() => {
+        const refreshCounts = () => setRefreshVersion((version) => version + 1);
+        window.addEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshCounts);
+        return () => window.removeEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshCounts);
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -38,16 +41,19 @@ export default function StudentMenu({user}) {
             api.student.getOffers(),
             api.student.getAppliedOfferIds(),
             api.student.getConvocations(),
-        ]).then(async ([offersResponse, applicationsResponse, interviewsResponse]) => {
-            if (!offersResponse.ok || !applicationsResponse.ok || !interviewsResponse.ok) throw new Error("student_counts_load_failed");
+            api.student.getContracts(),
+        ]).then(async ([offersResponse, applicationsResponse, interviewsResponse, contractsResponse]) => {
+            if (!offersResponse.ok || !applicationsResponse.ok || !interviewsResponse.ok || !contractsResponse.ok) throw new Error("student_counts_load_failed");
 
-            const [offersData, applicationsData, interviewsData] = await Promise.all([
+            const [offersData, applicationsData, interviewsData, contractsData] = await Promise.all([
                 offersResponse.json(),
                 applicationsResponse.json(),
                 interviewsResponse.status === 204 ? Promise.resolve([]) : interviewsResponse.json(),
+                contractsResponse.status === 204 ? Promise.resolve([]) : contractsResponse.json(),
             ]);
             const appliedIds = new Set((Array.isArray(applicationsData) ? applicationsData : []).map(String));
             const interviews = Array.isArray(interviewsData) ? interviewsData : interviewsData.items ?? interviewsData.content ?? [];
+            const contracts = Array.isArray(contractsData) ? contractsData : contractsData.items ?? contractsData.content ?? [];
 
             if (active) {
                 setCounts({
@@ -56,6 +62,9 @@ export default function StudentMenu({user}) {
                         .filter(({statut, id}) => statut === "VALIDE" && !appliedIds.has(String(id))).length,
                     applicationsCount: appliedIds.size,
                     interviewsCount: interviews.filter(isPendingInterview).length,
+                    contractsCount: contracts.filter((contract) =>
+                        String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "PENDING_SIGNATURE"
+                    ).length,
                 });
             }
         }).catch(() => {
@@ -65,14 +74,14 @@ export default function StudentMenu({user}) {
         return () => {
             active = false;
         };
-    }, [user?.id]);
+    }, [user?.id, pathname, refreshVersion]);
 
-    const countBadge = (count) => count === null || count === undefined ? null : (
+    const countBadge = (count) => count > 0 ? (
         <span
             className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-[11px] font-black leading-none text-ink">
             {count}
         </span>
-    );
+    ) : null;
 
     const itemClass = (active) => [
         "relative z-10 inline-flex flex-1 items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold transition-colors duration-200 sm:flex-none",
@@ -137,8 +146,7 @@ export default function StudentMenu({user}) {
             >
                 <span className="flex items-center justify-center gap-2">
                     {t("navigation.contract", "Contrat")}
-                    <span className={`h-2 w-2 rounded-full ${contractActive ? "bg-pink" : "bg-gold"}`}
-                          aria-hidden="true"/>
+                    {countBadge(contractsCount)}
                 </span>
             </Link>
         </nav>

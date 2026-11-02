@@ -6,6 +6,10 @@ import Loading from "../../Loading.jsx";
 import ErrorPage from "../../ErrorPage.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 import {formatOfferTitle} from "../../componentUtils/offresUtils.js";
+import {
+    buildOfferSubmissionFormData,
+    errorForOfferStatus
+} from "../../componentUtils/employeur/offresUtils/employeurOffresUtils.js";
 import ScheduleInterviewModal from "../../componentUtils/employeur/ScheduleInterviewModal.jsx";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -760,8 +764,10 @@ function ApplicationsModal({offer, applications, language, onClose, isLoading, e
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                                 <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerOffers.applications.label")}</p>
-                                <span
-                                    className="rounded-full bg-pink/55 px-2.5 py-1 text-xs font-black text-ink">{applications.length}</span>
+                                {applications.length > 0 && (
+                                    <span
+                                        className="rounded-full bg-pink/55 px-2.5 py-1 text-xs font-black text-ink">{applications.length}</span>
+                                )}
                             </div>
                             <h2 id="applications-title"
                                 className="mt-2 text-2xl font-black tracking-tight text-ink">{t("employerOffers.applications.title")}</h2>
@@ -1388,11 +1394,13 @@ export default function EmployeurOffres({
                                             <p className="mt-1 truncate text-xs text-ink-soft">{offer.fileName || t("employerOffers.noFile")}</p>
                                         </div>
                                         <div className="flex flex-wrap justify-end gap-2">
-                                            <span
-                                                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-bold text-ink-soft">
-                                                <Icon name="users" className="h-3.5 w-3.5"/>
-                                                {applicationCount}
-                                            </span>
+                                            {hasApplications && (
+                                                <span
+                                                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-bold text-ink-soft">
+                                                    <Icon name="users" className="h-3.5 w-3.5"/>
+                                                    {applicationCount}
+                                                </span>
+                                            )}
                                             <StatusBadge status={offer.statut}/>
                                         </div>
                                     </div>

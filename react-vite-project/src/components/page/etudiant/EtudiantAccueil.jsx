@@ -5,6 +5,7 @@ import api from "../../../utils/api.js";
 import Loading from "../../Loading.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 import {StudentCvRequiredMessage} from "./StudentCvAccess.jsx";
+import {notifyStudentTabCountsChanged} from "../../../utils/tabCounts.js";
 import {
     formatDate,
     formatDateRange,
@@ -93,6 +94,7 @@ function ApplicationModal({offer, cv, t, onClose, onSubmitted}) {
             if (!response.ok) throw new Error("application_failed");
 
             setSubmitted(true);
+            notifyStudentTabCountsChanged();
             onSubmitted?.(offer.id);
         } catch {
             setError(t("studentOffers.application.errors.submitFailed"));

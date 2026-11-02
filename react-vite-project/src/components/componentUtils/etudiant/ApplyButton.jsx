@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {api} from "../../../utils/api.js";
+import {notifyStudentTabCountsChanged} from "../../../utils/tabCounts.js";
 
 export default function ApplyButton({ offerId, initialApplied = false, onAppliedSuccess }) {
     const { t } = useTranslation();
@@ -26,6 +27,7 @@ export default function ApplyButton({ offerId, initialApplied = false, onApplied
             }
 
             setHasApplied(true);
+            notifyStudentTabCountsChanged();
             if (onAppliedSuccess) {
                 onAppliedSuccess(offerId);
             }

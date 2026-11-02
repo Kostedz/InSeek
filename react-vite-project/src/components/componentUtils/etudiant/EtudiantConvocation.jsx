@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
+import {notifyStudentTabCountsChanged} from "../../../utils/tabCounts.js";
 
 import InterviewList from "./convocationsUtils/InterviewList.jsx";
 import InterviewDetails from "./convocationsUtils/InterviewDetails.jsx";
@@ -88,6 +89,7 @@ export default function StudentInterviews({user, page = false, onPendingCountCha
                     responseError.status = response.status;
                     throw responseError;
                 }
+                notifyStudentTabCountsChanged();
 
                 if (response.status !== 204) {
                     const updated = await response.json();
@@ -109,6 +111,7 @@ export default function StudentInterviews({user, page = false, onPendingCountCha
             }
 
             if (response && response.id != null) {
+                notifyStudentTabCountsChanged();
                 const updatedInterview = normalizeInterview(response);
 
                 setInterviews((previous) =>

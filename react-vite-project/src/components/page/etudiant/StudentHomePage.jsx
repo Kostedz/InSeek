@@ -6,12 +6,7 @@ import EtudiantAccueil from "./EtudiantAccueil.jsx";
 import EtudiantCandidatures from "./EtudiantCandidatures.jsx";
 import StudentConvocation from "./StudentConvocation.jsx";
 import StudentMenu from "./StudentMenu.jsx";
-import ContractSignaturePage, {
-    createDemoContract,
-    getDemoContracts,
-    isDemoStudent,
-    saveDemoContract
-} from "../ContractSignaturePage.jsx";
+import StudentContractsPage from "./StudentContractsPage.jsx";
 import StudentCvAccess from "./StudentCvAccess.jsx";
 
 function getActiveTab(pathname) {
@@ -21,7 +16,7 @@ function getActiveTab(pathname) {
     return "offers";
 }
 
-export default function StudentHomePage({user, contract}) {
+export default function StudentHomePage({user}) {
     const {t} = useTranslation();
     const {pathname} = useLocation();
     const activeTab = getActiveTab(pathname);
@@ -139,6 +134,7 @@ export default function StudentHomePage({user, contract}) {
                                             }
                                         }}
                                     />
+                                    <StudentContractsPage user={user}/>
                                 )}
                             </div>
                         </>
