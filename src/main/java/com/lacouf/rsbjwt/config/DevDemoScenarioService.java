@@ -326,6 +326,7 @@ public class DevDemoScenarioService {
         contract.setSupervisorName(offer.getContactName());
         contract.setStartingDate(offer.getDateDebutStage());
         contract.setEndingDate(offer.getDateFinStage());
+        contract.setSchedule("9:00 - 17:00");
         contract.setWeeklyHours(35);
         contract.setHourlySalary(offer.getSalaire());
         contract.setInternshipLocation(offer.getAdresseEntreprise());

@@ -128,7 +128,7 @@ export default function GestionnaireStudents({embedded = false}) {
                                 const studentName = `${student.firstName || student.prenom || ""} ${student.lastName || student.nom || ""}`.trim();
 
                                 return (
-                                    <div key={student.id}
+                                    <div key={`${student.id}-${student.offerId}`}
                                          className="flex flex-col justify-between rounded-2xl border border-line bg-surface p-5 shadow-sm">
                                         <div>
                                             <div className="flex items-start justify-between gap-2">

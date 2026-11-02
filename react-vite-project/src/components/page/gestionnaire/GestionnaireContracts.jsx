@@ -283,15 +283,6 @@ export default function GestionnaireContracts({embedded = false}) {
                                     </div>
                                 </div>
 
-                                {selectedContract.id && (
-                                    <PdfPreview
-                                        key={`${selectedContract.id}-${selectedContract.status}`}
-                                        contractId={selectedContract.id}
-                                        fileName={`Contrat ${selectedContract.id}.pdf`}
-                                        className="border-0 bg-transparent p-0"
-                                    />
-                                )}
-
                                 <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-line">
                                     {selectedContract.status === MANAGER_SIGNABLE_STATUS && (
                                         <button
