@@ -12,11 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Contract {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long contractId;
+public class Contract extends Document {
 
     @ManyToOne()
     private Etudiant student;
