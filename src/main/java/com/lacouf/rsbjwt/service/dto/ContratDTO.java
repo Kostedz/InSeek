@@ -22,6 +22,7 @@ public record ContratDTO(
         String assignedTeacherName,
         LocalDate internshipStartingDate,
         LocalDate internshipEndingDate,
+        String schedule,
         double weeklyHours,
         Double hourlySalary,
         String internshipLocation,
@@ -56,6 +57,7 @@ public record ContratDTO(
                 .assignedTeacherName(teacherName)
                 .internshipStartingDate(contract.getStartingDate())
                 .internshipEndingDate(contract.getEndingDate())
+                .schedule(contract.getSchedule())
                 .weeklyHours(contract.getWeeklyHours())
                 .hourlySalary(contract.getHourlySalary())
                 .internshipLocation(contract.getInternshipLocation())

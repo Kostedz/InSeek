@@ -156,6 +156,7 @@ public class ContratService {
         data.dateFin = contract.getEndingDate() == null ? "" : contract.getEndingDate().toString();
         data.nombreSemaines = ContratStageGenerator.weeksBetween(
                 contract.getStartingDate(), contract.getEndingDate());
+        data.schedule = contract.getSchedule();
         data.heuresSemaine = contract.getWeeklyHours() + " h";
         data.tauxHoraire = contract.getHourlySalary() == null ? "" : contract.getHourlySalary() + " $/h";
         data.offreDescription = contract.getInternshipOffer() == null
@@ -215,9 +216,11 @@ public class ContratService {
                 .companyName(companyNameForContract(internshipOffer, employer))
                 .employerName(employerFullName)
                 .offerTitle(internshipOffer.getPosition())
-                .supervisorName(supervisorNameForContract(internshipOffer, employer))                .assignedTeacherName(fullName(teacher, "Non assigné"))
+                .supervisorName(supervisorNameForContract(internshipOffer, employer))
+                .assignedTeacherName(fullName(teacher, "Non assigné"))
                 .internshipStartDate(proposedStartDate(internshipOffer))
                 .internshipEndDate(proposedEndDate(internshipOffer))
+                .schedule("09:00 - 17:00")
                 .weeklyHours(35)
                 .hourlySalary(internshipOffer.getSalaire() != null ? internshipOffer.getSalaire() : 0.0)
                 .location(internshipOffer.getAdresseEntreprise() != null ? internshipOffer.getAdresseEntreprise() : "")
@@ -307,6 +310,7 @@ public class ContratService {
                 .supervisorName(supervisorNameForContract(internshipOffer, employer))
                 .startingDate(createContratDTO.internshipStartingDate())
                 .endingDate(createContratDTO.internshipEndingDate())
+                .schedule(createContratDTO.schedule() != null ? createContratDTO.schedule().trim() : "")
                 .weeklyHours(createContratDTO.weeklyHours())
                 .hourlySalary(createContratDTO.hourlySalary() != null ? createContratDTO.hourlySalary() : 0.0)
                 .internshipLocation(createContratDTO.internshipLocation().trim())
@@ -327,6 +331,8 @@ public class ContratService {
             throw new BadRequestException("Le nombre d'heures par semaine doit être supérieur à 0.");
         if (createContratDTO.internshipLocation() == null || createContratDTO.internshipLocation().isBlank())
             throw new BadRequestException("Le lieu est requis.");
+        if (createContratDTO.schedule() == null || createContratDTO.schedule().isBlank())
+            throw new BadRequestException("L'horaire de travail est requis.");
         if (createContratDTO.hourlySalary() != null && createContratDTO.hourlySalary() < 0)
             throw new BadRequestException("La rémunération ne peut pas être négative.");
     }
