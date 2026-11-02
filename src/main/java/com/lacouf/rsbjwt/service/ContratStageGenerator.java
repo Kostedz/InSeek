@@ -52,6 +52,7 @@ public class ContratStageGenerator {
         public String dateDebut = "xx";
         public String dateFin = "xx";
         public String nombreSemaines = "0";
+        public String schedule = "Lundi au Jeudi, 7h30 par jour";
         public String heuresSemaine = "0h";
         public String tauxHoraire = "0$/h";
         public String offreDescription = "Description de l'offre de stage.";
@@ -119,7 +120,8 @@ public class ContratStageGenerator {
                 + "Date de fin : " + value(d.dateFin) + "\n"
                 + "Nombre total de semaines : " + value(d.nombreSemaines)), regular));
         table.addCell(sectionHeader("HORAIRE DE TRAVAIL", bold));
-        table.addCell(sectionBody(new Paragraph("Horaire de travail : Lundi au jeudi, 7h30 par jour.\n"
+        String horaireAffiche = (d.schedule != null && !d.schedule.isBlank()) ? d.schedule : "Lundi au vendredi, 7h30 par jour";
+        table.addCell(sectionBody(new Paragraph("Horaire de travail : " + value(horaireAffiche) + "\n"
                 + "Nombre total d’heures par semaine : " + value(d.heuresSemaine)), regular));
         table.addCell(sectionHeader("SALAIRE", bold));
         table.addCell(sectionBody(new Paragraph("Salaire horaire : " + value(d.tauxHoraire)), regular));

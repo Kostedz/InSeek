@@ -39,6 +39,7 @@ public class DevContractController {
         data.offreLieuStage = "Montréal, Québec";
         data.dateDebut = "2026-11-02";
         data.dateFin = "2027-02-01";
+        data.schedule = "de 9h a 17h du Lundi au vendredi";
         data.nombreSemaines = ContratStageGenerator.weeksBetween(
                 java.time.LocalDate.parse(data.dateDebut), java.time.LocalDate.parse(data.dateFin));
         data.heuresSemaine = "35 h";
