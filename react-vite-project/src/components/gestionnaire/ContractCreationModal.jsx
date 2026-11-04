@@ -157,6 +157,7 @@ export default function ContractCreationModal({ student, onClose, onSuccess }) {
                 offerId: student.offerId,
                 internshipStartingDate: formData.startDate,
                 internshipEndingDate: formData.endDate,
+                schedule: formData.schedule,
                 weeklyHours: Number(formData.weeklyHours),
                 hourlySalary: formData.remuneration === "" ? 0 : Number(formData.remuneration),
                 internshipLocation: formData.location.trim(),

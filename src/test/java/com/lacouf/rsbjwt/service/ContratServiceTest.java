@@ -110,7 +110,7 @@ class ContratServiceTest {
 
     private CreateContratDTO dto(Long studentId, LocalDate debut, LocalDate fin,
                                  int heures, Double salaire, String lieu) {
-        return new CreateContratDTO(studentId, 10L, debut, fin, heures, salaire, lieu);
+        return new CreateContratDTO(studentId, 10L, debut, fin, "De 9 h à 17 h du lundi au jeudi", heures, salaire, lieu);
     }
 
     private MockHttpServletRequest requeteAvecToken() {
@@ -187,6 +187,7 @@ class ContratServiceTest {
         assertEquals("Will Gates", result.employerName());
         assertEquals("Développeur Java", result.offerTitle());
         assertEquals("Bob Gagnon", result.assignedTeacherName());
+        assertEquals("09:00 - 17:00", result.schedule());
         assertEquals(35, result.weeklyHours());
         assertEquals(25.0, result.hourlySalary());
         assertEquals("123 rue Principale", result.location());
@@ -623,20 +624,16 @@ class ContratServiceTest {
     @Test
     @DisplayName("listerContrats() retourne tous les contrats")
     void listerContrats_retourneTousLesContrats() {
-        Contract c1 = Contract.builder()
-                .contractId(100L)
+        Contract c1 = contractWithId(100L, Contract.builder()
                 .student(etudiant)
                 .employer(employeur)
                 .internshipOffer(offre)
-                .contractStatus(StatutContrat.PENDING_SIGNATURE)
-                .build();
-        Contract c2 = Contract.builder()
-                .contractId(101L)
+                .contractStatus(StatutContrat.PENDING_SIGNATURE));
+        Contract c2 = contractWithId(101L, Contract.builder()
                 .student(etudiant)
                 .employer(employeur)
                 .internshipOffer(offre)
-                .contractStatus(StatutContrat.PENDING_SIGNATURE)
-                .build();
+                .contractStatus(StatutContrat.PENDING_SIGNATURE));
         when(contratRepository.findAllByOrderByDateCreationDesc()).thenReturn(List.of(c1, c2));
 
         List<ContratDTO> result = contratService.listerContrats();
@@ -656,8 +653,7 @@ class ContratServiceTest {
     @Test
     @DisplayName("getContrat() avec un id existant retourne le contrat")
     void getContrat_existant_retourneDTO() throws Exception {
-        Contract contract = Contract.builder()
-                .contractId(100L)
+        Contract contract = contractWithId(100L, Contract.builder()
                 .student(etudiant)
                 .employer(employeur)
                 .internshipOffer(offre)
@@ -667,8 +663,7 @@ class ContratServiceTest {
                 .endingDate(LocalDate.now().plusMonths(3))
                 .weeklyHours(35)
                 .hourlySalary(22.5)
-                .internshipLocation("123 rue Sherbrooke")
-                .build();
+                .internshipLocation("123 rue Sherbrooke"));
 
         when(contratRepository.findById(100L)).thenReturn(Optional.of(contract));
 
@@ -694,14 +689,18 @@ class ContratServiceTest {
 
 
     private Contract contrat(StatutContrat statut) {
-        return Contract.builder()
-                .contractId(100L)
+        return contractWithId(100L, Contract.builder()
                 .student(etudiant)
                 .employer(employeur)
                 .admin(gestionnaire)
                 .internshipOffer(offre)
-                .contractStatus(statut)
-                .build();
+                .contractStatus(statut));
+    }
+
+    private Contract contractWithId(long id, Contract.ContractBuilder builder) {
+        Contract contract = builder.build();
+        contract.setId(id);
+        return contract;
     }
 
     private void contratExiste(Contract contract) {
@@ -961,7 +960,7 @@ class ContratServiceTest {
         Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
         contratExiste(contract);
         when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.of(etudiant));
-        when(contratRepository.existsByStudentIdAndContractStatusInAndContractIdNot(eq(1L), any(), eq(100L)))
+        when(contratRepository.existsByStudentIdAndContractStatusInAndIdNot(eq(1L), any(), eq(100L)))
                 .thenReturn(true);
 
         ConflictException ex = assertThrows(ConflictException.class,
@@ -983,7 +982,7 @@ class ContratServiceTest {
         var ordre = inOrder(utilisateurRepository, contratRepository);
         ordre.verify(utilisateurRepository).lockEtudiantById(1L);
         ordre.verify(contratRepository)
-                .existsByStudentIdAndContractStatusInAndContractIdNot(eq(1L), any(), eq(100L));
+                .existsByStudentIdAndContractStatusInAndIdNot(eq(1L), any(), eq(100L));
     }
 
     @Test
@@ -1008,7 +1007,7 @@ class ContratServiceTest {
 
         verify(utilisateurRepository, never()).lockEtudiantById(any());
         verify(contratRepository, never())
-                .existsByStudentIdAndContractStatusInAndContractIdNot(any(), any(), any());
+                .existsByStudentIdAndContractStatusInAndIdNot(any(), any(), any());
     }
 
     @Test
@@ -1020,7 +1019,7 @@ class ContratServiceTest {
 
         verify(utilisateurRepository, never()).lockEtudiantById(any());
         verify(contratRepository, never())
-                .existsByStudentIdAndContractStatusInAndContractIdNot(any(), any(), any());
+                .existsByStudentIdAndContractStatusInAndIdNot(any(), any(), any());
     }
 
     @Test

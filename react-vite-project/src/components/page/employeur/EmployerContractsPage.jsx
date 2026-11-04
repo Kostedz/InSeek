@@ -95,7 +95,7 @@ function contractPosition(contract) {
 }
 
 function contractStartDate(contract) {
-    return contract?.startingDate ?? contract?.startDate ?? contract?.internshipStartingDate ?? contract?.dateDebutStage;
+    return contract?.startingDate ?? contract?.internshipStartingDate ?? contract?.startDate ?? contract?.internshipStartingDate ?? contract?.dateDebutStage;
 }
 
 function formatDate(value, language) {
@@ -220,7 +220,8 @@ export default function EmployerContractsPage({
     }, [user]);
 
     const allContracts = useMemo(() => {
-        const combined = [...getContractList(contracts), ...employerContracts, ...demoContracts];
+        const combined = [...getContractList(contracts), ...employerContracts, ...demoContracts]
+            .filter((contract) => !contractId(contract).toLowerCase().startsWith("demo-"));
         const unique = new Map();
         combined.forEach((contract, index) => unique.set(contractId(contract, index), contract));
         return [...unique.values()];
@@ -254,7 +255,6 @@ export default function EmployerContractsPage({
                 contractId(contract) === entry.id ? updatedContract : contract
             ));
         }
-
         setLocallySignedContracts((current) => ({...current, [entry.id]: true}));
         if (isDemoEmployer(user) && entry.id.startsWith("demo-")) {
             const updated = saveDemoContract({
@@ -265,7 +265,7 @@ export default function EmployerContractsPage({
             });
             setDemoContracts(updated);
         }
-        onContractSigned?.(entry.contract);
+        await onContractSigned?.(entry.contract);
     };
 
     useEffect(() => {
@@ -386,7 +386,6 @@ export default function EmployerContractsPage({
                                             <button type="button"
                                                     onClick={() => setSelectedContractId(isOpen ? null : id)}
                                                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
-                                                <ContractIcon name="file" className="h-4 w-4"/>
                                                 {isOpen ? t("employerContracts.closeContract") : state === "ready" ? t("employerContracts.viewAndSign") : t("employerContracts.viewContract")}
                                             </button>
                                         )}

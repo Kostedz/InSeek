@@ -12,11 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Contract {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long contractId;
+public class Contract extends Document {
 
     @ManyToOne()
     private Etudiant student;
@@ -39,6 +35,8 @@ public class Contract {
 
     private LocalDate endingDate;
 
+    private String schedule;
+
     private double weeklyHours;
 
     private Double hourlySalary;
@@ -48,6 +46,12 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private StatutContrat contractStatus = StatutContrat.PENDING_SIGNATURE;
+
+    private LocalDateTime studentSignedAt;
+
+    private LocalDateTime employerSignedAt;
+
+    private LocalDateTime managerSignedAt;
 
     private LocalDateTime dateCreation = LocalDateTime.now();
 

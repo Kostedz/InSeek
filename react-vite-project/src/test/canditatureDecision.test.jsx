@@ -20,6 +20,12 @@ vi.mock("react-i18next", () => ({
         i18n: {resolvedLanguage: "fr"},
     }),
 }));
+vi.mock("react-i18next", () => ({
+    useTranslation: () => ({
+        t: (key, fallback) => (typeof fallback === "string" ? fallback : key),
+        i18n: {resolvedLanguage: "fr"},
+    }),
+}));
 vi.mock("../utils/i18nMessage.js", () => ({
     translateMessage: (_t, message) => (typeof message === "string" ? message : message?.key ?? ""),
 }));
@@ -29,8 +35,15 @@ vi.mock("../components/PdfPreview.jsx", () => ({default: () => null}));
 vi.mock("../components/page/employeurOffresUtils.js", () => ({formatOfferTitle: (value) => value}));
 vi.mock("../components/employer/ScheduleInterviewModal.jsx", () => ({default: () => <div/>}));
 
-const OFFERS = [{id: 1, statut: "VALIDE", position: "Développeur web", fileName: "offre.pdf"}];
-const APPLICATION = {id: 10, studentId: 5, name: "Demo Étudiant", email: "demo.etudiant@inseek.local", status: "PENDING"};
+const OFFERS = [{id: 1, statut: "VALIDE", position: "Développeur web", fileName: "offre.pdf", applicationCount: 1}];
+const APPLICATION = {
+    id: 10,
+    studentId: 5,
+    name: "Demo Étudiant",
+    email: "demo.etudiant@inseek.local",
+    status: "PENDING",
+    interviewScheduled: true
+};
 
 const jsonResponse = (data, {ok = true, status = 200} = {}) => ({
     ok,
@@ -48,7 +61,7 @@ async function openApplicationDetails(user) {
 
 const acceptButton = () => screen.queryByRole("button", {name: "Accepter"});
 const rejectButton = () => screen.queryByRole("button", {name: "Refuser"});
-const interviewButton = () => screen.getByRole("button", {name: "Planifier une entrevue"});
+const interviewButton = () => screen.getByRole("button", {name: "Entrevue déjà planifiée"});
 
 // ---- Tests ----
 describe("Employeur - accepter ou refuser une candidature", () => {

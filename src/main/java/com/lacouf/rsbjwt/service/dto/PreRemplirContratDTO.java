@@ -15,6 +15,7 @@ public record PreRemplirContratDTO(
         String assignedTeacherName,
         LocalDate internshipStartDate,
         LocalDate internshipEndDate,
+        String schedule,
         double weeklyHours,
         Double hourlySalary,
         String location

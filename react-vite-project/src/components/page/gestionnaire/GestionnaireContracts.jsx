@@ -1,6 +1,7 @@
 import {useEffect, useState, useMemo} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
+import PdfPreview from "../../PdfPreview.jsx";
 import {notifyManagerContractsChanged} from "../../../utils/tabCounts.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import ContractSignaturePage from "../ContractSignaturePage.jsx";

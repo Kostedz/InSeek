@@ -72,6 +72,30 @@ export const api = {
             headers: {Accept: "application/json"},
         }),
 
+        getContract: () => fetcher("/contracts/student/me", {
+            headers: {Accept: "application/json"},
+        }),
+
+        getContractPdf: (contractId) => fetcher(`/contracts/${encodeURIComponent(contractId)}/pdf`, {
+            headers: {Accept: "application/pdf"},
+        }),
+
+        signContract: (contractId) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+            method: "PATCH",
+            headers: {Accept: "application/json"},
+        }),
+
+        getDemoContractPdf: (signatureDates = {}) => {
+            const params = new URLSearchParams();
+            if (signatureDates.studentSignedAt) params.set("studentSignedAt", signatureDates.studentSignedAt);
+            if (signatureDates.employerSignedAt) params.set("employerSignedAt", signatureDates.employerSignedAt);
+            if (signatureDates.managerSignedAt) params.set("managerSignedAt", signatureDates.managerSignedAt);
+            const query = params.toString();
+            return fetcher(`/contracts/dev/demo-pdf${query ? `?${query}` : ""}`, {
+                headers: {Accept: "application/pdf"},
+            });
+        },
+
         uploadCv: (file, documentType = "CV") => {
         const formData = new FormData();
             formData.append("file", file);
@@ -122,12 +146,6 @@ export const api = {
         getContracts: () =>
             fetcher("/contracts/student", {
                 cache: "no-store",
-                headers: {Accept: "application/json"},
-            }),
-
-        signContract: (contractId) =>
-            fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
-                method: "PATCH",
                 headers: {Accept: "application/json"},
             }),
     },
@@ -265,11 +283,10 @@ export const api = {
                 headers: { Accept: "application/json" },
             }),
 
-        signContract: (contractId) =>
-            fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
-                method: "PATCH",
-                headers: {Accept: "application/json"},
-            }),
+        signContract: (contractId) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+            method: "PATCH",
+            headers: {Accept: "application/json"},
+        }),
     },
 
     professor: {

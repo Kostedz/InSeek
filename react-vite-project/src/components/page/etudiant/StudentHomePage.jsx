@@ -32,8 +32,8 @@ export default function StudentHomePage({user}) {
             description: t("studentInterviews.allDescription"),
         },
         contract: {
-            title: t("studentContract.title", "Mon contrat de stage"),
-            description: t("studentContract.description", "Consultez les modalités de votre stage et signez votre entente électroniquement."),
+            title: t("studentContract.title"),
+            description: t("studentContract.description"),
         },
     }[activeTab];
 
@@ -45,32 +45,19 @@ export default function StudentHomePage({user}) {
                         className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
                         {t("studentOffers.studentArea")}
                     </span>
-                    <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">
-                        {pageCopy.title}
-                    </h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">
-                        {pageCopy.description}
-                    </p>
+                    <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{pageCopy.title}</h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{pageCopy.description}</p>
                 </header>
 
                 <StudentCvAccess user={user}>
                     {({cv}) => (
                         <>
                             <StudentMenu user={user}/>
-
                             <div key={activeTab}>
-                                {activeTab === "offers" && (
-                                    <EtudiantAccueil user={user} cvData={cv}/>
-                                )}
-                                {activeTab === "applications" && (
-                                    <EtudiantCandidatures/>
-                                )}
-                                {activeTab === "interviews" && (
-                                    <StudentConvocation user={user} page/>
-                                )}
-                                {activeTab === "contract" && (
-                                    <StudentContractsPage user={user}/>
-                                )}
+                                {activeTab === "offers" && <EtudiantAccueil user={user} cvData={cv}/>}
+                                {activeTab === "applications" && <EtudiantCandidatures/>}
+                                {activeTab === "interviews" && <StudentConvocation user={user} page/>}
+                                {activeTab === "contract" && <StudentContractsPage user={user}/>}
                             </div>
                         </>
                     )}

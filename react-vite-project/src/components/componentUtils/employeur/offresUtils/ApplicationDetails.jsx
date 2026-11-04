@@ -239,6 +239,15 @@ export default function ApplicationDetails({
                                     {t("employerOffers.applications.reject", "Refuser")}
                                 </button>
                             )}
+                            {isPending && isInterviewScheduled && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenDecisionModal("ACCEPTED")}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/50"
+                                >
+                                    {t("employerOffers.applications.accept", "Accepter")}
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 disabled={!isPending || isInterviewScheduled}
@@ -326,7 +335,7 @@ export default function ApplicationDetails({
                                 disabled={isSubmitting}
                                 onClick={handleSubmitDecision}
                                 className={`rounded-xl px-4 py-2 text-sm font-bold text-white transition-colors ${
-                                    decisionType === "ACCEPTED" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
+                                    decisionType === "ACCEPTED" ? "bg-ink hover:bg-ink-soft" : "bg-rose-600 hover:bg-rose-700"
                                 } disabled:opacity-50`}
                             >
                                 {isSubmitting ? t("common.saving", "Traitement...") : t("common.confirm", "Confirmer")}

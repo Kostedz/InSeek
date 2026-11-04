@@ -7,6 +7,7 @@ public record CreateContratDTO(
         Long offerId,
         LocalDate internshipStartingDate,
         LocalDate internshipEndingDate,
+        String schedule,
         double weeklyHours,
         Double hourlySalary,
         String internshipLocation

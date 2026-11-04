@@ -23,6 +23,28 @@ function contractId(contract) {
     return String(contract?.contractId ?? contract?.id ?? "");
 }
 
+function contractIdentity(contract) {
+    const value = (input) => String(input ?? "").trim().toLocaleLowerCase("fr-CA");
+    const offer = contract?.offerTitle ?? contract?.internshipOffer?.position;
+    const company = contract?.companyName
+        ?? contract?.employee?.nomCompagnie
+        ?? contract?.internshipOffer?.nomEntreprise;
+    return offer && company ? `${value(company)}::${value(offer)}` : "";
+}
+
+function removeShadowedDemoContracts(contracts) {
+    const persistedIdentities = new Set(contracts
+        .filter((contract) => !contractId(contract).toLowerCase().startsWith("demo-"))
+        .map(contractIdentity)
+        .filter(Boolean));
+
+    return contracts.filter((contract) => {
+        const id = contractId(contract).toLowerCase();
+        const identity = contractIdentity(contract);
+        return !id.startsWith("demo-") || !identity || !persistedIdentities.has(identity);
+    });
+}
+
 function splitName(value) {
     const [firstName = "", ...lastName] = String(value ?? "").trim().split(/\s+/);
     return {prenom: firstName, nom: lastName.join(" ")};
@@ -76,7 +98,7 @@ export default function StudentContractsPage({user}) {
                 if (!response.ok) throw new Error("contract_load_failed");
                 const payload = response.status === 204 ? [] : await response.json();
                 const list = Array.isArray(payload) ? payload : payload.items ?? payload.content ?? [];
-                if (active) setContracts(list);
+                if (active) setContracts(removeShadowedDemoContracts(list));
             } catch {
                 if (active) setError(true);
             } finally {

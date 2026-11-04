@@ -22,11 +22,15 @@ public record ContratDTO(
         String assignedTeacherName,
         LocalDate internshipStartingDate,
         LocalDate internshipEndingDate,
+        String schedule,
         double weeklyHours,
         Double hourlySalary,
         String internshipLocation,
         StatutContrat contractStatus,
-        LocalDateTime contractDateCreation
+        LocalDateTime contractDateCreation,
+        LocalDateTime studentSignedAt,
+        LocalDateTime employerSignedAt,
+        LocalDateTime managerSignedAt
 ) {
     public static ContratDTO of(Contract contract) {
         String studentFullName = contract.getStudent() != null ? contract.getStudent().getPrenom() + " " +
@@ -40,7 +44,7 @@ public record ContratDTO(
         String managerName = contract.getAdmin() != null
                 ? contract.getAdmin().getPrenom() + " " + contract.getAdmin().getNom() : null;
         return ContratDTO.builder()
-                .id(contract.getContractId())
+                .id(contract.getId())
                 .studentFullName(studentFullName)
                 .studentEmail(contract.getStudent().getEmail())
                 .fieldOfStudy(discipline)
@@ -53,11 +57,15 @@ public record ContratDTO(
                 .assignedTeacherName(teacherName)
                 .internshipStartingDate(contract.getStartingDate())
                 .internshipEndingDate(contract.getEndingDate())
+                .schedule(contract.getSchedule())
                 .weeklyHours(contract.getWeeklyHours())
                 .hourlySalary(contract.getHourlySalary())
                 .internshipLocation(contract.getInternshipLocation())
                 .contractStatus(contract.getContractStatus())
                 .contractDateCreation(contract.getDateCreation())
+                .studentSignedAt(contract.getStudentSignedAt())
+                .employerSignedAt(contract.getEmployerSignedAt())
+                .managerSignedAt(contract.getManagerSignedAt())
                 .build();
     }
 }
