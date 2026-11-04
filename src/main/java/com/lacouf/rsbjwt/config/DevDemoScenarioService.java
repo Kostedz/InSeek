@@ -1,17 +1,14 @@
 package com.lacouf.rsbjwt.config;
 
 import com.lacouf.rsbjwt.model.CV;
-import com.lacouf.rsbjwt.model.Contract;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.Entrevue;
 import com.lacouf.rsbjwt.model.Employeur;
 import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Gestionnaire;
 import com.lacouf.rsbjwt.model.ModeEntrevue;
 import com.lacouf.rsbjwt.model.OffreDeStage;
 import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
 import com.lacouf.rsbjwt.model.StatutValidation;
-import com.lacouf.rsbjwt.model.StatutContrat;
 import com.lacouf.rsbjwt.model.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.ApplicationStage;
@@ -171,7 +168,7 @@ public class DevDemoScenarioService {
         prepareValidatedCv(etudiant);
         List<OffreDeStage> offers = prepareValidatedOffers(employeur);
         prepareDemoApplications(etudiant, offers);
-        prepareDemoContract(etudiant, employeur, offers);
+        prepareAcceptedStudentWithoutContract(etudiant, offers);
         prepareDemoInterviews(etudiant, employeur, offers);
     }
 
@@ -298,41 +295,23 @@ public class DevDemoScenarioService {
         utilisateurRepository.save(student);
     }
 
-    private void prepareDemoContract(Etudiant student, Employeur employer, List<OffreDeStage> offers) {
+    private void prepareAcceptedStudentWithoutContract(Etudiant student, List<OffreDeStage> offers) {
         OffreDeStage offer = offers.stream()
                 .filter(candidate -> candidate.getTargetDiscipline() == student.getDiscipline())
                 .skip(1)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("L'offre démo acceptée est introuvable."));
+
         ApplicationStage acceptedApplication = applicationStageRepository
                 .findByEtudiantIdAndOffreDeStageId(student.getId(), offer.getId())
                 .orElseThrow(() -> new IllegalStateException("La candidature démo acceptée est introuvable."));
+
         if (acceptedApplication.getStatutValidation() != StatutValidation.ACCEPTE) {
-            throw new IllegalStateException("La candidature démo doit être acceptée pour créer un contrat.");
-        }
-        Utilisateur managerUser = utilisateurRepository.findByEmail(
-                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.GESTIONNAIRE).email());
-        if (!(managerUser instanceof Gestionnaire manager)) {
-            throw new IllegalStateException("Le compte gestionnaire de démonstration est introuvable.");
+            throw new IllegalStateException("La candidature démo doit être acceptée.");
         }
 
-        Contract contract = contratRepository.findByStudentIdAndInternshipOfferId(student.getId(), offer.getId())
-                .orElseGet(Contract::new);
-        contract.setStudent(student);
-        contract.setEmployer(employer);
-        contract.setInternshipOffer(offer);
-        contract.setAdmin(manager);
-        contract.setTeacher(null);
-        contract.setSupervisorName(offer.getContactName());
-        contract.setStartingDate(offer.getDateDebutStage());
-        contract.setEndingDate(offer.getDateFinStage());
-        contract.setSchedule("9:00 - 17:00");
-        contract.setWeeklyHours(35);
-        contract.setHourlySalary(offer.getSalaire());
-        contract.setInternshipLocation(offer.getAdresseEntreprise());
-        contract.setContractStatus(StatutContrat.PENDING_SIGNATURE);
-        contract.setDateCreation(LocalDateTime.now());
-        contratRepository.save(contract);
+        contratRepository.findByStudentIdAndInternshipOfferId(student.getId(), offer.getId())
+                .ifPresent(contratRepository::delete);
     }
 
     private void prepareDemoInterviews(Etudiant student, Employeur employer, List<OffreDeStage> offers) {
