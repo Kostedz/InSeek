@@ -194,21 +194,6 @@ export default function ContractSignaturePage({
                             {t("studentContract.noContract")}
                         </p>
                     )}
-
-                    <div className="mt-5 border-t border-line pt-4">
-                        <h2 className="text-sm font-black text-ink">{t("contractSignature.signaturesTitle")}</h2>
-                        {[
-                            [t("contractSignature.studentSigner"), studentName, studentSigned, contract?.studentSignedAt],
-                            [t("contractSignature.employerSigner"), employerName, employerSigned, contract?.employerSignedAt],
-                            [t("contractSignature.managerSigner"), managerName, managerSigned, contract?.managerSignedAt],
-                        ].map(([label, name, signed, signedAt]) => (
-                            <p key={label} className="mt-2 text-xs text-ink-soft">
-                                <strong className="text-ink">{label}:</strong> {name || "—"} · {signed
-                                ? `${t("contractSignature.signatureRecorded")}${signedAt ? ` (${String(signedAt).replace("T", " ").slice(0, 16)})` : ""}`
-                                : t("contractSignature.signaturePending")}
-                            </p>
-                        ))}
-                    </div>
                 </article>
 
                 <aside className="lg:sticky lg:top-6">
