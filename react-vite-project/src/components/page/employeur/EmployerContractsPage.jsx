@@ -386,7 +386,6 @@ export default function EmployerContractsPage({
                                             <button type="button"
                                                     onClick={() => setSelectedContractId(isOpen ? null : id)}
                                                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-black text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-4 focus:ring-pink/40">
-                                                <ContractIcon name="file" className="h-4 w-4"/>
                                                 {isOpen ? t("employerContracts.closeContract") : state === "ready" ? t("employerContracts.viewAndSign") : t("employerContracts.viewContract")}
                                             </button>
                                         )}
