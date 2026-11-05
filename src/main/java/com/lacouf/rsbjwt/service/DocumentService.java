@@ -35,7 +35,7 @@ public class DocumentService {
     private final ApplicationStageRepository applicationStageRepository;
     private final UtilisateurService utilisateurService;
     private final JwtTokenProvider jwtTokenProvider;
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
 
     @Transactional
@@ -131,10 +131,6 @@ public class DocumentService {
         }
 
         return new DocumentFile(document.getData(), document.getContentType());
-    }
-
-    void setObjectMapper(ObjectMapper objectMapper) {
-        this.objectMapper  = objectMapper;
     }
 
     public record DocumentFile(byte[] data, String contentType) {

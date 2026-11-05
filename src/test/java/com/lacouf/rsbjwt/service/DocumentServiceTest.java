@@ -52,8 +52,6 @@ public class DocumentServiceTest {
 
     @BeforeEach
     public void setUp() {
-        documentService.setObjectMapper(new ObjectMapper());
-
         fileCV = new MockMultipartFile(
                 "file",
                 "cv.pdf",
