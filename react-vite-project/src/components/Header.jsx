@@ -18,8 +18,7 @@ function Header({user}) {
     const lastName = user?.lastName ?? user?.nom ?? "";
     const displayName = [firstName, lastName].filter(Boolean).join(" ");
     const isLoggedIn = Boolean(user?.isLoggedIn);
-    const isDevAccess = Boolean(user?.isDevAccess);
-    const canAccessRole = (requiredRole) => isLoggedIn && (isDevAccess || role === requiredRole);
+    const canAccessRole = (requiredRole) => isLoggedIn && role === requiredRole;
 
     const navLinkClass = ({isActive}) => [
         "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors md:w-auto md:px-3",

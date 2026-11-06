@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,34 +20,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Profile("dev")
 @RestController
-@RequestMapping("/user/dev")
+@RequestMapping("/user/demo")
 @RequiredArgsConstructor
 public class DevAuthController {
     private final UtilisateurService utilisateurService;
     private final DevDemoScenarioService demoScenarioService;
 
-    @Value("${app.dev.email:dev@inseek.local}")
-    private String email;
-
-    @Value("${app.dev.password:DevInSeek!2026}")
-    private String password;
-
     @PostMapping("/login")
-    public ResponseEntity<JWTAuthResponse> login(@RequestParam(required = false) String role) {
+    public ResponseEntity<JWTAuthResponse> demoLogin(@RequestParam String role) {
         try {
-            if (role != null && !role.isBlank()) {
-                Role demoRole = Role.valueOf(role.replaceFirst("^ROLE_", "").toUpperCase());
-                DevDemoAccounts.Account demoAccount = DevDemoAccounts.forRole(demoRole);
-                if (demoAccount == null) {
-                    return ResponseEntity.badRequest().build();
-                }
-                return ResponseEntity.ok(new JWTAuthResponse(
-                        utilisateurService.login(new LoginDTO(demoAccount.email(), demoAccount.password()))
-                ));
+            Role demoRole = Role.valueOf(role.replaceFirst("^ROLE_", "").toUpperCase());
+            DevDemoAccounts.Account demoAccount = DevDemoAccounts.forRole(demoRole);
+            if (demoAccount == null) {
+                return ResponseEntity.badRequest().build();
             }
-
             return ResponseEntity.ok(new JWTAuthResponse(
-                    utilisateurService.login(new LoginDTO(email, password))
+                    utilisateurService.login(new LoginDTO(demoAccount.email(), demoAccount.password()))
             ));
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -62,6 +49,21 @@ public class DevAuthController {
         try {
             demoScenarioService.prepareStudentScenario();
             DevDemoAccounts.Account student = DevDemoAccounts.forRole(Role.ETUDIANT);
+            return ResponseEntity.ok(new JWTAuthResponse(
+                    utilisateurService.login(new LoginDTO(student.email(), student.password()))
+            ));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (BadRequestException | NotFoundException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @PostMapping("/student-contract-demo")
+    public ResponseEntity<JWTAuthResponse> prepareSignedContractStudentDemo() {
+        try {
+            demoScenarioService.prepareSignedContractStudentScenario();
+            DevDemoAccounts.Account student = DevDemoAccounts.signedContractStudent();
             return ResponseEntity.ok(new JWTAuthResponse(
                     utilisateurService.login(new LoginDTO(student.email(), student.password()))
             ));

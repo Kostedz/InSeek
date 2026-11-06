@@ -33,15 +33,22 @@ export const api = {
                 body: JSON.stringify(credentials),
             }),
 
-        devLogin: (role) =>
-            fetcher(role ? `/user/dev/login?role=${encodeURIComponent(role)}` : "/user/dev/login", {
+        demoLogin: (role) =>
+            fetcher(`/user/demo/login?role=${encodeURIComponent(role)}`, {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
             }),
 
         prepareStudentDemo: () =>
-            fetcher("/user/dev/student-demo", {
+            fetcher("/user/demo/student-demo", {
+                skipAuth: true,
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
+        prepareStudentContractDemo: () =>
+            fetcher("/user/demo/student-contract-demo", {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
