@@ -78,10 +78,11 @@ export default function ContractSignaturePage({
                                                   readOnlyMessage,
                                               }) {
     const {t} = useTranslation();
-    const [hasSignature, setHasSignature] = useState(false);
     const [isSigning, setIsSigning] = useState(false);
     const [isLocallySigned, setIsLocallySigned] = useState(false);
     const [signatureError, setSignatureError] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [pdfRevision, setPdfRevision] = useState(0);
 
     const signerIsEmployer = signer === "employer";
@@ -113,16 +114,19 @@ export default function ContractSignaturePage({
 
     const submitSignature = async (event) => {
         event.preventDefault();
-        if (isSigned || isSigning || !hasSignature) return;
+        if (isSigned || isSigning || !password) return;
         setIsSigning(true);
         setSignatureError("");
         try {
-            await onSigned?.(contract);
+            await onSigned?.(contract, password);
             setIsLocallySigned(true);
+            setPassword("");
             setPdfRevision((revision) => revision + 1);
         } catch (error) {
             const key = error?.message === "signature_unauthorized"
                 ? "contractSignature.reauthenticate"
+                : error?.message === "signature_password_invalid"
+                    ? "contractSignature.invalidPassword"
                 : error?.message === "signature_forbidden"
                     ? "contractSignature.signatureForbidden"
                     : "contractSignature.signingError";
@@ -226,21 +230,49 @@ export default function ContractSignaturePage({
                                 <p className="text-xs font-black text-ink">{t("contractSignature.secure")}</p>
                                 <p className="mt-0.5 text-[11px] leading-5 text-ink-soft">{t("contractSignature.secureText")}</p>
                             </div>
+                            <div
+                                className="relative mt-4 h-32 overflow-hidden rounded-xl border-2 border-line bg-canvas">
+                                <span className="absolute bottom-7 left-5 text-3xl italic text-ink"
+                                      style={{fontFamily: "'Brush Script MT', 'Segoe Script', 'URW Chancery L', cursive"}}>{signerName}</span>
+                                <span
+                                    className="pointer-events-none absolute bottom-4 left-5 right-5 border-b border-ink/30"/>
+                            </div>
+                            <label className="mt-4 block">
+                                <span
+                                    className="mb-1.5 block text-xs font-bold text-ink">{t("contractSignature.passwordLabel")}</span>
+                                <span className="relative block">
+                                    <input type={showPassword ? "text" : "password"} autoComplete="current-password"
+                                           required value={password}
+                                           onChange={(event) => setPassword(event.target.value)}
+                                           placeholder={t("contractSignature.passwordPlaceholder")}
+                                           disabled={isSigning}
+                                           className="w-full rounded-xl border border-line bg-canvas py-2.5 pl-3 pr-11 text-sm text-ink outline-none focus:border-lavender disabled:opacity-60"/>
+                                    <button type="button" onClick={() => setShowPassword((visible) => !visible)}
+                                            disabled={isSigning}
+                                            aria-label={t(showPassword ? "contractSignature.hidePassword" : "contractSignature.showPassword")}
+                                            aria-pressed={showPassword}
+                                            className="absolute inset-y-0 right-0 inline-flex w-10 items-center justify-center text-ink-soft hover:text-ink disabled:opacity-60">
+                                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                             strokeWidth="1.8" className="h-5 w-5">
+                                            {showPassword ? <>
+                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                      d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8"/>
+                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                      d="M9.9 5.2A10.8 10.8 0 0112 5c5 0 8.7 4.2 9.5 6.1a2.2 2.2 0 010 1.8 11.8 11.8 0 01-3.1 4.1M6.2 6.2a12 12 0 00-3.7 4.9 2.2 2.2 0 000 1.8A10.8 10.8 0 0012 19a10.4 10.4 0 003-.4"/>
+                                            </> : <>
+                                                <path strokeLinecap="round" strokeLinejoin="round"
+                                                      d="M2.5 12s3.4-7 9.5-7 9.5 7 9.5 7-3.4 7-9.5 7-9.5-7-9.5-7z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </>}
+                                        </svg>
+                                    </button>
+                                </span>
+                            </label>
                             {signatureError &&
                                 <p className="mt-3 rounded-xl border border-error bg-blush/30 px-3 py-2 text-xs font-semibold text-error"
                                    role="alert">{signatureError}</p>}
-                            <div
-                                className="relative mt-4 h-32 overflow-hidden rounded-xl border-2 border-line bg-canvas">
-                                {hasSignature && <span className="absolute bottom-7 left-5 text-3xl italic text-ink"
-                                                       style={{fontFamily: "'Brush Script MT', 'Segoe Script', 'URW Chancery L', cursive"}}>{signerName}</span>}
-                                <span
-                                    className="pointer-events-none absolute bottom-4 left-5 right-5 border-b border-ink/30"/>
-                                {!hasSignature && <button type="button" onClick={() => setHasSignature(true)}
-                                                          className="absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded-lg border border-ink/15 bg-surface/95 px-3 py-1.5 text-xs font-black text-ink shadow-sm hover:bg-pink"
-                                                          disabled={isSigning}>{t("contractSignature.signWithName")}</button>}
-                            </div>
-                            <button type="submit" disabled={!hasSignature || isSigning}
-                                    className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition-colors ${hasSignature && !isSigning ? "bg-ink text-white hover:bg-ink-soft" : "cursor-not-allowed bg-line text-ink-soft"}`}>
+                            <button type="submit" disabled={!password || isSigning}
+                                    className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition-colors ${password && !isSigning ? "bg-ink text-white hover:bg-ink-soft" : "cursor-not-allowed bg-line text-ink-soft"}`}>
                                 {isSigning ? t("contractSignature.signing") : t("contractSignature.confirmSignature")}
                             </button>
                         </form>

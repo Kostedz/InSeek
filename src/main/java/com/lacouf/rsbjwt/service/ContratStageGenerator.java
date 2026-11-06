@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceGray;
@@ -18,6 +19,7 @@ import com.itextpdf.layout.element.List;
 import com.itextpdf.layout.element.ListItem;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.element.Text;
 import com.itextpdf.layout.properties.AreaBreakType;
 import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
@@ -26,22 +28,19 @@ import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.temporal.ChronoUnit;
 
-/**
- * Builds the three-page French internship agreement PDF.
- */
+
 @Component
 public class ContratStageGenerator {
 
     private static final float TABLE_WIDTH = 430f;
     private static final Color HEADER_GRAY = new DeviceGray(0.88f);
 
-    /**
-     * Values printed in the agreement. Missing values are displayed as empty text.
-     */
+
     public static class ContratData {
         public String anneeContrat = Integer.toString(Year.now().getValue());
         public String referenceContrat = "0";
@@ -56,9 +55,6 @@ public class ContratStageGenerator {
         public String heuresSemaine = "0h";
         public String tauxHoraire = "0$/h";
         public String offreDescription = "Description de l'offre de stage.";
-        public String signatureEtudiant = "Signature de l'étudiant(e)";
-        public String signatureEmployeur = "Signature de l'employeur";
-        public String signatureGestionnaire = "Signature du gestionnaire";
         public String dateSignatureEtudiant = "";
         public String dateSignatureEmployeur = "";
         public String dateSignatureGestionnaire = "";
@@ -69,6 +65,7 @@ public class ContratStageGenerator {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         PdfFont regular = PdfFontFactory.createFont(StandardFonts.HELVETICA);
         PdfFont bold = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
+        PdfFont signature = createSignatureFont();
 
         try (PdfDocument pdf = new PdfDocument(new PdfWriter(output));
              Document doc = new Document(pdf, PageSize.LETTER)) {
@@ -79,7 +76,7 @@ public class ContratStageGenerator {
             doc.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
             addPage2(doc, d, regular, bold);
             doc.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
-            addPage3(doc, d, regular, bold);
+            addPage3(doc, d, regular, bold, signature);
         }
         return output.toByteArray();
     }
@@ -128,7 +125,7 @@ public class ContratStageGenerator {
         doc.add(table);
     }
 
-    private void addPage3(Document doc, ContratData d, PdfFont regular, PdfFont bold) {
+    private void addPage3(Document doc, ContratData d, PdfFont regular, PdfFont bold, PdfFont signature) {
         doc.add(new Paragraph("TÂCHES ET RESPONSABILITÉS DU STAGIAIRE")
                 .setFont(bold).setFontSize(11).setMarginBottom(2));
 
@@ -172,12 +169,12 @@ public class ContratStageGenerator {
         doc.add(new Paragraph("En foi de quoi les parties ont signé,")
                 .setFont(bold).setFontSize(11).setMarginBottom(4));
 
-        signatureBlock(doc, "L’étudiant(e) :", d.signatureEtudiant, d.nomEtudiant,
-                d.dateSignatureEtudiant, regular, bold);
-        signatureBlock(doc, "L’employeur :", d.signatureEmployeur, d.nomEmployeur,
-                d.dateSignatureEmployeur, regular, bold);
-        signatureBlock(doc, "Le gestionnaire de stage :", d.signatureGestionnaire, d.nomGestionnaire,
-                d.dateSignatureGestionnaire, regular, bold);
+        signatureBlock(doc, "L’étudiant(e) :", d.nomEtudiant,
+                d.dateSignatureEtudiant, regular, bold, signature);
+        signatureBlock(doc, "L’employeur :", d.nomEmployeur,
+                d.dateSignatureEmployeur, regular, bold, signature);
+        signatureBlock(doc, "Le gestionnaire de stage :", d.nomGestionnaire,
+                d.dateSignatureGestionnaire, regular, bold, signature);
     }
 
     private Paragraph centered(String text, boolean isBold, float size, PdfFont regular, PdfFont bold) {
@@ -212,12 +209,21 @@ public class ContratStageGenerator {
         return list;
     }
 
-    private void signatureBlock(Document doc, String label, String signatureText, String name, String signedAt,
-                                PdfFont regular, PdfFont bold) {
-        doc.add(new Paragraph(label).setFont(bold).setFontSize(11).setMarginTop(5).setMarginBottom(8));
-        doc.add(new Paragraph(value(signatureText)).setFont(regular).setFontSize(10).setMarginBottom(2));
-        Table table = new Table(UnitValue.createPercentArray(new float[]{45, 55})).useAllAvailableWidth();
-        table.addCell(new Cell().add(new Paragraph(value(name)).setFont(regular).setFontSize(10))
+    private void signatureBlock(Document doc, String label, String name, String signedAt,
+                                PdfFont regular, PdfFont bold, PdfFont signatureFont) {
+        doc.add(new Paragraph(label).setFont(bold).setFontSize(11)
+                .setMarginTop(5).setMarginBottom(8));
+
+        Table table = new Table(UnitValue.createPercentArray(new float[]{60, 40})).useAllAvailableWidth();
+        Paragraph signatureLine;
+        if (signedAt == null || signedAt.isBlank()) {
+            signatureLine = new Paragraph("Signature : __________________").setFont(regular).setFontSize(10);
+        } else {
+            signatureLine = new Paragraph()
+                    .add(new Text("Signature : ").setFont(regular).setFontSize(10))
+                    .add(new Text(value(name)).setFont(signatureFont).setFontSize(16));
+        }
+        table.addCell(new Cell().add(signatureLine)
                 .setBorder(Border.NO_BORDER).setBorderTop(new SolidBorder(ColorConstants.BLACK, 0.75f))
                 .setPaddingLeft(0));
         table.addCell(new Cell().add(new Paragraph(signedAt == null || signedAt.isBlank()
@@ -225,6 +231,15 @@ public class ContratStageGenerator {
                         .setFont(regular).setFontSize(10))
                 .setBorder(Border.NO_BORDER).setBorderTop(new SolidBorder(ColorConstants.BLACK, 0.75f)));
         doc.add(table);
+    }
+
+    private PdfFont createSignatureFont() throws IOException {
+        try (InputStream fontStream = getClass().getResourceAsStream("/fonts/Signature-Chancery.otf")) {
+            if (fontStream == null) {
+                throw new IOException("Signature font resource is missing.");
+            }
+            return PdfFontFactory.createFont(fontStream.readAllBytes(), PdfEncodings.IDENTITY_H);
+        }
     }
 
     public static String weeksBetween(LocalDate start, LocalDate end) {

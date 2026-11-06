@@ -16,6 +16,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,6 +35,7 @@ public class ContratService {
     private final ApplicationStageRepository applicationStageRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final ContratStageGenerator contratStageGenerator;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<EtudiantEligibleContratDTO> getEtudiantsEligibles() {
@@ -161,13 +164,22 @@ public class ContratService {
         data.tauxHoraire = contract.getHourlySalary() == null ? "" : contract.getHourlySalary() + " $/h";
         data.offreDescription = contract.getInternshipOffer() == null
                 ? "" : contract.getInternshipOffer().getDescriptionPosition();
-        data.signatureEtudiant = signatureLabel("l’étudiant(e)", contract.getStudentSignedAt(), contract.getStudent());
-        data.signatureEmployeur = signatureLabel("l’employeur", contract.getEmployerSignedAt(), contract.getEmployer());
-        data.signatureGestionnaire = signatureLabel("le gestionnaire", contract.getManagerSignedAt(), contract.getAdmin());
         data.dateSignatureEtudiant = formatSignatureDate(contract.getStudentSignedAt());
         data.dateSignatureEmployeur = formatSignatureDate(contract.getEmployerSignedAt());
         data.dateSignatureGestionnaire = formatSignatureDate(contract.getManagerSignedAt());
         return contratStageGenerator.generate(data);
+    }
+
+    @Transactional
+    public ContratDTO signContract(Long contractId, HttpServletRequest request, String password)
+            throws NotFoundException, BadRequestException, ConflictException {
+        Utilisateur user = getAuthUser(request);
+        if (user == null || password == null || password.isBlank()
+                || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new com.lacouf.rsbjwt.security.exception.AuthenticationException(
+                    HttpStatus.UNPROCESSABLE_ENTITY, "Le mot de passe est invalide.");
+        }
+        return signContract(contractId, request);
     }
 
     @Transactional
@@ -232,13 +244,6 @@ public class ContratService {
             return valueIfMissing;
         }
         return (user.getPrenom() + " " + user.getNom()).trim();
-    }
-
-    private String signatureLabel(String party, LocalDateTime signedAt, Utilisateur signer) {
-        if (signedAt == null) {
-            return "Signature de " + party;
-        }
-        return "Signé électroniquement par " + fullName(signer, party);
     }
 
     private String formatSignatureDate(LocalDateTime signedAt) {

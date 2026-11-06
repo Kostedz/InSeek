@@ -246,9 +246,12 @@ export default function EmployerContractsPage({
         declined: 0,
     });
 
-    const markContractSigned = async (entry) => {
+    const markContractSigned = async (entry, password) => {
         if (!entry.id.startsWith("demo-")) {
-            const response = await api.employer.signContract(entry.id);
+            const response = await api.employer.signContract(entry.id, password);
+            if (response.status === 422) throw new Error("signature_password_invalid");
+            if (response.status === 401) throw new Error("signature_unauthorized");
+            if (response.status === 403) throw new Error("signature_forbidden");
             if (!response.ok) throw new Error("employer_contract_sign_failed");
             const updatedContract = await response.json();
             setEmployerContracts((current) => current.map((contract) =>
@@ -437,7 +440,7 @@ export default function EmployerContractsPage({
                                         employerSigned: signableContract.employerSigned
                                     }}
                                     signer="employer"
-                                    onSigned={() => markContractSigned(signableContract)}
+                                    onSigned={(_, password) => markContractSigned(signableContract, password)}
                                 />
                             </div>
                         </section>

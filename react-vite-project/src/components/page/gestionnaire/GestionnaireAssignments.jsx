@@ -16,7 +16,6 @@ export default function GestionnaireAssignments() {
     const [savingId, setSavingId] = useState(null);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
-    const [pendingAssignment, setPendingAssignment] = useState(null);
 
     const load = async () => {
         setLoading(true);
@@ -59,14 +58,11 @@ export default function GestionnaireAssignments() {
         const professor = professors.find((item) => String(item.id) === String(professorId));
         setError("");
         setNotice("");
-        setPendingAssignment({student, professor, professorId});
+        saveAssignment(student, professor, professorId);
     };
 
-    const confirmAssignment = async () => {
-        if (!pendingAssignment) return;
-        const {student, professor, professorId} = pendingAssignment;
+    const saveAssignment = async (student, professor, professorId) => {
         const studentName = fullName(student) || student.email;
-        setPendingAssignment(null);
         setSavingId(student.id);
         try {
             const response = await api.gestionnaire.assignProfessor(student.id, Number(professorId));
@@ -186,37 +182,6 @@ export default function GestionnaireAssignments() {
                         </>
                     )}
             </div>
-            {pendingAssignment &&
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/60 px-4 py-8"
-                     onMouseDown={(event) => {
-                         if (event.target === event.currentTarget) setPendingAssignment(null);
-                     }}>
-                    <section role="dialog" aria-modal="true" aria-labelledby="assignment-confirm-title"
-                             aria-describedby="assignment-confirm-description"
-                             className="w-full max-w-lg rounded-[1.75rem] border border-line bg-surface p-6 shadow-[0_24px_80px_rgba(48,35,55,0.28)] sm:p-8">
-                        <span
-                            className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">{t("professorAssignment.confirmEyebrow", "Confirmation")}</span>
-                        <h2 id="assignment-confirm-title"
-                            className="mt-4 text-2xl font-black text-ink">{t("professorAssignment.confirmTitle", "Confirmer l’assignation")}</h2>
-                        <p id="assignment-confirm-description" className="mt-3 text-sm leading-7 text-ink-soft">
-                            {t("professorAssignment.confirm", {
-                                student: fullName(pendingAssignment.student) || pendingAssignment.student.email,
-                                professor: fullName(pendingAssignment.professor) || pendingAssignment.professor?.email || "",
-                                defaultValue: "Confirmer l’assignation de {{student}} à {{professor}} ?",
-                            })}
-                        </p>
-                        <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                            <button type="button" onClick={() => setPendingAssignment(null)}
-                                    className="rounded-xl border border-line bg-surface px-5 py-3 text-sm font-bold text-ink transition hover:bg-canvas">
-                                {t("professorAssignment.cancel", "Annuler")}
-                            </button>
-                            <button type="button" onClick={confirmAssignment}
-                                    className="rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white transition hover:bg-ink-soft">
-                                {t("professorAssignment.confirmAction", "Confirmer")}
-                            </button>
-                        </div>
-                    </section>
-                </div>}
         </section>
     );
 }
