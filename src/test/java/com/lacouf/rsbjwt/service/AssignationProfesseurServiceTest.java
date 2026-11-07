@@ -7,6 +7,7 @@ import com.lacouf.rsbjwt.model.Etudiant;
 import com.lacouf.rsbjwt.model.Professeur;
 import com.lacouf.rsbjwt.repository.EtudiantRepository;
 import com.lacouf.rsbjwt.repository.ProfesseurRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ProfesseurDTO;
 import com.lacouf.rsbjwt.service.dto.StagiaireDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,9 @@ class AssignationProfesseurServiceTest {
     @Mock
     private ProfesseurRepository professeurRepository;
 
+    @Mock
+    private UtilisateurRepository utilisateurRepository;
+
     @InjectMocks
     private AssignationProfesseurService assignationProfesseurService;
 
@@ -44,7 +48,9 @@ class AssignationProfesseurServiceTest {
     void setUp() {
         etudiant = Etudiant.builder()
                 .id(1L).nom("bib").prenom("bib").email("bib@a.com")
-                .password("hashed").discipline(Disciplines.INFORMATIQUE).build();
+                .password("hashed").discipline(Disciplines.INFORMATIQUE)
+                .session("A26")
+                .build();
 
         professeur = Professeur.builder()
                 .id(7L).nom("Gagnon").prenom("Bob").email("bob@mail.com")
@@ -61,9 +67,9 @@ class AssignationProfesseurServiceTest {
     @DisplayName("listStagiaires() retourne les étudiants avec leur professeur assigné")
     void listStagiaires_retourneEtudiantsAvecProfesseur() {
         etudiant.setProfesseur(professeur);
-        when(etudiantRepository.findAll()).thenReturn(List.of(etudiant));
+        when(utilisateurRepository.findBySession("A26")).thenReturn(List.of(etudiant));
 
-        List<StagiaireDTO> result = assignationProfesseurService.listStagiaires();
+        List<StagiaireDTO> result = assignationProfesseurService.listStagiaires("A26");
 
         assertEquals(1, result.size());
         assertEquals("bib@a.com", result.get(0).email());
@@ -74,9 +80,9 @@ class AssignationProfesseurServiceTest {
     @Test
     @DisplayName("listStagiaires() retourne un professeur null pour un étudiant non assigné")
     void listStagiaires_etudiantNonAssigne() {
-        when(etudiantRepository.findAll()).thenReturn(List.of(etudiant));
+        when(utilisateurRepository.findBySession("A26")).thenReturn(List.of(etudiant));
 
-        List<StagiaireDTO> result = assignationProfesseurService.listStagiaires();
+        List<StagiaireDTO> result = assignationProfesseurService.listStagiaires("A26");
 
         assertNull(result.get(0).professeurId());
         assertNull(result.get(0).professeurNom());
