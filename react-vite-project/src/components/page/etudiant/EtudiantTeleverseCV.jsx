@@ -4,6 +4,7 @@ import {Link} from "react-router-dom";
 import {api} from "../../../utils/api.js";
 import {translateMessage} from "../../../utils/i18nMessage.js";
 import PdfPreview from "../../PdfPreview.jsx";
+import StudentSessionBadge from "./StudentSessionBadge.jsx";
 
 function normalizeStatus(status) {
     const normalized = String(status ?? "").toUpperCase();
@@ -183,8 +184,11 @@ export default function EtudiantTeleverseCV({user, cvData, isAccountEmailValidat
         <section className="flex flex-1 items-center px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
             <div
                 className="mx-auto w-full max-w-3xl rounded-[2rem] border border-line bg-surface p-7 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-9">
-                <span
-                    className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">{translateMessage(t, "studentCv.label")}</span>
+                <div className="flex items-start justify-between gap-4">
+                    <span
+                        className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">{translateMessage(t, "studentCv.label")}</span>
+                    <StudentSessionBadge session={user?.session}/>
+                </div>
                 <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{translateMessage(t, "studentCv.title")}</h1>
                 <p className="mt-3 text-sm leading-7 text-ink-soft">{translateMessage(t, "studentCv.description")}</p>
 

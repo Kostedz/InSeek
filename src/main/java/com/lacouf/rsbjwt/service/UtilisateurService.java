@@ -7,6 +7,7 @@ import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.*;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -150,6 +151,7 @@ public class UtilisateurService {
                     .prenom(registerDTO.prenom())
                     .email(registerDTO.email())
                     .discipline(Disciplines.valueOf(registerDTO.affiliation()))
+                    .session(SessionUtil.getCurrentSession())
                     .password(passwordEncoder.encode(registerDTO.password()))
                     .build();
         }

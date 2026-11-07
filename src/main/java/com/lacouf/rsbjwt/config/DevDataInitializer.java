@@ -8,6 +8,7 @@ import com.lacouf.rsbjwt.model.Professeur;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.boot.CommandLineRunner;
@@ -38,6 +39,7 @@ public class DevDataInitializer implements CommandLineRunner {
                     account.nom(),
                     account.prenom(),
                     Disciplines.valueOf(account.affiliation()),
+                    SessionUtil.getCurrentSession(),
                     account.email(),
                     encodedPassword
             );

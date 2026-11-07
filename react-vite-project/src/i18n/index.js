@@ -202,6 +202,12 @@ const resources = {
             },
             studentOffers: {
                 studentArea: "Espace étudiant",
+                sessionLabel: "Session",
+                seasons: {
+                    autumn: "Automne",
+                    winter: "Hiver",
+                    summer: "Été",
+                },
                 title: "Offres de stage",
                 description: "Consultez les offres de stage validées et disponibles pour votre profil.",
                 uploadCv: "Téléverser mon CV",
@@ -1446,6 +1452,12 @@ const resources = {
             },
             studentOffers: {
                 studentArea: "Student area",
+                sessionLabel: "Session",
+                seasons: {
+                    autumn: "Fall",
+                    winter: "Winter",
+                    summer: "Summer",
+                },
                 title: "Internship offers",
                 description: "Browse validated internship offers available for your profile.",
                 uploadCv: "Upload my résumé",
