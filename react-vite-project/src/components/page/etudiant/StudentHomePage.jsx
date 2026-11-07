@@ -6,6 +6,7 @@ import StudentConvocation from "./StudentConvocation.jsx";
 import StudentMenu from "./StudentMenu.jsx";
 import StudentContractsPage from "./StudentContractsPage.jsx";
 import StudentCvAccess from "./StudentCvAccess.jsx";
+import StudentSessionBadge from "./StudentSessionBadge.jsx";
 
 function getActiveTab(pathname) {
     if (pathname === "/etudiant/candidatures") return "applications";
@@ -40,13 +41,16 @@ export default function StudentHomePage({user}) {
     return (
         <section className="flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
             <div className="mx-auto w-full max-w-6xl">
-                <header>
-                    <span
-                        className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
-                        {t("studentOffers.studentArea")}
-                    </span>
-                    <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{pageCopy.title}</h1>
-                    <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{pageCopy.description}</p>
+                <header className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                        <span
+                            className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                            {t("studentOffers.studentArea")}
+                        </span>
+                        <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{pageCopy.title}</h1>
+                        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{pageCopy.description}</p>
+                    </div>
+                    <StudentSessionBadge session={user?.session}/>
                 </header>
 
                 <StudentCvAccess user={user}>

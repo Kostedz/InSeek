@@ -3,6 +3,7 @@ import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
 import {api} from "../../../utils/api.js";
 import {DisciplineEnum} from "../../../constants/disciplines.js";
+import StudentSessionBadge from "./StudentSessionBadge.jsx";
 
 const disciplines = Object.values(DisciplineEnum).map(({value}) => value);
 
@@ -78,10 +79,13 @@ export default function EtudiantProfil({user, setUser}) {
         <section className="flex flex-1 items-start px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
             <div
                 className="mx-auto w-full max-w-3xl rounded-[2rem] border border-line bg-surface p-7 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-9">
-                <span
-                    className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
-                    {t("studentProfile.label")}
-                </span>
+                <div className="flex items-start justify-between gap-4">
+                    <span
+                        className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                        {t("studentProfile.label")}
+                    </span>
+                    <StudentSessionBadge session={user?.session}/>
+                </div>
                 <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">
                     {t("studentProfile.title")}
                 </h1>

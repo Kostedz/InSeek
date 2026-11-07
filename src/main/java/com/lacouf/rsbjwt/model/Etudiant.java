@@ -25,6 +25,8 @@ public class Etudiant extends Utilisateur {
     @Enumerated(EnumType.STRING)
     private StatutRechercheEtudiant statutRecherche = StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP;
 
+    private String session;
+
     private LocalDateTime dateInterview;
 
     @ManyToOne
@@ -32,8 +34,9 @@ public class Etudiant extends Utilisateur {
     private Professeur professeur;
 
     @Builder
-    public Etudiant(Long id, String nom, String prenom, Disciplines discipline, String email, String password) {
+    public Etudiant(Long id, String nom, String prenom, Disciplines discipline, String session, String email, String password) {
         super(id, nom, prenom, Credentials.builder().email(email).password(password).role(Role.ETUDIANT).build());
         this.discipline = discipline;
+        this.session = session;
     }
 }
