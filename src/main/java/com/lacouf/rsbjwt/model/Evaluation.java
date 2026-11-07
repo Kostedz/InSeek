@@ -26,4 +26,8 @@ public abstract class Evaluation {
 
     String evaluationComment;
 
+    private static final double MAXIMUM_RATING = 5.0;
+
+    private static double MINIMUM_RATING = 1.0;
+
 }
