@@ -137,7 +137,7 @@ export default function EmployerEvaluationsPage() {
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{t("employerEvaluation.description", "Évaluez les stagiaires embauchés dans votre entreprise.")}</p>
             </div>
             <span
-                className="rounded-full bg-peach/50 px-3 py-1.5 text-sm font-black text-ink">{pendingCount} {t("employerEvaluation.toEvaluate", "à évaluer")}</span>
+                className="rounded-full bg-peach/50 px-3 py-1.5 text-sm font-black text-ink">{pendingCount} {t(pendingCount === 1 ? "employerEvaluation.toEvaluateSingular" : "employerEvaluation.toEvaluatePlural", pendingCount === 1 ? "stagiaire à évaluer" : "stagiaires à évaluer")}</span>
         </div>
 
         {loading ?
