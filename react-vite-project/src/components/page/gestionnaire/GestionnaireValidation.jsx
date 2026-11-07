@@ -1,53 +1,17 @@
-import {useEffect, useMemo, useState} from "react";
-import {useTranslation} from "react-i18next";
-import {translateMessage} from "../../../utils/i18nMessage.js";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { translateMessage } from "../../../utils/i18nMessage.js";
 import api from "../../../utils/api.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
-const SAMPLE_OFFERS = [
-    {
-        id: "sample-1",
-        statut: "EN_ATTENTE",
-        email: "marie.gagnon@novalab.ca",
-        contactName: "Marie Gagnon",
-        contactPhone: "+1 514 555-0182",
-        nomEntreprise: "NovaLab",
-        position: "Stagiaire en développement web",
-        targetDiscipline: "INFORMATIQUE",
-        adresseEntreprise: "Montréal, Québec",
-        salaire: 22.5,
-        descriptionPosition: "Contribuer au développement et à l’amélioration de fonctionnalités web pour les projets de l’équipe.",
-        dateDebutStage: "2026-05-04",
-        dateFinStage: "2026-08-21",
-    },
-    {
-        id: "sample-2",
-        statut: "EN_ATTENTE",
-        email: "alexandre.roy@ateliernord.com",
-        contactName: "Alexandre Roy",
-        contactPhone: "+1 418 555-0114",
-        nomEntreprise: "Atelier Nord",
-        position: "Stagiaire en design graphique",
-        targetDiscipline: "DESIGN_GRAPHIQUE",
-        adresseEntreprise: "Québec, Québec",
-        salaire: 20,
-        descriptionPosition: "Créer des visuels pour les campagnes et les outils de communication de l’équipe.",
-        dateDebutStage: "2026-01-12",
-        dateFinStage: "2026-04-24",
-    },
-];
-
-function createSampleOffers() {
-    return SAMPLE_OFFERS.map((offer) => ({...offer}));
-}
-
 function normalizeOffer(offer, t) {
     return {
         ...offer,
         id: offer.id ?? offer.documentId,
+        sessionId: offer.sessionId ?? offer.sessionCode ?? offer.session ?? "",
         fileName: offer.fileName ?? offer.filename ?? "",
         statut: String(offer.statut ?? offer.status ?? "EN_ATTENTE").toUpperCase(),
         nomEntreprise: offer.nomEntreprise ?? offer.companyName ?? offer.company ?? "",
@@ -73,7 +37,7 @@ function formatDate(value, language) {
         day: "numeric",
         month: "short",
         year: "numeric",
-    }).format(new Date(value));
+    }).format(date);
 }
 
 function formatDateRange(start, end, language, t) {
@@ -84,7 +48,7 @@ function formatDateRange(start, end, language, t) {
     if (!formattedStart) return formattedEnd;
     if (!formattedEnd) return formattedStart;
 
-    return t("managerValidation.dateRange", {start: formattedStart, end: formattedEnd});
+    return t("managerValidation.dateRange", { start: formattedStart, end: formattedEnd, defaultValue: `Du ${formattedStart} au ${formattedEnd}` });
 }
 
 function formatDiscipline(value, t) {
@@ -99,12 +63,12 @@ function formatDiscipline(value, t) {
         "DESIGN_GRAPHIQUE": "DESIGN_GRAPHIQUE",
     };
     const disciplineKey = aliases[normalized] ?? normalized;
-    return t(`employerOffers.disciplines.${disciplineKey}`, {defaultValue: value});
+    return t(`employerOffers.disciplines.${disciplineKey}`, { defaultValue: value });
 }
 
 function formatHourlyPay(value, language, t) {
     if (value === null || value === undefined || String(value).trim() === "") {
-        return t("managerValidation.unpaid");
+        return t("managerValidation.unpaid", { defaultValue: "Non rémunéré" });
     }
 
     const amount = Number(value);
@@ -120,8 +84,8 @@ function isPending(offer) {
     return offer.statut === "EN_ATTENTE";
 }
 
-function StatusBadge({status}) {
-    const {t} = useTranslation();
+function StatusBadge({ status }) {
+    const { t } = useTranslation();
     const styles = {
         EN_ATTENTE: "border-gold bg-gold/45 text-ink",
         VALIDE: "border-[#9ed9bd] bg-[#dff6e8] text-[#245e3b]",
@@ -136,14 +100,12 @@ function StatusBadge({status}) {
 
     return (
         <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${styles[statusKey] ?? styles.EN_ATTENTE}`}>
-            {labelKeys[statusKey] ? t(`managerValidation.status.${labelKeys[statusKey]}`) : status}
+            {labelKeys[statusKey] ? t(`managerValidation.status.${labelKeys[statusKey]}`, { defaultValue: statusKey }) : status}
         </span>
     );
 }
 
-function InfoItem({label, value}) {
-    const {t} = useTranslation();
-
+function InfoItem({ label, value }) {
     if (value === null || value === undefined || String(value).trim() === "") return null;
 
     return (
@@ -154,10 +116,17 @@ function InfoItem({label, value}) {
     );
 }
 
-function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false}) {
-    const {t, i18n} = useTranslation();
+function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false }) {
+    const { t, i18n } = useTranslation();
+
+    const [sessions, setSessions] = useState([]);
+    const [selectedSessionId, setSelectedSessionId] = useState("");
+
     const [offers, setOffers] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("EN_ATTENTE");
+
     const [comment, setComment] = useState("");
     const [showRejectForm, setShowRejectForm] = useState(false);
     const [message, setMessage] = useState(null);
@@ -173,39 +142,69 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
         setError(null);
     };
 
+    // 1. Récupération des sessions académiques
+    useEffect(() => {
+        let isMounted = true;
+
+        async function fetchSessionsFromBackend() {
+            try {
+                const response = await api.gestionnaire.getSessions();
+
+                if (response.status === 403) {
+                    if (isMounted) setForbidden(true);
+                    return;
+                }
+
+                if (!response.ok) throw new Error("sessions_load_failed");
+
+                const data = await response.json();
+                const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+
+                if (isMounted && list.length > 0) {
+                    setSessions(list);
+                    const currentSession = list.find((s) => s.isCurrent || s.courante) || list[0];
+                    setSelectedSessionId(currentSession.id || currentSession.code);
+                }
+            } catch {
+                if (isMounted) {
+                    setError({ key: "managerOffersSession.errors.loadFailed", defaultValue: "Erreur lors du chargement des sessions académiques." });
+                }
+            }
+        }
+
+        fetchSessionsFromBackend();
+        return () => { isMounted = false; };
+    }, []);
+
+    // 2. Chargement STRICTEMENT PAR SESSION (Toutes les offres de la session choisie)
     const loadOffers = async (showLoading = true) => {
+        if (!selectedSessionId) return;
         if (showLoading) setLoading(true);
         setError(null);
 
         try {
-            const response = await api.gestionnaire.getPendingDocuments("OffreDeStage");
+            const response = await api.gestionnaire.getOffersBySession(selectedSessionId);
 
             if (response.status === 403) {
                 setForbidden(true);
                 return;
             }
 
-            if (!response.ok) throw new Error("load_failed");
+            if (!response.ok) throw new Error("offers_load_failed");
 
             const data = await response.json();
             const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
             const normalized = list.map((offer) => normalizeOffer(offer, t));
 
-            setOffers(normalized);
+            // Tri pour placer les offres EN_ATTENTE en haut de la liste de la session
+            const sortedOffers = [...normalized].sort((a, b) =>
+                Number(isPending(b)) - Number(isPending(a)) || Number(b.id) - Number(a.id)
+            );
 
-            if (normalized.length > 0) {
-                setSelectedId((prevId) => {
-                    const exists = normalized.some((item) => item.id === prevId);
-                    return exists ? prevId : normalized[0].id;
-                });
-            } else {
-                setSelectedId(null);
-            }
+            setOffers(sortedOffers);
         } catch {
-            const samples = createSampleOffers().map((offer) => normalizeOffer(offer, t));
-            setOffers(samples);
-            setSelectedId(samples[0]?.id ?? null);
-            setError({key: "managerValidation.errors.unavailable"});
+            setOffers([]);
+            setError({ key: "managerValidation.errors.unavailable", defaultValue: "Impossible de charger les offres pour cette session." });
         } finally {
             if (showLoading) setLoading(false);
         }
@@ -214,18 +213,45 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
     useEffect(() => {
         loadOffers();
         const intervalId = window.setInterval(() => loadOffers(false), AUTO_REFRESH_INTERVAL_MS);
-
         return () => window.clearInterval(intervalId);
-    }, []);
+    }, [selectedSessionId]);
 
-    const pendingOffers = useMemo(() => offers.filter(isPending), [offers]);
-    const selectedOffer = offers.find((offer) => offer.id === selectedId) ?? pendingOffers[0];
+    // 3. Filtrage combiné (Recherche + Statut)
+    const filteredOffers = useMemo(() => {
+        return offers.filter((offer) => {
+            const position = (offer.position || "").toLowerCase();
+            const company = (offer.nomEntreprise || "").toLowerCase();
+            const searchLower = searchTerm.toLowerCase();
+            const matchesSearch = position.includes(searchLower) || company.includes(searchLower);
+
+            const matchesStatus = statusFilter === "ALL" || offer.statut === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        });
+    }, [offers, searchTerm, statusFilter]);
+
+    const pendingOffers = useMemo(() => filteredOffers.filter(isPending), [filteredOffers]);
+
+    useEffect(() => {
+        if (filteredOffers.length > 0) {
+            setSelectedId((prevId) => {
+                const exists = filteredOffers.some((item) => item.id === prevId);
+                return exists ? prevId : filteredOffers[0].id;
+            });
+        } else {
+            setSelectedId(null);
+        }
+    }, [filteredOffers]);
+
+    const selectedOffer = filteredOffers.find((offer) => offer.id === selectedId) ?? filteredOffers[0];
+
     const hasSelectedEmployerInformation = selectedOffer && [
         selectedOffer.nomEntreprise,
         selectedOffer.contactName,
         selectedOffer.email,
         selectedOffer.contactPhone,
     ].some((value) => value !== null && value !== undefined && String(value).trim() !== "");
+
     const hasSelectedInternshipDetails = selectedOffer && [
         selectedOffer.position,
         selectedOffer.targetDiscipline,
@@ -245,7 +271,7 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
         }, t);
 
         setOffers((currentOffers) => currentOffers.map((offer) => (
-            offer.id === id ? {...offer, ...updatedOffer} : offer
+            offer.id === id ? { ...offer, ...updatedOffer } : offer
         )));
     };
 
@@ -265,7 +291,7 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
             }
 
             if ([400, 404, 409].includes(response.status)) {
-                setError({key: "managerValidation.errors.offerUnavailable"});
+                setError({ key: "managerValidation.errors.offerUnavailable" });
                 await loadOffers();
                 return;
             }
@@ -275,11 +301,11 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
             const responseData = await response.json().catch(() => null);
             updateOffer(selectedOffer.id, responseData, "VALIDE");
             resetFormState();
-            setMessage({key: "managerValidation.messages.approved"});
+            setMessage({ key: "managerValidation.messages.approved" });
         } catch {
             updateOffer(selectedOffer.id, null, "VALIDE");
             resetFormState();
-            setMessage({key: "managerValidation.messages.approved"});
+            setMessage({ key: "managerValidation.messages.approved" });
         } finally {
             setSaving(false);
         }
@@ -289,7 +315,7 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
         if (!selectedOffer || !isPending(selectedOffer) || saving) return;
 
         if (!comment.trim()) {
-            setError({key: "managerValidation.errors.requiredComment"});
+            setError({ key: "managerValidation.errors.requiredComment" });
             return;
         }
 
@@ -306,7 +332,7 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
             }
 
             if ([400, 404, 409].includes(response.status)) {
-                setError({key: "managerValidation.errors.offerUnavailable"});
+                setError({ key: "managerValidation.errors.offerUnavailable" });
                 await loadOffers();
                 return;
             }
@@ -316,11 +342,11 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
             const responseData = await response.json().catch(() => null);
             updateOffer(selectedOffer.id, responseData, "REJETE");
             resetFormState();
-            setMessage({key: "managerValidation.messages.rejected"});
+            setMessage({ key: "managerValidation.messages.rejected" });
         } catch {
             updateOffer(selectedOffer.id, null, "REJETE");
             resetFormState();
-            setMessage({key: "managerValidation.messages.rejected"});
+            setMessage({ key: "managerValidation.messages.rejected" });
         } finally {
             setSaving(false);
         }
@@ -329,60 +355,122 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
     if (forbidden) {
         return (
             <section className="flex flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
-                <div
-                    className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
+                <div className="mx-auto max-w-xl rounded-[2rem] border border-line bg-surface p-8 text-center shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
                     <p className="text-sm font-bold text-error">403</p>
-                    <h1 className="mt-2 text-3xl font-black text-ink">{t("managerValidation.forbiddenTitle")}</h1>
-                    <p className="mt-3 text-sm leading-7 text-ink-soft">{t("managerValidation.forbiddenDescription")}</p>
+                    <h1 className="mt-2 text-3xl font-black text-ink">{t("managerValidation.forbiddenTitle", { defaultValue: "Accès refusé" })}</h1>
+                    <p className="mt-3 text-sm leading-7 text-ink-soft">{t("managerValidation.forbiddenDescription", { defaultValue: "Seul le personnel autorisé (Gestionnaire de Stage / Professeur) a accès à cette vue." })}</p>
                 </div>
             </section>
         );
     }
 
+    const currentSessionName = sessions.find((s) => (s.id || s.code) === selectedSessionId)?.name || selectedSessionId;
+
     return (
         <section className={embedded ? "mt-10" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
             <div className="mx-auto w-full max-w-6xl">
-                {!embedded && <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                    <div>
-                        <span
-                            className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
-                            {t("managerDashboard.eyebrow", "Espace gestionnaire")}
-                        </span>
-                        <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">{t("managerValidation.title")}</h1>
-                        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">{t("managerValidation.description")}</p>
-                    </div>
-                    <p className="shrink-0 text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
-                </header>}
-                {embedded && !hideEmbeddedHeading &&
+                {!embedded && (
+                    <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                        <div>
+                            <span className="inline-flex rounded-full bg-pink px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-ink">
+                                {t("managerDashboard.eyebrow", { defaultValue: "Espace gestionnaire" })}
+                            </span>
+                            <h1 className="mt-5 text-3xl font-black tracking-tight text-ink sm:text-4xl">
+                                {t("managerValidation.title", { defaultValue: "Gestion des offres" })}
+                            </h1>
+                            <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-soft">
+                                {t("managerOffersSession.description", { defaultValue: "Consultez et validez les offres de stage structurées par session collégiale du Cégep." })}
+                            </p>
+                        </div>
+                        <p className="shrink-0 text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh", { defaultValue: "Actualisation automatique 1 min" })}</p>
+                    </header>
+                )}
+
+                {embedded && !hideEmbeddedHeading && (
                     <div className="mb-5 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
                         <div>
-                            <h2 className="text-2xl font-black tracking-tight text-ink">{t("managerValidation.title")}</h2>
-                            <p className="mt-2 text-sm leading-6 text-ink-soft">{t("managerValidation.description")}</p>
+                            <h2 className="text-2xl font-black tracking-tight text-ink">{t("managerValidation.title", { defaultValue: "Gestion des offres" })}</h2>
+                            <p className="mt-2 text-sm leading-6 text-ink-soft">{t("managerValidation.description", { defaultValue: "Consultez et validez les offres de stage." })}</p>
                         </div>
-                        <p className="text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh")}</p>
-                    </div>}
+                        <p className="text-xs font-semibold text-ink-soft">{t("managerValidation.autoRefresh", { defaultValue: "Actualisation automatique 1 min" })}</p>
+                    </div>
+                )}
 
-                {!embedded && <GestionnaireTabs activeTab="offers" offersCount={pendingOffers.length}/>}
+                {!embedded && <GestionnaireTabs activeTab="offers" offersCount={pendingOffers.length} />}
 
-                {error &&
-                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error"
-                       role="alert">{translateMessage(t, error)}</p>}
-                {message &&
-                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]"
-                       role="status">{translateMessage(t, message)}</p>}
+                <div className="mt-8 grid gap-4 rounded-2xl border border-line bg-surface p-4 shadow-sm sm:grid-cols-3 sm:items-end">
+                    <div>
+                        <label htmlFor="cegep-session-select" className="block text-xs font-bold uppercase tracking-wider text-ink-soft mb-1">
+                            {t("managerOffersSession.sessionSelect", { defaultValue: "Session du Cégep" })}
+                        </label>
+                        <select
+                            id="cegep-session-select"
+                            value={selectedSessionId}
+                            onChange={(e) => setSelectedSessionId(e.target.value)}
+                            className="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm font-bold text-ink outline-none focus:border-ink"
+                        >
+                            {sessions.map((session) => (
+                                <option key={session.id || session.code} value={session.id || session.code}>
+                                    {session.name || session.libelle || session.code} {session.isCurrent || session.active || session.courante ? " (Courante)" : ""}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label htmlFor="search-offers-input" className="block text-xs font-bold uppercase tracking-wider text-ink-soft mb-1">
+                            {t("common.search", { defaultValue: "Recherche (Poste, Entreprise)" })}
+                        </label>
+                        <input
+                            id="search-offers-input"
+                            type="text"
+                            placeholder={t("managerOffersSession.searchPlaceholder", { defaultValue: "Rechercher par poste ou entreprise..." })}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm text-ink outline-none focus:border-ink"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="status-filter-select" className="block text-xs font-bold uppercase tracking-wider text-ink-soft mb-1">
+                            {t("managerOffersSession.filters.status", { defaultValue: "Statut de l'offre" })}
+                        </label>
+                        <select
+                            id="status-filter-select"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm font-semibold text-ink outline-none focus:border-ink"
+                        >
+                            <option value="ALL">{t("managerOffersSession.filters.allStatuses", { defaultValue: "Toutes les offres" })}</option>
+                            <option value="EN_ATTENTE">{t("managerOffersSession.filters.pending", { defaultValue: "En attente" })}</option>
+                            <option value="VALIDE">{t("managerOffersSession.filters.validated", { defaultValue: "Validées" })}</option>
+                            <option value="REJETE">{t("managerOffersSession.filters.rejected", { defaultValue: "Refusées" })}</option>
+                        </select>
+                    </div>
+                </div>
+
+                {error && (
+                    <p className="mt-6 rounded-xl border border-[#eab0bf] bg-[#fff0f3] px-4 py-3 text-sm font-semibold text-error" role="alert">
+                        {translateMessage(t, error)}
+                    </p>
+                )}
+                {message && (
+                    <p className="mt-6 rounded-xl border border-[#9ed9bd] bg-[#dff6e8] px-4 py-3 text-sm font-semibold text-[#245e3b]" role="status">
+                        {translateMessage(t, message)}
+                    </p>
+                )}
 
                 <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
-                    <aside
-                        className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
+                    <aside className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                         <div className="flex items-center justify-between">
-                            <h2 className="font-black text-ink">{t("managerValidation.pending")}</h2>
+                            <h2 className="font-black text-ink">{t("managerValidation.pending", { defaultValue: "Offres affichées" })} ({filteredOffers.length})</h2>
                         </div>
 
                         <div className="mt-4 space-y-2">
                             {loading ? (
-                                <p className="rounded-xl bg-lavender/40 p-4 text-sm text-ink-soft">{t("managerValidation.loading")}</p>
-                            ) : pendingOffers.length ? (
-                                pendingOffers.map((offer) => (
+                                <p className="rounded-xl bg-lavender/40 p-4 text-sm text-ink-soft">{t("managerValidation.loading", { defaultValue: "Chargement..." })}</p>
+                            ) : filteredOffers.length ? (
+                                filteredOffers.map((offer) => (
                                     <button
                                         key={offer.id}
                                         type="button"
@@ -390,120 +478,158 @@ function GestionnaireValidation({embedded = false, hideEmbeddedHeading = false})
                                             setSelectedId(offer.id);
                                             resetFormState();
                                         }}
-                                        className={`w-full rounded-xl border p-3 text-left ${selectedOffer?.id === offer.id ? "border-ink bg-ink text-white" : "border-line bg-canvas text-ink hover:bg-lavender/30"}`}
+                                        className={`w-full rounded-xl border p-3 text-left transition-all ${
+                                            selectedOffer?.id === offer.id
+                                                ? "border-ink bg-ink text-white"
+                                                : "border-line bg-canvas text-ink hover:bg-lavender/30"
+                                        }`}
                                     >
-                                        {offer.nomEntreprise &&
-                                            <p className="text-xs font-bold uppercase tracking-wide opacity-70">{offer.nomEntreprise}</p>}
-                                        {offer.position && <p className="mt-1 text-sm font-bold">{offer.position}</p>}
+                                        <div className="flex items-center justify-between gap-1">
+                                            {offer.nomEntreprise && (
+                                                <p className="text-xs font-bold uppercase tracking-wide opacity-70 truncate">{offer.nomEntreprise}</p>
+                                            )}
+                                            <span className={`h-2 w-2 rounded-full ${
+                                                offer.statut === "VALIDE" ? "bg-emerald-500" : offer.statut === "REJETE" ? "bg-rose-500" : "bg-amber-500"
+                                            }`} />
+                                        </div>
+                                        {offer.position && <p className="mt-1 text-sm font-bold truncate">{offer.position}</p>}
                                     </button>
                                 ))
                             ) : (
-                                <p className="rounded-xl bg-lavender/30 p-4 text-sm text-ink-soft">{t("managerValidation.noPendingOffers")}</p>
+                                <div className="rounded-xl bg-lavender/30 p-4 text-center">
+                                    <p className="text-sm font-bold text-ink">
+                                        {t("managerOffersSession.emptyTitle", { defaultValue: "Aucune offre trouvée" })}
+                                    </p>
+                                    <p className="mt-1 text-xs text-ink-soft">
+                                        {t("managerOffersSession.emptyDescription", {
+                                            defaultValue: `Aucune offre enregistrée pour la session ${currentSessionName}.`,
+                                            sessionName: currentSessionName
+                                        })}
+                                    </p>
+                                </div>
                             )}
                         </div>
                     </aside>
 
                     {selectedOffer ? (
-                        <article
-                            className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
+                        <article className="overflow-hidden rounded-2xl border border-line bg-surface shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                             <div className="border-b border-line p-5 sm:p-6">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <StatusBadge status={selectedOffer.statut}/>
-                                    <span
-                                        className="text-xs text-ink-soft">{t("managerValidation.offerId", {id: selectedOffer.id})}</span>
+                                    <StatusBadge status={selectedOffer.statut} />
+                                    <span className="text-xs text-ink-soft">
+                                        {t("managerValidation.offerId", { id: selectedOffer.id, defaultValue: `ID : ${selectedOffer.id}` })}
+                                    </span>
                                 </div>
-                                {selectedOffer.position &&
-                                    <h2 className="mt-4 text-2xl font-black text-ink">{selectedOffer.position}</h2>}
-                                {selectedOffer.nomEntreprise &&
-                                    <p className="mt-1 font-semibold text-ink-soft">{selectedOffer.nomEntreprise}</p>}
+                                {selectedOffer.position && <h2 className="mt-4 text-2xl font-black text-ink">{selectedOffer.position}</h2>}
+                                {selectedOffer.nomEntreprise && <p className="mt-1 font-semibold text-ink-soft">{selectedOffer.nomEntreprise}</p>}
                             </div>
 
                             <div className="grid gap-6 p-5 sm:p-6 md:grid-cols-2">
-                                <PdfPreview
-                                    documentId={selectedOffer.id}
-                                    fileName={selectedOffer.fileName}
-                                    className="md:col-span-2"
-                                />
+                                <PdfPreview documentId={selectedOffer.id} fileName={selectedOffer.fileName} className="md:col-span-2" />
 
-                                {hasSelectedEmployerInformation && <div className="md:col-span-2">
-                                    <h3 className="font-black text-ink">{t("managerValidation.employerInformation")}</h3>
-                                    <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">
-                                        <InfoItem label={t("managerValidation.companyName")}
-                                                  value={selectedOffer.nomEntreprise}/>
-                                        <InfoItem label={t("managerValidation.contactPerson")}
-                                                  value={selectedOffer.contactName}/>
-                                        <InfoItem label={t("managerValidation.email")} value={selectedOffer.email}/>
-                                        <InfoItem label={t("managerValidation.phone")}
-                                                  value={selectedOffer.contactPhone}/>
+                                {hasSelectedEmployerInformation && (
+                                    <div className="md:col-span-2">
+                                        <h3 className="font-black text-ink">{t("managerValidation.employerInformation", { defaultValue: "Informations de l'employeur" })}</h3>
+                                        <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">
+                                            <InfoItem label={t("managerValidation.companyName", { defaultValue: "Entreprise" })} value={selectedOffer.nomEntreprise} />
+                                            <InfoItem label={t("managerValidation.contactPerson", { defaultValue: "Contact" })} value={selectedOffer.contactName} />
+                                            <InfoItem label={t("managerValidation.email", { defaultValue: "Courriel" })} value={selectedOffer.email} />
+                                            <InfoItem label={t("managerValidation.phone", { defaultValue: "Téléphone" })} value={selectedOffer.contactPhone} />
+                                        </div>
                                     </div>
-                                </div>}
+                                )}
 
-                                {hasSelectedInternshipDetails && <div className="md:col-span-2">
-                                    <h3 className="font-black text-ink">{t("managerValidation.internshipDetails")}</h3>
-                                    <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">
-                                        <InfoItem label={t("managerValidation.positionTitle")}
-                                                  value={selectedOffer.position}/>
-                                        <InfoItem label={t("managerValidation.discipline")}
-                                                  value={formatDiscipline(selectedOffer.targetDiscipline, t)}/>
-                                        <InfoItem label={t("managerValidation.dates")}
-                                                  value={formatDateRange(selectedOffer.dateDebutStage, selectedOffer.dateFinStage, i18n.resolvedLanguage, t)}/>
-                                        <InfoItem label={t("managerValidation.location")}
-                                                  value={selectedOffer.adresseEntreprise}/>
-                                        <InfoItem label={t("managerValidation.hourlyPay")}
-                                                  value={formatHourlyPay(selectedOffer.salaire, i18n.resolvedLanguage, t)}/>
-                                        {selectedOffer.descriptionPosition && <div className="sm:col-span-2"><InfoItem
-                                            label={t("managerValidation.descriptionLabel")}
-                                            value={selectedOffer.descriptionPosition}/>
-                                        </div>}
+                                {hasSelectedInternshipDetails && (
+                                    <div className="md:col-span-2">
+                                        <h3 className="font-black text-ink">{t("managerValidation.internshipDetails", { defaultValue: "Détails du stage" })}</h3>
+                                        <div className="mt-3 grid gap-4 rounded-xl border border-line p-4 sm:grid-cols-2">
+                                            <InfoItem label={t("managerValidation.positionTitle", { defaultValue: "Intitulé du poste" })} value={selectedOffer.position} />
+                                            <InfoItem label={t("managerValidation.discipline", { defaultValue: "Discipline" })} value={formatDiscipline(selectedOffer.targetDiscipline, t)} />
+                                            <InfoItem label={t("managerValidation.dates", { defaultValue: "Dates du stage" })} value={formatDateRange(selectedOffer.dateDebutStage, selectedOffer.dateFinStage, i18n.resolvedLanguage, t)} />
+                                            <InfoItem label={t("managerValidation.location", { defaultValue: "Lieu" })} value={selectedOffer.adresseEntreprise} />
+                                            <InfoItem label={t("managerValidation.hourlyPay", { defaultValue: "Rémunération" })} value={formatHourlyPay(selectedOffer.salaire, i18n.resolvedLanguage, t)} />
+                                            {selectedOffer.descriptionPosition && (
+                                                <div className="sm:col-span-2">
+                                                    <InfoItem label={t("managerValidation.descriptionLabel", { defaultValue: "Description du poste" })} value={selectedOffer.descriptionPosition} />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>}
+                                )}
                             </div>
 
                             {isPending(selectedOffer) ? (
                                 <div className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 sm:p-6">
                                     {showRejectForm && (
                                         <div className="mb-4">
-                                            <label htmlFor="rejection-comment"
-                                                   className="text-sm font-bold text-ink">{t("managerValidation.rejectionComment")}</label>
-                                            <textarea id="rejection-comment" value={comment}
-                                                      onChange={(event) => {
-                                                          setComment(event.target.value);
-                                                          setError(null);
-                                                      }} rows="4" autoFocus
-                                                      className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
-                                                      placeholder={t("managerValidation.rejectionPlaceholder")}/>
+                                            <label htmlFor="rejection-comment" className="text-sm font-bold text-ink">
+                                                {t("managerValidation.rejectionComment", { defaultValue: "Motif du refus" })}
+                                            </label>
+                                            <textarea
+                                                id="rejection-comment"
+                                                value={comment}
+                                                onChange={(event) => {
+                                                    setComment(event.target.value);
+                                                    setError(null);
+                                                }}
+                                                rows="4"
+                                                autoFocus
+                                                className="mt-2 w-full rounded-xl border border-line p-3 text-sm outline-none focus:border-ink-soft focus:ring-4 focus:ring-lavender/50"
+                                                placeholder={t("managerValidation.rejectionPlaceholder", { defaultValue: "Expliquez les motifs du refus..." })}
+                                            />
                                         </div>
                                     )}
                                     <div className="flex flex-wrap justify-end gap-3">
-                                        {showRejectForm && <button type="button" onClick={() => {
-                                            setShowRejectForm(false);
-                                            setComment("");
-                                        }}
-                                                                   className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/30">{t("managerValidation.cancel")}</button>}
-                                        <button type="button" disabled={saving || (showRejectForm && !comment.trim())}
+                                        {showRejectForm && (
+                                            <button
+                                                type="button"
                                                 onClick={() => {
-                                                    if (showRejectForm) {
-                                                        handleReject();
-                                                        return;
-                                                    }
-                                                    setError(null);
-                                                    setMessage(null);
-                                                    setShowRejectForm(true);
+                                                    setShowRejectForm(false);
+                                                    setComment("");
                                                 }}
-                                                className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3] disabled:cursor-not-allowed disabled:opacity-50">{showRejectForm ? t("managerValidation.confirmRejection") : t("managerValidation.reject")}</button>
-                                        {!showRejectForm &&
-                                            <button type="button" disabled={saving} onClick={handleApprove}
-                                                    className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft">{saving ? t("managerValidation.processing") : t("managerValidation.approve")}</button>}
+                                                className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-lavender/30"
+                                            >
+                                                {t("managerValidation.cancel", { defaultValue: "Annuler" })}
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            disabled={saving || (showRejectForm && !comment.trim())}
+                                            onClick={() => {
+                                                if (showRejectForm) {
+                                                    handleReject();
+                                                    return;
+                                                }
+                                                setError(null);
+                                                setMessage(null);
+                                                setShowRejectForm(true);
+                                            }}
+                                            className="rounded-xl border border-error bg-white px-4 py-2 text-sm font-bold text-error hover:bg-[#fff0f3] disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            {showRejectForm ? t("managerValidation.confirmRejection", { defaultValue: "Confirmer le refus" }) : t("managerValidation.reject", { defaultValue: "Refuser" })}
+                                        </button>
+                                        {!showRejectForm && (
+                                            <button
+                                                type="button"
+                                                disabled={saving}
+                                                onClick={handleApprove}
+                                                className="rounded-xl bg-ink px-4 py-2 text-sm font-bold text-white hover:bg-ink-soft"
+                                            >
+                                                {saving ? t("managerValidation.processing", { defaultValue: "Traitement..." }) : t("managerValidation.approve", { defaultValue: "Approuver" })}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
-                                <div
-                                    className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft">{t("managerValidation.alreadyProcessed")}</div>
+                                <div className="rounded-b-2xl border-t border-line bg-canvas/60 p-5 text-sm font-semibold text-ink-soft">
+                                    {t("managerValidation.alreadyProcessed", { defaultValue: "Cette offre a déjà été traitée." })}
+                                </div>
                             )}
                         </article>
                     ) : (
-                        <div
-                            className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">{t("managerValidation.selectOffer")}</div>
+                        <div className="rounded-2xl border border-line bg-surface p-8 text-center text-sm text-ink-soft">
+                            {t("managerOffersSession.noSelectedOffer", { defaultValue: "Aucune offre sélectionnée pour cette session." })}
+                        </div>
                     )}
                 </div>
             </div>
