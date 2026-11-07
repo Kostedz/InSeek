@@ -311,6 +311,11 @@ export const api = {
                 headers: { Accept: "application/json" },
             }),
 
+        getAllOffers: () =>
+            fetcher("/documents/stage", {
+                headers: {Accept: "application/json"},
+            }),
+
         getOffersBySession: (sessionId, filters = {}) => {
             const queryParams = new URLSearchParams(filters).toString();
             const query = queryParams ? `?${queryParams}` : "";
