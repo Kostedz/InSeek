@@ -163,8 +163,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
 
                 if (isMounted && list.length > 0) {
                     setSessions(list);
-                    const currentSession = list.find((s) => s.isCurrent || s.courante) || list[0];
-                    setSelectedSessionId(currentSession.id || currentSession.code);
+                    setSelectedSessionId("ALL");
                 }
             } catch {
                 if (isMounted) {
@@ -184,7 +183,9 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
         setError(null);
 
         try {
-            const response = await api.gestionnaire.getOffersBySession(selectedSessionId);
+            const response = selectedSessionId === "ALL"
+                ? await api.gestionnaire.getAllOffers()
+                : await api.gestionnaire.getOffersBySession(selectedSessionId);
 
             if (response.status === 403) {
                 setForbidden(true);
@@ -365,7 +366,9 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
         );
     }
 
-    const currentSessionName = sessions.find((s) => (s.id || s.code) === selectedSessionId)?.name || selectedSessionId;
+    const currentSessionName = selectedSessionId === "ALL"
+        ? t("managerValidation.allSessions")
+        : sessions.find((s) => (s.id || s.code) === selectedSessionId)?.name || selectedSessionId;
 
     return (
         <section className={embedded ? "mt-10" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
@@ -410,6 +413,9 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
                             onChange={(e) => setSelectedSessionId(e.target.value)}
                             className="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm font-bold text-ink outline-none focus:border-ink"
                         >
+                            <option value="ALL">
+                                {t("managerValidation.allSessions")}
+                            </option>
                             {sessions.map((session) => (
                                 <option key={session.id || session.code} value={session.id || session.code}>
                                     {session.name || session.libelle || session.code} {session.isCurrent || session.active || session.courante ? " (Courante)" : ""}

@@ -67,7 +67,7 @@ export default function ProfessorDashboard() {
     const activeTab = pathname.endsWith("/evaluations") ? "evaluations" : "students";
     const [students, setStudents] = useState([]);
     const [sessions] = useState(() => sessionOptions());
-    const [selectedSessionId, setSelectedSessionId] = useState(() => sessionOptions()[0]?.id ?? "");
+    const [selectedSessionId, setSelectedSessionId] = useState("ALL");
     const [applications, setApplications] = useState({});
     const [evaluationPrefill, setEvaluationPrefill] = useState({});
     const [expandedId, setExpandedId] = useState(null);

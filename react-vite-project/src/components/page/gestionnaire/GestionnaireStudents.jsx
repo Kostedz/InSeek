@@ -39,7 +39,7 @@ const FALLBACK_SESSIONS = (date) => {
 export default function GestionnaireStudents({embedded = false}) {
     const {t} = useTranslation();
     const [sessions, setSessions] = useState([]);
-    const [selectedSessionId, setSelectedSessionId] = useState("");
+    const [selectedSessionId, setSelectedSessionId] = useState("ALL");
     const [students, setStudents] = useState([]);
     const [loadingSessions, setLoadingSessions] = useState(true);
     const [loadingStudents, setLoadingStudents] = useState(false);
@@ -61,14 +61,13 @@ export default function GestionnaireStudents({embedded = false}) {
                 if (!list.length) throw new Error("sessions_empty");
                 if (!mounted) return;
                 setSessions(list);
-                const active = list.find((session) => session.active || session.isActive || session.current || session.activeNow);
-                setSelectedSessionId(String(sessionId(active ?? list[0])));
+                setSelectedSessionId("ALL");
             } catch {
                 if (!mounted) return;
                 const fallback = FALLBACK_SESSIONS(new Date());
                 setSessions(fallback);
                 setSessionsUnavailable(true);
-                setSelectedSessionId(String(sessionId(fallback[0])));
+                setSelectedSessionId("ALL");
             } finally {
                 if (mounted) setLoadingSessions(false);
             }
@@ -84,7 +83,9 @@ export default function GestionnaireStudents({embedded = false}) {
         setLoadingStudents(true);
         setError(false);
         try {
-            const response = await api.gestionnaire.getStudentsBySession(id);
+            const response = id === "ALL"
+                ? await api.gestionnaire.getInternshipStudents()
+                : await api.gestionnaire.getStudentsBySession(id);
             if (!response.ok) throw new Error("students_unavailable");
             const data = asList(await response.json());
             if (sequence === loadSequence.current) setStudents(data);
@@ -122,7 +123,9 @@ export default function GestionnaireStudents({embedded = false}) {
     }, [students, search, statusFilter, programFilter, assignmentFilter]);
 
     const selectedSession = sessions.find((session) => String(sessionId(session)) === selectedSessionId);
-    const selectedLabel = sessionLabel(selectedSession) || selectedSessionId;
+    const selectedLabel = selectedSessionId === "ALL"
+        ? t("managerStudents.allSessions")
+        : sessionLabel(selectedSession) || selectedSessionId;
 
     return (
         <section className={embedded ? "mt-8 w-full" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
@@ -150,8 +153,9 @@ export default function GestionnaireStudents({embedded = false}) {
                                             disabled={loadingSessions || sessions.length === 0}
                                     onChange={(event) => setSelectedSessionId(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-semibold text-ink outline-none focus:border-lavender disabled:opacity-60">
-                                {sessions.map((session) => <option key={sessionId(session)}
-                                                                   value={sessionId(session)}>{sessionLabel(session)}</option>)}
+                            <option value="ALL">{t("managerStudents.allSessions", "Toutes les sessions")}</option>
+                            {sessions.map((session) => <option key={sessionId(session)}
+                                                               value={sessionId(session)}>{sessionLabel(session)}</option>)}
                             </DropdownSelect>
                         </label>
                     </div>
@@ -159,7 +163,7 @@ export default function GestionnaireStudents({embedded = false}) {
                     {sessionsUnavailable &&
                         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
                            role="status">
-                            {t("managerStudents.sessionsFallback", "Les sessions n’ont pas pu être chargées. La session la plus récente est sélectionnée.")}
+                            {t("managerStudents.sessionsFallback", "Les sessions n’ont pas pu être chargées.")}
                         </p>}
                     {error &&
                         <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
