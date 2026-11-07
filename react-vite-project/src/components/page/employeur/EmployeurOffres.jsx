@@ -1012,17 +1012,17 @@ export default function EmployeurOffres({
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
                     <div
-                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
                         <p className="text-xl font-black text-ink">{offerList.length}</p>
                     </div>
                     <div
-                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
                         <p className="text-xl font-black text-ink">{pendingCount}</p>
                     </div>
                     <div
-                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.published")}</p>
                         <p className="text-xl font-black text-ink">{publishedCount}</p>
                     </div>
