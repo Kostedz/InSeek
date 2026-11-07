@@ -200,6 +200,14 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+                    <Route
+                        path="employeur/evaluations"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["EMPLOYEUR"]}>
+                                <EmployerHomePage user={user} contracts={user?.contracts}/>
+                            </ProtectedRoute>
+                        }
+                    />
 
                     <Route
                         path="gestionnaire"

@@ -20,10 +20,6 @@ public class CompanyEvaluation extends Evaluation {
     @ManyToOne
     private Employeur employerCompany;
 
-    private static final double MAXIMUM_RATING = 5.0;
-
-    private static double MINIMUM_RATING = 1.0;
-
     private double supervisionRating;
 
     private double taskComplianceRating;
