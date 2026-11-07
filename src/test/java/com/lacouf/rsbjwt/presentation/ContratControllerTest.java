@@ -26,7 +26,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -397,16 +396,22 @@ class ContratControllerTest {
                 .build();
     }
 
+    private static final String VALID_SIGNATURE_JSON = """
+            {"password":"Password123!"}
+            """;
+
     // ======================= PATCH /contracts/sign/{contractId} : succès =======================
 
     @Test
     @WithMockUser(authorities = "ETUDIANT")
     @DisplayName("PATCH /contracts/sign/{id} par un étudiant retourne 200 et le contrat signé")
     void signContract_etudiant_retourne200() throws Exception {
-        when(contratService.signContract(eq(100L), any()))
+        when(contratService.signContract(eq(100L), any(), eq("Password123!")))
                 .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_STUDENT));
 
-        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(100))
                 .andExpect(jsonPath("$.contractStatus").value("SIGNED_BY_STUDENT"));
@@ -416,10 +421,12 @@ class ContratControllerTest {
     @WithMockUser(authorities = "EMPLOYEUR")
     @DisplayName("PATCH /contracts/sign/{id} par un employeur retourne 200 et le contrat signé")
     void signContract_employeur_retourne200() throws Exception {
-        when(contratService.signContract(eq(100L), any()))
+        when(contratService.signContract(eq(100L), any(), eq("Password123!")))
                 .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_EMPLOYER));
 
-        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.contractStatus").value("SIGNED_BY_EMPLOYER"));
     }
@@ -428,10 +435,12 @@ class ContratControllerTest {
     @WithMockUser(authorities = "GESTIONNAIRE")
     @DisplayName("PATCH /contracts/sign/{id} par un gestionnaire retourne 200 et le contrat signé")
     void signContract_gestionnaire_retourne200() throws Exception {
-        when(contratService.signContract(eq(100L), any()))
+        when(contratService.signContract(eq(100L), any(), eq("Password123!")))
                 .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_GESTIONNAIRE));
 
-        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.contractStatus").value("SIGNED_BY_GESTIONNAIRE"));
     }
@@ -439,58 +448,69 @@ class ContratControllerTest {
     @Test
     @DisplayName("PATCH /contracts/sign/{id} transmet l'id du contrat et la requête au service")
     void signContract_transmetIdEtRequeteAuService() throws Exception {
-        when(contratService.signContract(eq(100L), any()))
+        when(contratService.signContract(eq(100L), any(), eq("Password123!")))
                 .thenReturn(contratAvecStatut(StatutContrat.SIGNED_BY_STUDENT));
 
         mockMvc.perform(patch(SIGN_URL, 100L)
                         .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON)
                         .header("Authorization", "Bearer un-jeton"))
                 .andExpect(status().isOk());
 
         verify(contratService).signContract(
                 eq(100L),
                 org.mockito.ArgumentMatchers.argThat((HttpServletRequest r) ->
-                        "Bearer un-jeton".equals(r.getHeader("Authorization"))));
+                        "Bearer un-jeton".equals(r.getHeader("Authorization"))),
+                eq("Password123!"));
     }
 
 
     @Test
     @DisplayName("PATCH /contracts/sign/{id} avec un contrat inexistant retourne 404")
     void signContract_contratInexistant_retourne404() throws Exception {
-        when(contratService.signContract(eq(404L), any()))
+        when(contratService.signContract(eq(404L), any(), eq("Password123!")))
                 .thenThrow(new NotFoundException("Contrat non trouvé "));
 
-        mockMvc.perform(patch(SIGN_URL, 404L).with(csrf()))
+        mockMvc.perform(patch(SIGN_URL, 404L).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("PATCH /contracts/sign/{id} avec une signature non permise retourne 400")
     void signContract_signatureNonPermise_retourne400() throws Exception {
-        when(contratService.signContract(eq(100L), any()))
+        when(contratService.signContract(eq(100L), any(), eq("Password123!")))
                 .thenThrow(new BadRequestException("Le contrat ne peut pas être signé dans son état actuel."));
 
-        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("PATCH /contracts/sign/{id} par un utilisateur non lié au contrat retourne 400")
     void signContract_utilisateurNonLie_retourne400() throws Exception {
-        when(contratService.signContract(eq(100L), any()))
+        when(contratService.signContract(eq(100L), any(), eq("Password123!")))
                 .thenThrow(new BadRequestException("L'utilisateur connecté n'est pas l'employeur associé à ce contrat."));
 
-        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("PATCH /contracts/sign/{id} avec un étudiant ayant déjà un contrat signé retourne 409")
     void signContract_etudiantDejaSigne_retourne409() throws Exception {
-        when(contratService.signContract(eq(100L), any()))
+        when(contratService.signContract(eq(100L), any(), eq("Password123!")))
                 .thenThrow(new ConflictException("Un étudiant ne peut signer qu'un seul contrat."));
 
-        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf()))
+        mockMvc.perform(patch(SIGN_URL, 100L).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_SIGNATURE_JSON))
                 .andExpect(status().isConflict());
     }
 
