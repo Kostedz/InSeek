@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -231,6 +232,37 @@ public class ApplicationStageService {
     private void verifierEnAttente(ApplicationStage application) throws BadRequestException {
         if (application.getStatutValidation() != StatutValidation.EN_ATTENTE) {
             throw new BadRequestException("Cette candidature a déjà été traitée.");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<OffreDeStageDTO> listerOffresParSession(String sessionId) {
+        List<OffreDeStageDTO> toutesLesOffres = documentRepository.findAllOffreStageSummaries();
+
+        return toutesLesOffres.stream()
+                .filter(offre -> offre.updatedAt() != null // <-- Utiliser la date de création / d'émission
+                        && sessionId.equalsIgnoreCase(determinerSessionParDate(offre.updatedAt().toLocalDate())))
+                .toList();
+    }
+
+    /**
+     * Calcule la session en fonction de la date à laquelle l'offre a été créée / émise.
+     */
+    private String determinerSessionParDate(LocalDate dateCreation) {
+        if (dateCreation == null) return "";
+
+        int year = dateCreation.getYear();
+        int monthValue = dateCreation.getMonthValue();
+
+        // Hiver (HIV) : Janvier à Avril
+        // Été (ETE)   : Mai à Août
+        // Automne (AUT): Septembre à Décembre
+        if (monthValue >= 1 && monthValue <= 4) {
+            return "HIV_" + year;
+        } else if (monthValue >= 5 && monthValue <= 8) {
+            return "ETE_" + year;
+        } else {
+            return "AUT_" + year;
         }
     }
 }

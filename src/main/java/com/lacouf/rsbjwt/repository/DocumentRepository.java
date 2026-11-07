@@ -136,4 +136,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             WHERE o.statut = :statut
             """)
     List<Document> findOffreDeStageByStatut(StatutValidation statut);
+
+    @Query("""
+            SELECT new com.lacouf.rsbjwt.service.dto.OffreDeStageDTO(
+                o.id, o.fileName, o.utilisateur.credentials.email, o.nomEntreprise,
+                o.position, o.descriptionPosition, o.dateDebutStage, o.dateFinStage,
+                o.adresseEntreprise, o.statut, o.commentaireRejet, o.salaire,
+                o.targetDiscipline, o.contactName, o.contactPhone, o.version, o.updatedAt
+            )
+            FROM OffreDeStage o
+            ORDER BY o.updatedAt DESC, o.id DESC
+            """)
+    List<OffreDeStageDTO> findAllOffreStageSummaries();
 }
