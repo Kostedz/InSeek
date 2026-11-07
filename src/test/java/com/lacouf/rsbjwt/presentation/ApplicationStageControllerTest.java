@@ -83,7 +83,8 @@ class ApplicationStageControllerTest {
                 "Tremblay",
                 "alice@mail.com",
                 "ETUDIANT",
-                null
+                null,
+                "A26"
         );
     }
 

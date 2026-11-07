@@ -67,9 +67,10 @@ class AssignationProfesseurControllerTest {
     @Test
     @DisplayName("GET /gestionnaire/stagiaires retourne 200 et la liste des étudiants")
     void listStagiaires_retourne200() throws Exception {
-        when(assignationProfesseurService.listStagiaires()).thenReturn(List.of(stagiaire(7L)));
 
-        mockMvc.perform(get("/gestionnaire/stagiaires"))
+        when(assignationProfesseurService.listStagiaires("A26")).thenReturn(List.of(stagiaire(7L)));
+
+        mockMvc.perform(get("/gestionnaire/stagiaires/A26"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].email").value("bib@a.com"))
                 .andExpect(jsonPath("$[0].professeurId").value(7))
