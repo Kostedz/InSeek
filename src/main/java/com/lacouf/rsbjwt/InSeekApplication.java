@@ -41,22 +41,5 @@ public class InSeekApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        RegisterDTO registerDTO = new RegisterDTO("bib", "bib", "bib@a.com", Role.ETUDIANT, "123456Aa@", "INFORMATIQUE");
-        registerIfMissing(registerDTO);
-
-
-        RegisterDTO registerDTO1 = new RegisterDTO("Ubi", "Soft", "ubisoft@mail.com", Role.EMPLOYEUR, "123456Aa@", "UbiSoft");
-        registerIfMissing(registerDTO1);
-
-        RegisterDTO registerDTO2 = new RegisterDTO("Admin", "Jean", "gestionnaire@inseek.com", Role.GESTIONNAIRE, "123456Aa@", "");
-        registerIfMissing(registerDTO2);
-
-        MultipartFile file = new MockMultipartFile("cv.pdf", "cv.pdf", "application/pdf", "Dummy CV content".getBytes());
-    }
-
-    private void registerIfMissing(RegisterDTO registerDTO) throws Exception {
-        if (utilisateurRepository.findByEmail(registerDTO.email()) == null) {
-            utilisateurService.register(registerDTO);
-        }
     }
 }

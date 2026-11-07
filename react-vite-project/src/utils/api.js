@@ -236,7 +236,7 @@ export const api = {
             fetcher("/gestionnaire/sessions", {headers: {Accept: "application/json"}}),
 
         getStudentsBySession: (sessionId) =>
-            fetcher(`/gestionnaire/etudiants?sessionId=${encodeURIComponent(sessionId)}`, {
+            fetcher(`/gestionnaire/etudiants/${encodeURIComponent(sessionId)}`, {
                 headers: {Accept: "application/json"},
             }),
 

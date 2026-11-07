@@ -24,6 +24,13 @@ public class AssignationProfesseurService {
     private final UtilisateurRepository utilisateurRepository;
 
     @Transactional(readOnly = true)
+    public List<StagiaireDTO> listTousLesStagiaires() {
+        return etudiantRepository.findAll().stream()
+                .map(StagiaireDTO::of)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<StagiaireDTO> listStagiaires(String session) {
         List<Etudiant> stagiaires = utilisateurRepository.findBySession(session);
         return stagiaires.stream()
