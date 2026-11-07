@@ -232,6 +232,14 @@ export const api = {
     },
 
     gestionnaire: {
+        getAcademicSessions: () =>
+            fetcher("/gestionnaire/sessions", {headers: {Accept: "application/json"}}),
+
+        getStudentsBySession: (sessionId) =>
+            fetcher(`/gestionnaire/etudiants?sessionId=${encodeURIComponent(sessionId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
         getInternshipStudents: () =>
             fetcher("/gestionnaire/stagiaires", {headers: {Accept: "application/json"}}),
 
