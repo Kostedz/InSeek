@@ -19,9 +19,9 @@ public class AssignationProfesseurController {
 
     private final AssignationProfesseurService assignationProfesseurService;
 
-    @GetMapping("/stagiaires")
-    public ResponseEntity<List<StagiaireDTO>> listStagiaires() {
-        return ResponseEntity.ok(assignationProfesseurService.listStagiaires());
+    @GetMapping("/stagiaires/{session}")
+    public ResponseEntity<List<StagiaireDTO>> listStagiaires(@PathVariable String session) {
+        return ResponseEntity.ok(assignationProfesseurService.listStagiaires(session));
     }
 
     @GetMapping("/professeurs")
