@@ -39,6 +39,14 @@ public final class DevDemoAccounts {
             )
     );
 
+    private static final Account SIGNED_CONTRACT_STUDENT = new Account(
+            "emile.tremblay@inseek.local",
+            "DemoContrat!2026",
+            "Tremblay",
+            "Émile",
+            "INFORMATIQUE"
+    );
+
     private DevDemoAccounts() {
     }
 
@@ -48,5 +56,9 @@ public final class DevDemoAccounts {
 
     public static Account forRole(Role role) {
         return ACCOUNTS.get(role);
+    }
+
+    public static Account signedContractStudent() {
+        return SIGNED_CONTRACT_STUDENT;
     }
 }
