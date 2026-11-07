@@ -220,7 +220,7 @@ export default function ProfessorDashboard() {
                                 <h2 className="mt-1 text-xl font-black text-ink">{t("professorDashboard.evaluation.sectionTitle", "Évaluation du milieu de stage")}</h2>
                             </div>
                             <span
-                                className="rounded-full bg-peach/50 px-3 py-1.5 text-sm font-black text-ink">{pendingEvaluations} {t("professorDashboard.evaluation.remaining", "à évaluer")}</span>
+                                className="rounded-full bg-peach/50 px-3 py-1.5 text-sm font-black text-ink">{pendingEvaluations === 0 ? `0 ${t("professorDashboard.evaluation.remainingZero", "étudiant à évaluer")}` : `${pendingEvaluations} ${t("professorDashboard.evaluation.remaining", "à évaluer")}`}</span>
                         </div>
                         <div className="mt-4 grid gap-3">
                             {students.filter(s => isSigned(s) || submitted[s.id]).map((student) => {
@@ -231,12 +231,23 @@ export default function ProfessorDashboard() {
                                     className={`block text-sm font-bold text-ink ${className}`} key={name}>
                                     {type === "range" ? <><span
                                         className="flex items-center justify-between gap-3"><span>{label}</span><span
-                                        className="shrink-0 rounded-full bg-lavender/40 px-3 py-1 text-xs font-black text-ink">{data[name] ? `${data[name]} / 5` : t("professorDashboard.evaluation.ratingChoose", "Choisir une note")}</span></span><input
-                                        type="range" min="1" max="5" step="0.5" disabled={Boolean(complete)}
-                                        value={data[name] || "3"}
-                                        onChange={e => setEvaluationField(student.id, name, e.target.value)}
-                                        aria-label={label}
-                                        className="mt-0.5 block h-5 w-full cursor-pointer accent-ink disabled:cursor-default"/><span
+                                        className="shrink-0 rounded-full bg-lavender/40 px-3 py-1 text-xs font-black text-ink">{data[name] ? `${data[name]} / 5` : t("professorDashboard.evaluation.ratingChoose", "Choisir une note")}</span></span><span
+                                        className="professor-rating-slider relative mt-0.5 block h-6 w-full cursor-pointer has-[:focus-visible]:rounded-full has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink disabled:cursor-default">
+                                            <span
+                                                className="absolute inset-x-2 top-1/2 h-1 -translate-y-1/2 rounded-full bg-lavender/60">
+                                                <span
+                                                    className="absolute left-0 top-0 h-1 rounded-full bg-ink transition-[width] duration-150 ease-out motion-reduce:transition-none"
+                                                    style={{width: `${((Number(data[name] || 3) - 1) / 4) * 100}%`}}/>
+                                                <span
+                                                    className="absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-ink shadow-[0_1px_5px_rgba(48,35,55,0.3)] transition-[left,transform] duration-150 ease-out motion-reduce:transition-none"
+                                                    style={{left: `${((Number(data[name] || 3) - 1) / 4) * 100}%`}}/>
+                                            </span>
+                                            <input type="range" min="1" max="5" step="0.5" disabled={Boolean(complete)}
+                                                   value={data[name] || "3"}
+                                                   onChange={e => setEvaluationField(student.id, name, e.target.value)}
+                                                   aria-label={label}
+                                                   className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"/>
+                                        </span><span
                                         className="flex items-center justify-between gap-2 text-[10px] font-bold text-ink-soft"><span
                                         className="rounded-full bg-canvas px-2.5 py-1">{t("professorDashboard.evaluation.ratingLow", "1 · À améliorer")}</span><span
                                         className="rounded-full bg-canvas px-2.5 py-1">{t("professorDashboard.evaluation.ratingHigh", "5 · Excellent")}</span></span></> : <>{label}{type === "date" ?
