@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.service.ApplicationStageService;
+import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.SessionService;
 import com.lacouf.rsbjwt.service.dto.SessionDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
@@ -17,6 +18,7 @@ import java.util.List;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final DocumentService documentService;
     private final ApplicationStageService offreDeStageService;
 
     @GetMapping
@@ -28,6 +30,6 @@ public class SessionController {
     @GetMapping("/{sessionId}/offres")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
     public ResponseEntity<List<OffreDeStageDTO>> getOffersBySession(@PathVariable String sessionId) {
-        return ResponseEntity.ok(offreDeStageService.listerOffresParSession(sessionId));
+        return ResponseEntity.ok(documentService.findStagesBySession(sessionId));
     }
 }
