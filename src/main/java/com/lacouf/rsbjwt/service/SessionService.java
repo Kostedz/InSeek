@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.service.dto.SessionDTO;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -14,27 +15,18 @@ public class SessionService {
     public List<SessionDTO> listerToutesLesSessions() {
         LocalDate now = LocalDate.now();
         int currentYear = now.getYear();
-        int currentMonth = now.getMonthValue();
-
-        String currentSessionCode;
-        if (currentMonth <= 4) {
-            currentSessionCode = "HIV_" + currentYear;
-        } else if (currentMonth <= 8) {
-            currentSessionCode = "ETE_" + currentYear;
-        } else {
-            currentSessionCode = "AUT_" + currentYear;
-        }
+        String currentSessionCode = SessionUtil.getSession(now);
 
         List<SessionDTO> sessions = new ArrayList<>();
         int startYear = 2024;
-        int endYear = currentYear;
+        int endYear = currentYear + (now.getMonthValue() == 12 && now.getDayOfMonth() >= 15 ? 1 : 0);
 
-        String[] termCodes = {"HIV", "ETE", "AUT"};
+        String[] termCodes = {"H", "E", "A"};
         String[] termNames = {"Hiver", "Été", "Automne"};
 
         for (int yr = startYear; yr <= endYear; yr++) {
             for (int i = 0; i < termCodes.length; i++) {
-                String id = termCodes[i] + "_" + yr;
+                String id = termCodes[i] + String.format("%02d", yr % 100);
                 String name = termNames[i] + " " + yr;
                 boolean isCurrent = id.equals(currentSessionCode);
 

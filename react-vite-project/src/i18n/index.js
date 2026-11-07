@@ -868,6 +868,7 @@ const resources = {
                 sessionEyebrow: "Suivi par session",
                 sessionTitle: "Session du Cégep",
                 session: "Sélectionner une session",
+                allSessions: "Toutes les sessions",
                 navigation: "Navigation du professeur",
                 tabs: {
                     students: "Mes étudiants",
@@ -875,7 +876,7 @@ const resources = {
                 },
                 loading: "Chargement de vos étudiants…",
                 emptyTitle: "Aucun étudiant assigné",
-                emptyDescription: "Aucun étudiant ne vous est assigné pour la session sélectionnée",
+                emptyDescription: "Aucun étudiant n’est assigné à cette sélection.",
                 student: "Étudiant",
                 company: "Entreprise",
                 companyTutor: "Tuteur en entreprise",
@@ -2072,6 +2073,7 @@ const resources = {
                 sessionEyebrow: "Follow-up by session",
                 sessionTitle: "College session",
                 session: "Select a session",
+                allSessions: "All sessions",
                 navigation: "Professor navigation",
                 tabs: {
                     students: "My students",
@@ -2079,7 +2081,7 @@ const resources = {
                 },
                 loading: "Loading your students…",
                 emptyTitle: "No students assigned",
-                emptyDescription: "No students are assigned to you for the selected session.",
+                emptyDescription: "No students are assigned to this selection.",
                 student: "Student",
                 company: "Company",
                 companyTutor: "Company supervisor",

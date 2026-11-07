@@ -236,7 +236,7 @@ export const api = {
             fetcher("/gestionnaire/sessions", {headers: {Accept: "application/json"}}),
 
         getStudentsBySession: (sessionId) =>
-            fetcher(`/gestionnaire/etudiants/${encodeURIComponent(sessionId)}`, {
+            fetcher(`/gestionnaire/stagiaires/${encodeURIComponent(sessionId)}`, {
                 headers: {Accept: "application/json"},
             }),
 
@@ -322,7 +322,10 @@ export const api = {
 
     professor: {
         getStudents: (sessionId) => {
-            return fetcher(`/professeur/etudiants/${encodeURIComponent(sessionId)}`,
+            const path = sessionId === "ALL"
+                ? "/professeur/etudiants"
+                : `/professeur/etudiants/${encodeURIComponent(sessionId)}`;
+            return fetcher(path,
                 {headers: {Accept: "application/json"}});
         },
 

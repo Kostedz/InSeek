@@ -8,10 +8,14 @@ import ProfessorTabs from "./ProfessorTabs.jsx";
 const asList = (value) => Array.isArray(value) ? value : value?.items ?? value?.content ?? [];
 const personName = (person) => [person?.prenom ?? person?.firstName, person?.nom ?? person?.lastName].filter(Boolean).join(" ");
 const sessionOptions = (date = new Date()) => {
-    const year = date.getFullYear();
+    let year = date.getFullYear();
     const month = date.getMonth() + 1;
-    const currentTerm = month <= 4 ? 0 : month <= 8 ? 1 : 2;
-    const terms = [{code: "HIV", label: "Hiver"}, {code: "ETE", label: "Été"}, {code: "AUT", label: "Automne"}];
+    let currentTerm = month <= 4 ? 0 : month <= 8 ? 1 : 2;
+    if (currentTerm === 2 && month === 12 && date.getDate() >= 15) {
+        year += 1;
+        currentTerm = 0;
+    }
+    const terms = [{code: "H", label: "Hiver"}, {code: "E", label: "Été"}, {code: "A", label: "Automne"}];
     const options = [];
     const offsets = [0, -1, -2, -3, ...Array.from({length: 12}, (_, index) => index + 1)];
     for (const offset of offsets) {
@@ -19,7 +23,7 @@ const sessionOptions = (date = new Date()) => {
         const sessionYear = Math.floor(absoluteTerm / 3);
         const term = terms[((absoluteTerm % 3) + 3) % 3];
         if (sessionYear >= 2024 && sessionYear <= year) options.push({
-            id: `${term.code}_${sessionYear}`,
+            id: `${term.code}${String(sessionYear % 100).padStart(2, "0")}`,
             name: `${term.label} ${sessionYear}`
         });
     }
@@ -36,8 +40,8 @@ const defaultEvaluation = (student) => ({
     comments: "",
     student: personName(student),
     discipline: student?.discipline ?? "",
-    company: student?.nomEntreprise ?? student?.entreprise ?? "",
-    employer: student?.nomEmployeur ?? student?.employeur ?? "",
+    company: student?.entrepriseAccueil ?? student?.nomEntreprise ?? student?.entreprise ?? "",
+    employer: student?.tuteurEntreprise ?? student?.nomEmployeur ?? student?.employeur ?? "",
     offer: student?.titreOffre ?? student?.offreDeStage ?? "",
     startDate: student?.dateDebut ?? student?.dateDebutStage ?? "",
     endDate: student?.dateFin ?? student?.dateFinStage ?? "",
@@ -409,6 +413,7 @@ export default function ProfessorDashboard() {
                                         onChange={event => setSelectedSessionId(event.target.value)}
                                         wrapperClassName="w-fit"
                                         className="field-sizing-content w-fit rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-semibold text-ink outline-none focus:border-lavender">
+                            <option value="ALL">{t("professorDashboard.allSessions", "Toutes les sessions")}</option>
                             {sessions.map(session => <option key={session.id}
                                                              value={session.id}>{session.name}</option>)}
                         </DropdownSelect>
@@ -419,7 +424,7 @@ export default function ProfessorDashboard() {
                     <p className="py-14 text-center text-sm font-medium text-ink-soft">{t("professorDashboard.loading", "Chargement de vos étudiants…")}</p> : students.length === 0 ? (
                         <div className="mt-8 rounded-[1.75rem] border border-line bg-surface p-8 text-center shadow-sm">
                             <h2 className="text-lg font-black text-ink">{t("professorDashboard.emptyTitle", "Aucun étudiant assigné")}</h2>
-                            <p className="mt-2 text-sm leading-6 text-ink-soft">{t("professorDashboard.emptyDescription", "Aucun étudiant ne vous est assigné pour la session sélectionnée")}</p>
+                            <p className="mt-2 text-sm leading-6 text-ink-soft">{t("professorDashboard.emptyDescription", "Aucun étudiant n’est assigné à cette sélection.")}</p>
                         </div>
                     ) : (
                         <div className="mt-8 grid gap-4">
@@ -429,37 +434,40 @@ export default function ProfessorDashboard() {
                                 return <article key={student.id}
                                                 className="overflow-hidden rounded-[1.5rem] border border-line bg-surface shadow-sm">
                                     <div
-                                        className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                                        <div>
-                                            <h2 className="text-lg font-black text-ink">
+                                        className="grid grid-cols-1 gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-4 lg:p-4 xl:grid-cols-[1.1fr_1.3fr_1fr_1fr_1fr_auto] xl:items-center">
+                                        <div className="min-w-0">
+                                            <h2 className="text-base font-black text-ink">
                                                 <button type="button" onClick={() => toggleApplications(student)}
                                                         className="text-left underline decoration-lavender decoration-2 underline-offset-4 hover:text-ink-soft">{personName(student) || t("professorDashboard.student", "Étudiant")}</button>
                                             </h2>
-                                            <p className="mt-1 text-sm text-ink-soft">{student.email ?? student.courriel ?? "—"}</p>
-                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                {student.discipline && <span
-                                                    className="rounded-full bg-lavender/35 px-3 py-1 text-xs font-bold text-ink">{t("professorDashboard.discipline", "Discipline")} : {t(`employerOffers.disciplines.${String(student.discipline).toUpperCase()}`, {defaultValue: student.discipline})}</span>}
-                                                {student.statutRecherche && <span
-                                                    className="rounded-full bg-canvas px-3 py-1 text-xs font-bold text-ink-soft">{t("professorDashboard.searchStatus", "Recherche")}: {t(`professorDashboard.studentStatuses.${String(student.statutRecherche).toUpperCase()}`, {defaultValue: t("professorDashboard.status.unknown", "Statut inconnu")})}</span>}
-                                            </div>
-                                            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                                                <div>
-                                                    <dt className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.company", "Entreprise")}</dt>
-                                                    <dd className="mt-1 font-semibold text-ink">{student.nomEntreprise ?? student.entreprise ?? student.companyName ?? "—"}</dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.companyTutor", "Tuteur en entreprise")}</dt>
-                                                    <dd className="mt-1 font-semibold text-ink">{student.nomEmployeur ?? student.employeur ?? student.tuteurEntreprise ?? "—"}</dd>
-                                                </div>
-                                                <div>
-                                                    <dt className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.internshipStatus", "Statut du stage")}</dt>
-                                                    <dd className="mt-1 font-semibold text-ink">{student.statutContrat ?? student.contractStatus ?? student.statutRecherche ?? "—"}</dd>
-                                                </div>
-                                            </dl>
+                                            <p className="mt-0.5 truncate text-xs text-ink-soft">{student.email ?? student.courriel ?? "—"}</p>
                                         </div>
+                                        <div className="flex flex-wrap gap-1.5 lg:col-span-2 xl:col-span-1">
+                                            {student.discipline && <span
+                                                className="rounded-full bg-lavender/35 px-2.5 py-0.5 text-[11px] font-bold text-ink">{t("professorDashboard.discipline", "Discipline")} : {t(`employerOffers.disciplines.${String(student.discipline).toUpperCase()}`, {defaultValue: student.discipline})}</span>}
+                                            {student.statutRecherche && <span
+                                                className="rounded-full bg-canvas px-2.5 py-0.5 text-[11px] font-bold text-ink-soft">{t("professorDashboard.searchStatus", "Recherche")}: {t(`professorDashboard.studentStatuses.${String(student.statutRecherche).toUpperCase()}`, {defaultValue: t("professorDashboard.status.unknown", "Statut inconnu")})}</span>}
+                                        </div>
+                                        <dl className="grid grid-cols-1 gap-y-2 text-xs sm:grid-cols-2 sm:gap-x-4 lg:col-span-2 lg:grid-cols-3 xl:contents">
+                                            <div
+                                                className="flex min-w-0 items-baseline justify-between gap-3 sm:block xl:block">
+                                                <dt className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.company", "Entreprise")}</dt>
+                                                <dd className="min-w-0 break-words text-right font-semibold text-ink sm:text-left xl:truncate">{student.entrepriseAccueil ?? student.nomEntreprise ?? student.entreprise ?? student.companyName ?? "—"}</dd>
+                                            </div>
+                                            <div
+                                                className="flex min-w-0 items-baseline justify-between gap-3 sm:block xl:block">
+                                                <dt className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.companyTutor", "Tuteur en entreprise")}</dt>
+                                                <dd className="min-w-0 break-words text-right font-semibold text-ink sm:text-left xl:truncate">{student.tuteurEntreprise ?? student.nomEmployeur ?? student.employeur ?? "—"}</dd>
+                                            </div>
+                                            <div
+                                                className="flex min-w-0 items-baseline justify-between gap-3 sm:block xl:block">
+                                                <dt className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.internshipStatus", "Statut du stage")}</dt>
+                                                <dd className="min-w-0 break-words text-right font-semibold text-ink sm:text-left xl:truncate">{student.statutRecherche ? t(`professorDashboard.studentStatuses.${String(student.statutRecherche).toUpperCase()}`, {defaultValue: student.statutRecherche}) : "—"}</dd>
+                                            </div>
+                                        </dl>
                                         <button type="button" aria-expanded={isExpanded}
                                                 onClick={() => toggleApplications(student)}
-                                                className="shrink-0 rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white transition hover:bg-ink-soft">
+                                                className="w-full rounded-lg bg-ink px-4 py-3 text-center text-xs font-bold text-white transition hover:bg-ink-soft lg:col-start-2 lg:row-start-1 lg:w-auto lg:justify-self-end lg:py-2.5 xl:col-start-auto xl:row-start-auto">
                                             {isExpanded ? t("professorDashboard.hideApplications", "Masquer les demandes") : t("professorDashboard.viewApplications", "Voir les demandes")}
                                         </button>
                                     </div>

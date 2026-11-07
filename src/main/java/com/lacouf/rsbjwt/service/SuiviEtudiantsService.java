@@ -28,6 +28,14 @@ public class SuiviEtudiantsService {
     }
 
     @Transactional(readOnly = true)
+    public List<StagiaireDTO> listEtudiantsDuProfesseur(String professeurEmail, String session) {
+        return etudiantRepository.findByProfesseurEmailAndSession(professeurEmail, session)
+                .stream()
+                .map(StagiaireDTO::of)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<ApplicationStageDTO> listDemandesDeStage(String professeurEmail, Long etudiantId)
             throws NotFoundException, BadRequestException {
         Etudiant etudiant = etudiantRepository.findById(etudiantId)

@@ -5,7 +5,10 @@ import java.time.LocalDate;
 public class SessionUtil {
 
     public static String getCurrentSession() {
-        LocalDate today = LocalDate.now();
+        return getSession(LocalDate.now());
+    }
+
+    public static String getSession(LocalDate today) {
         int year = today.getYear();
 
         String formattedYear = String.format("%02d", year % 100);

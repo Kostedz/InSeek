@@ -10,6 +10,7 @@ import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -240,29 +241,8 @@ public class ApplicationStageService {
         List<OffreDeStageDTO> toutesLesOffres = documentRepository.findAllOffreStageSummaries();
 
         return toutesLesOffres.stream()
-                .filter(offre -> offre.updatedAt() != null // <-- Utiliser la date de création / d'émission
-                        && sessionId.equalsIgnoreCase(determinerSessionParDate(offre.updatedAt().toLocalDate())))
+                .filter(offre -> offre.updatedAt() != null
+                        && sessionId.equalsIgnoreCase(SessionUtil.getSession(offre.updatedAt().toLocalDate())))
                 .toList();
-    }
-
-    /**
-     * Calcule la session en fonction de la date à laquelle l'offre a été créée / émise.
-     */
-    private String determinerSessionParDate(LocalDate dateCreation) {
-        if (dateCreation == null) return "";
-
-        int year = dateCreation.getYear();
-        int monthValue = dateCreation.getMonthValue();
-
-        // Hiver (HIV) : Janvier à Avril
-        // Été (ETE)   : Mai à Août
-        // Automne (AUT): Septembre à Décembre
-        if (monthValue >= 1 && monthValue <= 4) {
-            return "HIV_" + year;
-        } else if (monthValue >= 5 && monthValue <= 8) {
-            return "ETE_" + year;
-        } else {
-            return "AUT_" + year;
-        }
     }
 }

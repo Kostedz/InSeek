@@ -10,21 +10,28 @@ const sessionLabel = (session) => valueOf(session, "label", "nom", "name", "libe
 const sessionId = (session) => valueOf(session, "id", "sessionId", "code") ?? sessionLabel(session);
 const statusOf = (student) => String(valueOf(student, "statutRecherche", "statutRechercheEtudiant", "researchStatus", "status", "statut") ?? "").toUpperCase();
 const FALLBACK_SESSIONS = (date) => {
-    const currentYear = date.getFullYear();
-    const latestTerm = date.getMonth() < 4 ? ["HIVER", currentYear]
-        : date.getMonth() < 8 ? ["ETE", currentYear]
-            : ["AUTOMNE", currentYear];
-    const termOrder = ["HIVER", "ETE", "AUTOMNE"];
+    let currentYear = date.getFullYear();
+    let currentTerm = date.getMonth() < 4 ? 0 : date.getMonth() < 8 ? 1 : 2;
+    if (currentTerm === 2 && date.getDate() >= 15 && date.getMonth() === 11) {
+        currentYear += 1;
+        currentTerm = 0;
+    }
+    const terms = [
+        {code: "H", label: "Hiver"},
+        {code: "E", label: "Été"},
+        {code: "A", label: "Automne"},
+    ];
     const sessions = [];
-    let [term, year] = latestTerm;
+    let termIndex = currentTerm;
+    let year = currentYear;
     for (let index = 0; index < 6; index += 1) {
+        const term = terms[termIndex];
         sessions.push({
-            id: `${term}-${year}`,
-            label: `${term === "ETE" ? "Été" : term[0] + term.slice(1).toLocaleLowerCase()} ${year}`
+            id: `${term.code}${String(year % 100).padStart(2, "0")}`,
+            label: `${term.label} ${year}`
         });
-        const termIndex = termOrder.indexOf(term);
         if (termIndex === 0) year -= 1;
-        term = termOrder[(termIndex + termOrder.length - 1) % termOrder.length];
+        termIndex = (termIndex + terms.length - 1) % terms.length;
     }
     return sessions;
 };
@@ -232,7 +239,7 @@ export default function GestionnaireStudents({embedded = false}) {
                                         const status = statusOf(student);
                                         const professorValue = valueOf(student, "professeurNom", "professorName", "professeur", "professor");
                                         const professor = typeof professorValue === "object" ? fullName(professorValue) : professorValue ?? [student.professeurPrenom, student.professeurNom].filter(Boolean).join(" ");
-                                        const company = valueOf(student, "entreprise", "nomEntreprise", "companyName", "employeurNom");
+                                        const company = valueOf(student, "entrepriseAccueil", "entreprise", "nomEntreprise", "companyName", "employeurNom");
                                         const program = valueOf(student, "discipline", "programme", "program", "programName");
                                         return <tr key={student.id ?? student.email}>
                                             <td className="px-4 py-4"><p
