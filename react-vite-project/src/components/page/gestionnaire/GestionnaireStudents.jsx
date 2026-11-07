@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
+import DropdownSelect from "../../DropdownSelect.jsx";
 
 const asList = (value) => Array.isArray(value) ? value : value?.items ?? value?.content ?? value?.sessions ?? [];
 const fullName = (student) => [student?.prenom ?? student?.firstName, student?.nom ?? student?.lastName].filter(Boolean).join(" ");
@@ -138,12 +139,13 @@ export default function GestionnaireStudents({embedded = false}) {
                         <label className="w-full lg:max-w-xs">
                             <span
                                 className="mb-2 block text-xs font-bold uppercase tracking-wide text-ink-soft">{t("managerStudents.session", "Session du Cégep")}</span>
-                            <select value={selectedSessionId} disabled={loadingSessions || sessions.length === 0}
+                            <DropdownSelect value={selectedSessionId}
+                                            disabled={loadingSessions || sessions.length === 0}
                                     onChange={(event) => setSelectedSessionId(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-semibold text-ink outline-none focus:border-lavender disabled:opacity-60">
                                 {sessions.map((session) => <option key={sessionId(session)}
                                                                    value={sessionId(session)}>{sessionLabel(session)}</option>)}
-                            </select>
+                            </DropdownSelect>
                         </label>
                     </div>
 
@@ -168,27 +170,29 @@ export default function GestionnaireStudents({embedded = false}) {
                         </label>
                         <label>
                             <span className="sr-only">{t("managerStudents.filterStatus", "Filtrer par statut")}</span>
-                            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}
+                            <DropdownSelect value={statusFilter}
+                                            onChange={(event) => setStatusFilter(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender">
                                 <option value="all">{t("managerStudents.allStatuses", "Tous les statuts")}</option>
                                 {statuses.map((status) => <option key={status}
                                                                   value={status}>{t(`managerStudents.statuses.${status}`, {defaultValue: status.replaceAll("_", " ").toLocaleLowerCase()})}</option>)}
-                            </select>
+                            </DropdownSelect>
                         </label>
                         <label>
                             <span
                                 className="sr-only">{t("managerStudents.filterProgram", "Filtrer par programme")}</span>
-                            <select value={programFilter} onChange={(event) => setProgramFilter(event.target.value)}
+                            <DropdownSelect value={programFilter}
+                                            onChange={(event) => setProgramFilter(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender">
                                 <option value="all">{t("managerStudents.allPrograms", "Tous les programmes")}</option>
                                 {programs.map((program) => <option key={program}
                                                                    value={program}>{t(`employerOffers.disciplines.${String(program).toUpperCase()}`, {defaultValue: program})}</option>)}
-                            </select>
+                            </DropdownSelect>
                         </label>
                         <label>
                             <span
                                 className="sr-only">{t("managerStudents.filterAssignment", "Filtrer par assignation")}</span>
-                            <select value={assignmentFilter}
+                            <DropdownSelect value={assignmentFilter}
                                     onChange={(event) => setAssignmentFilter(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender">
                                 <option
@@ -197,7 +201,7 @@ export default function GestionnaireStudents({embedded = false}) {
                                     value="assigned">{t("managerStudents.assigned", "Avec professeur assigné")}</option>
                                 <option
                                     value="unassigned">{t("managerStudents.unassigned", "Sans professeur assigné")}</option>
-                            </select>
+                            </DropdownSelect>
                         </label>
                     </div>
 

@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import {Link} from "react-router-dom";
 import {useTranslation} from "react-i18next";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import {api} from "../../../utils/api.js";
 import {DisciplineEnum} from "../../../constants/disciplines.js";
 
@@ -129,7 +130,7 @@ export default function EtudiantProfil({user, setUser}) {
                             <label htmlFor="student-discipline" className="text-sm font-bold text-ink">
                                 {t("studentProfile.selectDiscipline")}
                             </label>
-                            <select
+                            <DropdownSelect
                                 id="student-discipline"
                                 value={selectedDiscipline}
                                 onChange={(event) => setSelectedDiscipline(event.target.value)}
@@ -140,7 +141,7 @@ export default function EtudiantProfil({user, setUser}) {
                                         {t(`auth.register.disciplines.${disciplineTranslationKey(discipline)}`, {defaultValue: discipline})}
                                     </option>
                                 ))}
-                            </select>
+                            </DropdownSelect>
                             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                                 <button
                                     type="button"

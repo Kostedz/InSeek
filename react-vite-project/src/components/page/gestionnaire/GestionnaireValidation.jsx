@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { translateMessage } from "../../../utils/i18nMessage.js";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import api from "../../../utils/api.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
@@ -403,7 +404,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
                         <label htmlFor="cegep-session-select" className="block text-xs font-bold uppercase tracking-wider text-ink-soft mb-1">
                             {t("managerOffersSession.sessionSelect", { defaultValue: "Session du Cégep" })}
                         </label>
-                        <select
+                        <DropdownSelect
                             id="cegep-session-select"
                             value={selectedSessionId}
                             onChange={(e) => setSelectedSessionId(e.target.value)}
@@ -414,7 +415,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
                                     {session.name || session.libelle || session.code} {session.isCurrent || session.active || session.courante ? " (Courante)" : ""}
                                 </option>
                             ))}
-                        </select>
+                        </DropdownSelect>
                     </div>
 
                     <div>
@@ -435,7 +436,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
                         <label htmlFor="status-filter-select" className="block text-xs font-bold uppercase tracking-wider text-ink-soft mb-1">
                             {t("managerOffersSession.filters.status", { defaultValue: "Statut de l'offre" })}
                         </label>
-                        <select
+                        <DropdownSelect
                             id="status-filter-select"
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
@@ -445,7 +446,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
                             <option value="EN_ATTENTE">{t("managerOffersSession.filters.pending", { defaultValue: "En attente" })}</option>
                             <option value="VALIDE">{t("managerOffersSession.filters.validated", { defaultValue: "Validées" })}</option>
                             <option value="REJETE">{t("managerOffersSession.filters.rejected", { defaultValue: "Refusées" })}</option>
-                        </select>
+                        </DropdownSelect>
                     </div>
                 </div>
 

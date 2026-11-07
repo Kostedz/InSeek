@@ -2,10 +2,29 @@ import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {useLocation} from "react-router-dom";
 import api from "../../../utils/api.js";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import ProfessorTabs from "./ProfessorTabs.jsx";
 
 const asList = (value) => Array.isArray(value) ? value : value?.items ?? value?.content ?? [];
 const personName = (person) => [person?.prenom ?? person?.firstName, person?.nom ?? person?.lastName].filter(Boolean).join(" ");
+const sessionOptions = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const currentTerm = month <= 4 ? 0 : month <= 8 ? 1 : 2;
+    const terms = [{code: "HIV", label: "Hiver"}, {code: "ETE", label: "Été"}, {code: "AUT", label: "Automne"}];
+    const options = [];
+    const offsets = [0, -1, -2, -3, ...Array.from({length: 12}, (_, index) => index + 1)];
+    for (const offset of offsets) {
+        const absoluteTerm = year * 3 + currentTerm - offset;
+        const sessionYear = Math.floor(absoluteTerm / 3);
+        const term = terms[((absoluteTerm % 3) + 3) % 3];
+        if (sessionYear >= 2024 && sessionYear <= year) options.push({
+            id: `${term.code}_${sessionYear}`,
+            name: `${term.label} ${sessionYear}`
+        });
+    }
+    return options;
+};
 const draftKey = (id) => `inseek.professor.environment-evaluation.${id}`;
 const isSigned = (student) => [student?.statutRecherche, student?.statutContrat, student?.contractStatus]
     .some((status) => String(status ?? "").toUpperCase().includes("SIGNED") || String(status ?? "").toUpperCase().includes("SIGNE"));
@@ -43,6 +62,8 @@ export default function ProfessorDashboard() {
     const {pathname} = useLocation();
     const activeTab = pathname.endsWith("/evaluations") ? "evaluations" : "students";
     const [students, setStudents] = useState([]);
+    const [sessions] = useState(() => sessionOptions());
+    const [selectedSessionId, setSelectedSessionId] = useState(() => sessionOptions()[0]?.id ?? "");
     const [applications, setApplications] = useState({});
     const [evaluationPrefill, setEvaluationPrefill] = useState({});
     const [expandedId, setExpandedId] = useState(null);
@@ -88,7 +109,11 @@ export default function ProfessorDashboard() {
 
     useEffect(() => {
         let active = true;
-        api.professor.getStudents().then(async (response) => {
+        if (!selectedSessionId) return undefined;
+        setLoading(true);
+        setStudents([]);
+        setError("");
+        api.professor.getStudents(selectedSessionId).then(async (response) => {
             if (!response.ok) throw new Error("load_failed");
             const list = asList(await response.json());
             if (active) setStudents(list);
@@ -100,7 +125,7 @@ export default function ProfessorDashboard() {
         return () => {
             active = false;
         };
-    }, [t]);
+    }, [t, selectedSessionId]);
 
     const toggleApplications = async (student) => {
         if (expandedId === student.id) {
@@ -372,11 +397,29 @@ export default function ProfessorDashboard() {
                 {error &&
                     <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
                        role="alert">{error}</p>}
+                {activeTab === "students" && <section
+                    className="mt-8 rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm sm:flex sm:items-end sm:justify-between sm:gap-6 sm:p-6">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink-soft">{t("professorDashboard.sessionEyebrow", "Suivi par session")}</p>
+                        <h2 className="mt-1 text-lg font-black text-ink">{t("professorDashboard.sessionTitle", "Session du Cégep")}</h2>
+                    </div>
+                    <label className="mt-4 block w-fit sm:mt-0">
+                        <span className="sr-only">{t("professorDashboard.session", "Sélectionner une session")}</span>
+                        <DropdownSelect value={selectedSessionId}
+                                        onChange={event => setSelectedSessionId(event.target.value)}
+                                        wrapperClassName="w-fit"
+                                        className="field-sizing-content w-fit rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-semibold text-ink outline-none focus:border-lavender">
+                            {sessions.map(session => <option key={session.id}
+                                                             value={session.id}>{session.name}</option>)}
+                        </DropdownSelect>
+                    </label>
+                </section>}
+
                 {activeTab === "students" && (loading ?
                     <p className="py-14 text-center text-sm font-medium text-ink-soft">{t("professorDashboard.loading", "Chargement de vos étudiants…")}</p> : students.length === 0 ? (
                         <div className="mt-8 rounded-[1.75rem] border border-line bg-surface p-8 text-center shadow-sm">
                             <h2 className="text-lg font-black text-ink">{t("professorDashboard.emptyTitle", "Aucun étudiant assigné")}</h2>
-                            <p className="mt-2 text-sm leading-6 text-ink-soft">{t("professorDashboard.emptyDescription", "Les étudiants qui vous seront assignés par le gestionnaire apparaîtront ici.")}</p>
+                            <p className="mt-2 text-sm leading-6 text-ink-soft">{t("professorDashboard.emptyDescription", "Aucun étudiant ne vous est assigné pour la session sélectionnée")}</p>
                         </div>
                     ) : (
                         <div className="mt-8 grid gap-4">
@@ -388,14 +431,31 @@ export default function ProfessorDashboard() {
                                     <div
                                         className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                                         <div>
-                                            <h2 className="text-lg font-black text-ink">{personName(student) || t("professorDashboard.student", "Étudiant")}</h2>
-                                            <p className="mt-1 text-sm text-ink-soft">{student.email}</p>
+                                            <h2 className="text-lg font-black text-ink">
+                                                <button type="button" onClick={() => toggleApplications(student)}
+                                                        className="text-left underline decoration-lavender decoration-2 underline-offset-4 hover:text-ink-soft">{personName(student) || t("professorDashboard.student", "Étudiant")}</button>
+                                            </h2>
+                                            <p className="mt-1 text-sm text-ink-soft">{student.email ?? student.courriel ?? "—"}</p>
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 {student.discipline && <span
                                                     className="rounded-full bg-lavender/35 px-3 py-1 text-xs font-bold text-ink">{t("professorDashboard.discipline", "Discipline")} : {t(`employerOffers.disciplines.${String(student.discipline).toUpperCase()}`, {defaultValue: student.discipline})}</span>}
                                                 {student.statutRecherche && <span
                                                     className="rounded-full bg-canvas px-3 py-1 text-xs font-bold text-ink-soft">{t("professorDashboard.searchStatus", "Recherche")}: {t(`professorDashboard.studentStatuses.${String(student.statutRecherche).toUpperCase()}`, {defaultValue: t("professorDashboard.status.unknown", "Statut inconnu")})}</span>}
                                             </div>
+                                            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                                                <div>
+                                                    <dt className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.company", "Entreprise")}</dt>
+                                                    <dd className="mt-1 font-semibold text-ink">{student.nomEntreprise ?? student.entreprise ?? student.companyName ?? "—"}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.companyTutor", "Tuteur en entreprise")}</dt>
+                                                    <dd className="mt-1 font-semibold text-ink">{student.nomEmployeur ?? student.employeur ?? student.tuteurEntreprise ?? "—"}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs font-bold uppercase tracking-wide text-ink-soft">{t("professorDashboard.internshipStatus", "Statut du stage")}</dt>
+                                                    <dd className="mt-1 font-semibold text-ink">{student.statutContrat ?? student.contractStatus ?? student.statutRecherche ?? "—"}</dd>
+                                                </div>
+                                            </dl>
                                         </div>
                                         <button type="button" aria-expanded={isExpanded}
                                                 onClick={() => toggleApplications(student)}

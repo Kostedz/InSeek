@@ -321,7 +321,10 @@ export const api = {
     },
 
     professor: {
-        getStudents: () => fetcher("/professeur/etudiants", {headers: {Accept: "application/json"}}),
+        getStudents: (sessionId) => {
+            const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : "";
+            return fetcher(`/professeur/etudiants${query}`, {headers: {Accept: "application/json"}});
+        },
 
         getStudentApplications: (studentId) =>
             fetcher(`/professeur/etudiants/${encodeURIComponent(studentId)}/demandes`, {
