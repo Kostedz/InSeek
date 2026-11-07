@@ -95,6 +95,14 @@ public class DocumentService {
     }
 
     @Transactional
+    public List<OffreDeStageDTO> findStagesBySession(String session) {
+        List<OffreDeStage> stages = documentRepository.findBySession(session);
+
+        logger.info("Found {} stages for session {}", stages.size(), session);
+        return toOfferDTOs(stages);
+    }
+
+    @Transactional
     public DocumentValidationDTO findStudentCv(HttpServletRequest request)
             throws BadRequestException, NotFoundException {
         Utilisateur student = getAuthenticatedUser(request);

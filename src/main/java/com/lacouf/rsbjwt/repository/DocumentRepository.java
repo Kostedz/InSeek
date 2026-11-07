@@ -148,4 +148,11 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             ORDER BY o.updatedAt DESC, o.id DESC
             """)
     List<OffreDeStageDTO> findAllOffreStageSummaries();
+
+    @Query("""
+            SELECT o
+            FROM OffreDeStage o
+            WHERE o.session = :session
+            """)
+    List<OffreDeStage> findBySession(String session);
 }
