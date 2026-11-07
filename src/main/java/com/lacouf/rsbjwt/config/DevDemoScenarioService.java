@@ -17,6 +17,7 @@ import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -217,6 +218,7 @@ public class DevDemoScenarioService {
                         .contentType("application/pdf")
                         .size(offerPdf.length)
                         .employeur(employer)
+                        .session(SessionUtil.getCurrentSession())
                         .build();
             }
             offer.setUtilisateur(employer);
