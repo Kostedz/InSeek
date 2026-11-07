@@ -15,7 +15,7 @@ import lombok.Setter;
 public class StudentEvaluation extends Evaluation{
 
     @ManyToOne
-    Employeur employee;
+    Employeur employer;
 
     @ManyToOne
     Etudiant intern;

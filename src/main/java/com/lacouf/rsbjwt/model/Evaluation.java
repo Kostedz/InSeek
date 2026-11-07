@@ -3,6 +3,7 @@ package com.lacouf.rsbjwt.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,13 +17,13 @@ public abstract class Evaluation {
     @GeneratedValue(strategy = GenerationType.AUTO)
     Long evaluationId;
 
-    LocalDateTime evaluationDate;
+    LocalDate evaluationDate;
 
     Disciplines discipline;
 
     @ManyToOne
-    @JoinColumn(name = "internship_offer_id_id")
-    OffreDeStage internshipOfferId;
+    @JoinColumn(name = "internship_offer_id")
+    OffreDeStage internshipOffer;
 
     String evaluationComment;
 
