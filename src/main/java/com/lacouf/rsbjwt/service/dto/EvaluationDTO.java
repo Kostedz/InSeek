@@ -6,7 +6,6 @@ import com.lacouf.rsbjwt.model.OffreDeStage;
 import java.time.LocalDate;
 
 public interface EvaluationDTO {
-    LocalDate evaluationDate();
     Disciplines discipline();
     Long internshipOfferId();
     String evaluationComment();
