@@ -1,6 +1,8 @@
 package com.lacouf.rsbjwt.repository;
 
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.service.dto.GestionnaireDTO;
+import jdk.jshell.execution.Util;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +30,9 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     @Query("SELECT e FROM Etudiant e WHERE e.session = :session")
     List<Etudiant> findBySession(String session);
+
+    @Query("SELECT g FROM Gestionnaire g")
+    Gestionnaire findGestionnaire();
+
+    boolean existsByCredentials_Email(String credentialsEmail);
 }
