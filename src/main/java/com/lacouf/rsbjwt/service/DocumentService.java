@@ -7,16 +7,12 @@ import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.*;
+import com.lacouf.rsbjwt.service.util.NotificationType;
 import com.lacouf.rsbjwt.service.util.OfferFields;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
@@ -28,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
@@ -36,7 +33,7 @@ public class DocumentService {
     private final UtilisateurService utilisateurService;
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private static final Logger logger = LoggerFactory.getLogger(DocumentService.class);
+    private final SseService sseService;
 
     @Transactional
     public DocumentDTO saveDocument(MultipartFile file, String formContent, HttpServletRequest request) throws BadRequestException, IOException, NotFoundException {
@@ -67,6 +64,7 @@ public class DocumentService {
         }
 
         documentRepository.save(document);
+        sseService.sendNotification(NotificationType.CV_TO_APPROVE);
         return toDTO(document);
     }
 
@@ -98,7 +96,7 @@ public class DocumentService {
     public List<OffreDeStageDTO> findStagesBySession(String session) {
         List<OffreDeStage> stages = documentRepository.findBySession(session);
 
-        logger.info("Found {} stages for session {}", stages.size(), session);
+        log.info("Found {} stages for session {}", stages.size(), session);
         return toOfferDTOs(stages);
     }
 
@@ -252,7 +250,7 @@ public class DocumentService {
             validateFile(file);
             offer = OffreDeStage.create(file, fields, employer);
 
-            logger.info("Employer {} is submitting a new offer: {}", employer.getEmail(), offer);
+            log.info("Employer {} is submitting a new offer: {}", employer.getEmail(), offer);
             if (documentRepository.findByUtilisateur(employer) != null && documentRepository.findByUtilisateur(employer).getStatut() == StatutValidation.EN_ATTENTE) {
                 throw new BadRequestException("Document with the same name and target discipline already exists");
             }
