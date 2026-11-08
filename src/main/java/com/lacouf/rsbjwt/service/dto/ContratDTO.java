@@ -1,71 +1,71 @@
-package com.lacouf.rsbjwt.service.dto;
+    package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.Contract;
-import com.lacouf.rsbjwt.model.StatutContrat;
-import lombok.Builder;
+    import com.lacouf.rsbjwt.model.Contract;
+    import com.lacouf.rsbjwt.model.StatutContrat;
+    import lombok.Builder;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+    import java.time.LocalDate;
+    import java.time.LocalDateTime;
 
-@Builder
-public record ContratDTO(
-        Long id,
-        String studentFullName,
-        String studentEmail,
-        String fieldOfStudy,
-        String companyName,
-        String employerFullName,
-        String managerFullName,
-        String offerTitle,
-        String offerDescription,
-        String supervisorName,
-        String assignedTeacherName,
-        LocalDate internshipStartingDate,
-        LocalDate internshipEndingDate,
-        String schedule,
-        double weeklyHours,
-        Double hourlySalary,
-        String internshipLocation,
-        StatutContrat contractStatus,
-        LocalDateTime contractDateCreation,
-        LocalDateTime studentSignedAt,
-        LocalDateTime employerSignedAt,
-        LocalDateTime managerSignedAt
-) {
-    public static ContratDTO of(Contract contract) {
-        String studentFullName = contract.getStudent() != null ? contract.getStudent().getPrenom() + " " +
-                contract.getStudent().getNom() : "";
-        String employerFullName = contract.getEmployer() != null ? contract.getEmployer().getPrenom() + " " +
-                contract.getEmployer().getNom() : "";
-        String companyName = contract.getEmployer() != null ? contract.getEmployer().getNomCompagnie(): "";
-        String discipline = contract.getStudent() != null && contract.getStudent().getDiscipline() != null
-                ? contract.getStudent().getDiscipline().name() : "";
-        String teacherName = contract.getTeacher() != null ? contract.getTeacher().getPrenom() + " " + contract.getTeacher().getNom() : null;
-        String managerName = contract.getAdmin() != null
-                ? contract.getAdmin().getPrenom() + " " + contract.getAdmin().getNom() : null;
-        return ContratDTO.builder()
-                .id(contract.getId())
-                .studentFullName(studentFullName)
-                .studentEmail(contract.getStudent().getEmail())
-                .fieldOfStudy(discipline)
-                .companyName(companyName)
-                .employerFullName(employerFullName)
-                .managerFullName(managerName)
-                .offerTitle(contract.getInternshipOffer().getPosition())
-                .offerDescription(contract.getInternshipOffer().getDescriptionPosition())
-                .supervisorName(contract.getSupervisorName())
-                .assignedTeacherName(teacherName)
-                .internshipStartingDate(contract.getStartingDate())
-                .internshipEndingDate(contract.getEndingDate())
-                .schedule(contract.getSchedule())
-                .weeklyHours(contract.getWeeklyHours())
-                .hourlySalary(contract.getHourlySalary())
-                .internshipLocation(contract.getInternshipLocation())
-                .contractStatus(contract.getContractStatus())
-                .contractDateCreation(contract.getDateCreation())
-                .studentSignedAt(contract.getStudentSignedAt())
-                .employerSignedAt(contract.getEmployerSignedAt())
-                .managerSignedAt(contract.getManagerSignedAt())
-                .build();
+    @Builder
+    public record ContratDTO(
+            Long id,
+            String studentFullName,
+            String studentEmail,
+            String fieldOfStudy,
+            String companyName,
+            String employerFullName,
+            String managerFullName,
+            String offerTitle,
+            String offerDescription,
+            String supervisorName,
+            String assignedTeacherName,
+            LocalDate internshipStartingDate,
+            LocalDate internshipEndingDate,
+            String schedule,
+            double weeklyHours,
+            Double hourlySalary,
+            String internshipLocation,
+            StatutContrat contractStatus,
+            LocalDateTime contractDateCreation,
+            LocalDateTime studentSignedAt,
+            LocalDateTime employerSignedAt,
+            LocalDateTime managerSignedAt
+    ) {
+        public static ContratDTO of(Contract contract) {
+            String studentFullName = contract.getStudent() != null ? contract.getStudent().getPrenom() + " " +
+                    contract.getStudent().getNom() : "";
+            String employerFullName = contract.getEmployer() != null ? contract.getEmployer().getPrenom() + " " +
+                    contract.getEmployer().getNom() : "";
+            String companyName = contract.getEmployer() != null ? contract.getEmployer().getNomCompagnie(): "";
+            String discipline = contract.getStudent() != null && contract.getStudent().getDiscipline() != null
+                    ? contract.getStudent().getDiscipline().name() : "";
+            String teacherName = contract.getTeacher() != null ? contract.getTeacher().getPrenom() + " " + contract.getTeacher().getNom() : null;
+            String managerName = contract.getAdmin() != null
+                    ? contract.getAdmin().getPrenom() + " " + contract.getAdmin().getNom() : null;
+            return ContratDTO.builder()
+                    .id(contract.getId())
+                    .studentFullName(studentFullName)
+                    .studentEmail(contract.getStudent().getEmail())
+                    .fieldOfStudy(discipline)
+                    .companyName(companyName)
+                    .employerFullName(employerFullName)
+                    .managerFullName(managerName)
+                    .offerTitle(contract.getInternshipOffer().getPosition())
+                    .offerDescription(contract.getInternshipOffer().getDescriptionPosition())
+                    .supervisorName(contract.getSupervisorName())
+                    .assignedTeacherName(teacherName)
+                    .internshipStartingDate(contract.getStartingDate())
+                    .internshipEndingDate(contract.getEndingDate())
+                    .schedule(contract.getSchedule())
+                    .weeklyHours(contract.getWeeklyHours())
+                    .hourlySalary(contract.getHourlySalary())
+                    .internshipLocation(contract.getInternshipLocation())
+                    .contractStatus(contract.getContractStatus())
+                    .contractDateCreation(contract.getDateCreation())
+                    .studentSignedAt(contract.getStudentSignedAt())
+                    .employerSignedAt(contract.getEmployerSignedAt())
+                    .managerSignedAt(contract.getManagerSignedAt())
+                    .build();
+        }
     }
-}
