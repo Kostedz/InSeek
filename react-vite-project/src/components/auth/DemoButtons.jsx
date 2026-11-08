@@ -5,6 +5,8 @@ import api from "../../utils/api.js";
 import {getRedirectPathByRole} from "../../utils/authRedirect.js";
 import {clearDemoContracts} from "../page/ContractSignaturePage.jsx";
 
+const DELAYED_NOTIFICATIONS_DEMO_KEY = "inseek.delayed-notifications-demo.started";
+
 const demoRoles = [
     {value: "ETUDIANT", label: "student", color: "bg-lavender hover:bg-lavender"},
     {value: "PROFESSEUR", label: "professor", color: "bg-pink hover:bg-pink"},
@@ -141,6 +143,7 @@ function DemoButtons({setUser}) {
             const userResponse = await api.auth.getMe();
             if (!userResponse.ok) throw new Error("delayed_notifications_demo_user_missing");
             const userData = await userResponse.json();
+            localStorage.setItem(DELAYED_NOTIFICATIONS_DEMO_KEY, "true");
             setUser({...userData, isLoggedIn: true});
             navigate("/gestionnaire", {replace: true});
         } catch {
@@ -149,6 +152,13 @@ function DemoButtons({setUser}) {
         } finally {
             setLoadingRole(null);
         }
+    };
+
+    const activateGestionnaireDemo = () => {
+        if (localStorage.getItem(DELAYED_NOTIFICATIONS_DEMO_KEY) === "true") {
+            return activateDemoAccess({value: "GESTIONNAIRE"});
+        }
+        return activateDelayedNotificationsScenario();
     };
 
     return (
@@ -165,7 +175,7 @@ function DemoButtons({setUser}) {
                         key={demoRole.value}
                         type="button"
                         onClick={() => demoRole.value === "GESTIONNAIRE"
-                            ? activateDelayedNotificationsScenario()
+                            ? activateGestionnaireDemo()
                             : activateDemoAccess(demoRole)}
                         disabled={loadingRole !== null}
                         className={`whitespace-nowrap rounded-full border border-ink px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors ${demoRole.color} disabled:cursor-wait disabled:opacity-70`}
