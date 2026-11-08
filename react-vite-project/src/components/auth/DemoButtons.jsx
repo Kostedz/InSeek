@@ -124,6 +124,33 @@ function DemoButtons({setUser}) {
         }
     };
 
+    const activateDelayedNotificationsScenario = async () => {
+        setLoadingRole("GESTIONNAIRE");
+        setError(false);
+        setUser(null);
+        navigate("/login", {replace: true});
+
+        try {
+            const loginResponse = await api.auth.prepareDelayedNotificationsDemo();
+            if (!loginResponse.ok) throw new Error("delayed_notifications_demo_failed");
+            const loginData = await loginResponse.json();
+            const token = loginData.accessToken || loginData.token;
+            if (!token) throw new Error("delayed_notifications_demo_token_missing");
+
+            localStorage.setItem("token", token);
+            const userResponse = await api.auth.getMe();
+            if (!userResponse.ok) throw new Error("delayed_notifications_demo_user_missing");
+            const userData = await userResponse.json();
+            setUser({...userData, isLoggedIn: true});
+            navigate("/gestionnaire", {replace: true});
+        } catch {
+            localStorage.removeItem("token");
+            setError(true);
+        } finally {
+            setLoadingRole(null);
+        }
+    };
+
     return (
         <div className="flex max-w-[calc(100vw-9rem)] flex-col items-end gap-1" aria-label={t("demoButtons.title")}>
             {error && (
@@ -137,7 +164,9 @@ function DemoButtons({setUser}) {
                     <button
                         key={demoRole.value}
                         type="button"
-                        onClick={() => activateDemoAccess(demoRole)}
+                        onClick={() => demoRole.value === "GESTIONNAIRE"
+                            ? activateDelayedNotificationsScenario()
+                            : activateDemoAccess(demoRole)}
                         disabled={loadingRole !== null}
                         className={`whitespace-nowrap rounded-full border border-ink px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors ${demoRole.color} disabled:cursor-wait disabled:opacity-70`}
                     >
