@@ -47,6 +47,14 @@ public final class DevDemoAccounts {
             "INFORMATIQUE"
     );
 
+    private static final Account SECOND_STUDENT = new Account(
+            "pascal.carbonneau@inseek.local",
+            "DemoEtudiant!2026",
+            "Carbonneau",
+            "Pascal",
+            "INFORMATIQUE"
+    );
+
     private DevDemoAccounts() {
     }
 
@@ -60,5 +68,9 @@ public final class DevDemoAccounts {
 
     public static Account signedContractStudent() {
         return SIGNED_CONTRACT_STUDENT;
+    }
+
+    public static Account secondStudent() {
+        return SECOND_STUDENT;
     }
 }
