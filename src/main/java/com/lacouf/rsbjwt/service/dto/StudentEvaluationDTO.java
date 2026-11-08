@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.service.dto;
 
 import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.EvaluationState;
 import com.lacouf.rsbjwt.model.StudentEvaluation;
 
 import java.time.LocalDate;
@@ -17,14 +18,15 @@ public record StudentEvaluationDTO(
         LocalDate evaluationDate,
         Disciplines discipline,
         Long internshipOfferId,
-        String evaluationComment
+        String evaluationComment,
+        EvaluationState evaluationState
 ) implements EvaluationDTO {
 
     public static StudentEvaluationDTO of(StudentEvaluation evaluation) {
         return new StudentEvaluationDTO(
                 evaluation.getEvaluationId(),
-                evaluation.getEmployer().getId(),
-                evaluation.getIntern().getId(),
+                evaluation.getEmployer() != null ? evaluation.getEmployer().getId() : null,
+                evaluation.getIntern() != null ? evaluation.getIntern().getId() : null,
                 evaluation.getProfessionalismRating(),
                 evaluation.getWorkQualityRating(),
                 evaluation.getTeamworkRating(),
@@ -32,8 +34,9 @@ public record StudentEvaluationDTO(
                 evaluation.getObjectiveReachedRating(),
                 evaluation.getEvaluationDate(),
                 evaluation.getDiscipline(),
-                evaluation.getInternshipOffer().getId(),
-                evaluation.getEvaluationComment()
+                evaluation.getInternshipOffer() != null ? evaluation.getInternshipOffer().getId() : null,
+                evaluation.getEvaluationComment(),
+                evaluation.getEvaluationState()
         );
     }
 }
