@@ -189,4 +189,16 @@ public class UtilisateurService {
 
         throw new BadRequestException("Type de DTO non pris en charge pour la conversion en entité.");
     }
+
+    public Gestionnaire getGestionnaire() throws NotFoundException {
+        Gestionnaire gestionnaire = utilisateurRepository.findGestionnaire();
+        if (gestionnaire == null) {
+            throw new NotFoundException("Aucun gestionnaire trouvé.");
+        }
+        return gestionnaire;
+    }
+
+    public boolean existsByEmail(String email) {
+        return utilisateurRepository.existsByCredentials_Email(email);
+    }
 }

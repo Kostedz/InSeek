@@ -64,7 +64,7 @@ public class DocumentService {
         }
 
         documentRepository.save(document);
-        sseService.sendNotification(NotificationType.CV_TO_APPROVE);
+        sseService.sendNotification(NotificationType.CV_TO_APPROVE, utilisateurService.getGestionnaire());
         return toDTO(document);
     }
 

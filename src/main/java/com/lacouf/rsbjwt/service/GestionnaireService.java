@@ -6,6 +6,7 @@
     import com.lacouf.rsbjwt.model.StatutValidation;
     import com.lacouf.rsbjwt.repository.DocumentRepository;
     import com.lacouf.rsbjwt.service.dto.DocumentValidationDTO;
+    import com.lacouf.rsbjwt.service.util.NotificationType;
     import lombok.RequiredArgsConstructor;
     import org.springframework.stereotype.Service;
     import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@
     @RequiredArgsConstructor
     public class GestionnaireService {
         private final DocumentRepository documentRepository;
+        private final SseService sseService;
 
         @Transactional(readOnly = true)
         public List<DocumentValidationDTO> listPendingDocuments(String type) {
@@ -41,6 +43,8 @@
             document.setStatut(StatutValidation.VALIDE);
 
             documentRepository.save(document);
+
+            sseService.sendNotification(NotificationType.CV_APPROVED, document.getUtilisateur());
 
             return DocumentValidationDTO.of(document);
         }
