@@ -61,3 +61,47 @@ jobs:
         name: backend-coverage-java-${{ matrix.java-version }}
         path: target/site/jacoco/
         retention-days: 30
+
+    - name: Summarize test results
+      if: always()
+      id: test_results
+      shell: bash
+      run: |
+        python3 - <<'PY' >> "$GITHUB_OUTPUT"
+        import glob
+        import xml.etree.ElementTree as ET
+
+        totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0}
+        for path in glob.glob("target/surefire-reports/TEST-*.xml"):
+            try:
+                root = ET.parse(path).getroot()
+                for key in totals:
+                    totals[key] += int(root.attrib.get(key, 0))
+            except (ET.ParseError, OSError, ValueError):
+                pass
+
+        passed = totals["tests"] - totals["failures"] - totals["errors"] - totals["skipped"]
+        print(
+            "summary=Tests: {tests} | Passed: {passed} | "
+            "Failures: {failures} | Errors: {errors} | Skipped: {skipped}".format(
+                passed=passed, **totals
+            )
+        )
+        PY
+
+    - name: Notify Discord
+      if: always()
+      uses: tsickert/discord-webhook@v7.0.0
+      with:
+        webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+        username: GitHub Actions
+        content: |
+          **Workflow:** ${{ github.workflow }}
+          **Result:** ${{ job.status }}
+          **Triggered by:** ${{ github.actor }}
+          **Event:** ${{ github.event_name }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** `${{ github.sha }}`
+          **Message:** ${{ github.event.head_commit.message || github.event.pull_request.title || 'Not available' }}
+          **${{ steps.test_results.outputs.summary }}**
+          **Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
