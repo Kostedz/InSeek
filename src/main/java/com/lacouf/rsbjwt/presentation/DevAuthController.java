@@ -73,4 +73,19 @@ public class DevAuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
+
+    @PostMapping("/delayed-notifications-demo")
+    public ResponseEntity<JWTAuthResponse> prepareDelayedNotificationsDemo() {
+        try {
+            demoScenarioService.prepareDelayedNotificationsScenario();
+            DevDemoAccounts.Account manager = DevDemoAccounts.forRole(Role.GESTIONNAIRE);
+            return ResponseEntity.ok(new JWTAuthResponse(
+                    utilisateurService.login(new LoginDTO(manager.email(), manager.password()))
+            ));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (BadRequestException | NotFoundException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
 }
