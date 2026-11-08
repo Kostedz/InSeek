@@ -16,6 +16,7 @@ import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.model.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.model.ApplicationStage;
+import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
@@ -483,8 +484,10 @@ public class DevDemoScenarioService {
                     prepareSignedContractStudentScenario();
                     preparePendingNotificationsData();
                 });
-                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
-                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
+                String email = DevDemoAccounts.forRole(Role.GESTIONNAIRE).email();
+                Utilisateur recipient = utilisateurRepository.findByEmail(email);
+                sseService.sendNotification(NotificationType.CV_TO_APPROVE, recipient);
+                sseService.sendNotification(NotificationType.CV_TO_APPROVE, recipient);
             } catch (RuntimeException exception) {
                 log.error("Impossible de préparer le scénario de notifications différées.", exception);
             }
