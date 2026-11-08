@@ -6,9 +6,12 @@ import NotificationBell from "./componentUtils/NotificationBell.jsx";
 function Header({user}) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+    const [isHeaderInViewport, setIsHeaderInViewport] = useState(true);
+    const [showHeaderBell, setShowHeaderBell] = useState(true);
+    const [showFloatingBell, setShowFloatingBell] = useState(false);
     const userMenuRef = useRef(null);
-    const lastScrollYRef = useRef(0);
+    const headerRef = useRef(null);
+    const bellTransitionTimeoutRef = useRef(null);
     const { t, i18n } = useTranslation();
     const currentLanguage = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const nextLanguage = currentLanguage === "fr" ? "en" : "fr";
@@ -58,24 +61,43 @@ function Header({user}) {
     }, []);
 
     useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-            const previousScrollY = lastScrollYRef.current;
+        const header = headerRef.current;
+        if (!header) return undefined;
 
-            if (isMenuOpen || currentScrollY <= 8) {
-                setIsHeaderVisible(true);
-            } else if (currentScrollY > previousScrollY) {
-                setIsHeaderVisible(false);
-            } else if (currentScrollY < previousScrollY) {
-                setIsHeaderVisible(true);
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                const headerIsVisible = entry.isIntersecting;
+                setIsHeaderInViewport(headerIsVisible);
+
+                if (bellTransitionTimeoutRef.current) {
+                    window.clearTimeout(bellTransitionTimeoutRef.current);
+                }
+
+                if (headerIsVisible) {
+                    setShowHeaderBell(true);
+                    bellTransitionTimeoutRef.current = window.setTimeout(
+                        () => setShowFloatingBell(false),
+                        280
+                    );
+                } else {
+                    setShowFloatingBell(true);
+                    bellTransitionTimeoutRef.current = window.setTimeout(
+                        () => setShowHeaderBell(false),
+                        280
+                    );
+                }
+            },
+            {threshold: 0.01}
+        );
+        observer.observe(header);
+
+        return () => {
+            observer.disconnect();
+            if (bellTransitionTimeoutRef.current) {
+                window.clearTimeout(bellTransitionTimeoutRef.current);
             }
-
-            lastScrollYRef.current = currentScrollY;
         };
-
-        window.addEventListener("scroll", handleScroll, {passive: true});
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, [isMenuOpen]);
+    }, []);
 
     const closeMenus = () => {
         setIsMenuOpen(false);
@@ -88,7 +110,9 @@ function Header({user}) {
     };
 
     return (
+        <>
         <header
+            ref={headerRef}
             className="z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)]">
             <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
                 <Link to="/" className="group -my-1 flex shrink-0 items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-white/10 focus:outline-none" onClick={closeMenus}>
@@ -235,13 +259,27 @@ function Header({user}) {
                     )}
 
                 </nav>
-                {isLoggedIn && (
-                    <div className="fixed bottom-20 right-4 z-[100] md:static md:z-auto md:ml-2">
-                        <NotificationBell isLoggedIn={isLoggedIn}/>
+                {isLoggedIn && showHeaderBell && (
+                    <div className={`fixed bottom-20 right-4 z-[100] md:static md:z-auto md:ml-2 ${
+                        isHeaderInViewport
+                            ? "md:animate-[bell-slide-in_280ms_ease-out]"
+                            : "md:animate-[bell-slide-out_280ms_ease-in]"
+                    }`}>
+                        <NotificationBell user={user} isFloating={!isHeaderInViewport}/>
                     </div>
                 )}
             </div>
         </header>
+        {isLoggedIn && showFloatingBell && (
+            <div className={`fixed bottom-20 right-4 z-[100] ${
+                isHeaderInViewport
+                    ? "md:animate-[bell-slide-out_280ms_ease-in]"
+                    : "md:animate-[bell-slide-in_280ms_ease-out]"
+            }`}>
+                <NotificationBell user={user} isFloating/>
+            </div>
+        )}
+        </>
     );
 }
 
