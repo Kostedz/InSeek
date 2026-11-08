@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import NotificationBell from "./componentUtils/NotificationBell.jsx";
 
 function Header({user}) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -234,6 +235,11 @@ function Header({user}) {
                     )}
 
                 </nav>
+                {isLoggedIn && (
+                    <div className="fixed bottom-20 right-4 z-[100] md:static md:z-auto md:ml-2">
+                        <NotificationBell isLoggedIn={isLoggedIn}/>
+                    </div>
+                )}
             </div>
         </header>
     );
