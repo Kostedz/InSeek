@@ -11,7 +11,6 @@ import com.lacouf.rsbjwt.repository.ProfesseurRepository;
 import com.lacouf.rsbjwt.service.dto.CompanyEvaluationDTO;
 import com.lacouf.rsbjwt.service.dto.EvaluationDTO;
 import com.lacouf.rsbjwt.service.dto.PrefillCompanyEvaluationDTO;
-import com.lacouf.rsbjwt.service.dto.StudentEvaluationDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,7 +84,7 @@ public class EvaluationService {
 
         CompanyEvaluation evaluation = buildEvaluation(companyEvaluationDTO, teacher, student, activeContract);
         evaluation.setEvaluationState(EvaluationState.SUBMITTED);
-        evaluation.setEvaluationSubmittedAt(LocalDate.now());
+        evaluation.setEvaluationSubmittedDate(LocalDate.now());
 
         return CompanyEvaluationDTO.of(evaluationRepository.save(evaluation));
     }

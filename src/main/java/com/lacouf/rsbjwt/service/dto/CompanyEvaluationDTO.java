@@ -36,7 +36,7 @@ public record CompanyEvaluationDTO(
                 evaluation.getDiscipline(),
                 evaluation.getEvaluationComment(),
                 evaluation.getEvaluationState(),
-                evaluation.getEvaluationSubmittedAt()
+                evaluation.getEvaluationSubmittedDate()
         );
     }
 }

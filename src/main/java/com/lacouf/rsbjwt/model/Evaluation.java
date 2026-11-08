@@ -28,7 +28,7 @@ public abstract class Evaluation {
     @Column(nullable = false)
     private EvaluationState evaluationState = EvaluationState.DRAFT;
 
-    private LocalDate evaluationSubmittedAt;
+    private LocalDate evaluationSubmittedDate;
 
     private static final double MAXIMUM_RATING = 5.0;
 
