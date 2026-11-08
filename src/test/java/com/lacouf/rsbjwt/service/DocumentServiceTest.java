@@ -38,6 +38,9 @@ public class DocumentServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private SseService sseService;
+
     @InjectMocks
     private DocumentService documentService;
 
