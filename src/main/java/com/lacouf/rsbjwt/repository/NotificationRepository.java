@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.repository;
 
 import com.lacouf.rsbjwt.model.Notification;
+import com.lacouf.rsbjwt.model.StatutEnvoiCourriel;
 import com.lacouf.rsbjwt.model.TypeNotification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -13,16 +14,20 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     boolean existsByTypeAndContratId(TypeNotification type, Long contratId);
 
+    boolean existsByTypeAndContratIdAndDestinataireId(TypeNotification type, Long contratId, Long destinataireId);
+
+    List<Notification> findByStatutCourrielAndTentativesLessThan(StatutEnvoiCourriel statut, int maxTentatives);
+
     @Query("""
             SELECT n FROM Notification n
-            WHERE n.destinataire.credentials.email = :email
+            WHERE n.destinataire.credentials.email = :email AND n.inApp = true
             ORDER BY n.dateCreation DESC
             """)
     List<Notification> findByDestinataireEmail(@Param("email") String email);
 
     @Query("""
             SELECT COUNT(n) FROM Notification n
-            WHERE n.destinataire.credentials.email = :email AND n.lue = false
+            WHERE n.destinataire.credentials.email = :email AND n.inApp = true AND n.lue = false
             """)
     long countNonLuesByEmail(@Param("email") String email);
 

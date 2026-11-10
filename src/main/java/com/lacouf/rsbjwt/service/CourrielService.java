@@ -20,11 +20,12 @@ public class CourrielService {
         this.from = from;
     }
 
-    public void envoyer(String to, String sujet, String corps) {
+    /** @return true si le courriel est parti (ou écrit dans les logs si le mail n'est pas configuré), false si échec. */
+    public boolean envoyer(String to, String sujet, String corps) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (sender == null) {
             log.info("[COURRIEL non configuré] à={} sujet={}\n{}", to, sujet, corps);
-            return;
+            return true;
         }
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -33,8 +34,10 @@ public class CourrielService {
             message.setSubject(sujet);
             message.setText(corps);
             sender.send(message);
+            return true;
         } catch (Exception e) {
             log.error("Échec d'envoi du courriel à {}", to, e);
+            return false;
         }
     }
 }

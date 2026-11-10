@@ -3,6 +3,7 @@ package com.lacouf.rsbjwt.presentation;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.service.NotificationService;
 import com.lacouf.rsbjwt.service.dto.NotificationDTO;
+import com.lacouf.rsbjwt.service.dto.PreferencesNotificationDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,5 +33,18 @@ public class NotificationController {
     public ResponseEntity<NotificationDTO> marquerLue(@PathVariable Long id, Principal principal)
             throws NotFoundException {
         return ResponseEntity.ok(notificationService.marquerLue(id, principal.getName()));
+    }
+
+    @GetMapping("/preferences")
+    public ResponseEntity<PreferencesNotificationDTO> preferences(Principal principal)
+            throws NotFoundException {
+        return ResponseEntity.ok(notificationService.preferences(principal.getName()));
+    }
+
+    @PutMapping("/preferences")
+    public ResponseEntity<PreferencesNotificationDTO> modifierPreferences(
+            @RequestBody PreferencesNotificationDTO dto, Principal principal) throws NotFoundException {
+        return ResponseEntity.ok(
+                notificationService.modifierPreferences(principal.getName(), dto.inAppActif()));
     }
 }

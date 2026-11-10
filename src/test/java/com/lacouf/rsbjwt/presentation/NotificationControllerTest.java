@@ -1,3 +1,4 @@
+
 package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.NotFoundException;
@@ -9,10 +10,13 @@ import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.NotificationService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.NotificationDTO;
+import com.lacouf.rsbjwt.service.dto.PreferencesNotificationDTO;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,6 +28,7 @@ import java.util.List;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,14 +62,24 @@ class NotificationControllerTest {
     private final Principal employeur = () -> "ubisoft@mail.com";
 
     private NotificationDTO dto(boolean lue) {
-        return new NotificationDTO(5L, TypeNotification.EVALUATION_STAGIAIRE,
-                "Veuillez remplir l'évaluation", 10L, lue, LocalDateTime.now());
+        return new NotificationDTO(
+                5L,
+                TypeNotification.EVALUATION_STAGIAIRE,
+                "Veuillez remplir l'évaluation",
+                10L,
+                null,
+                lue,
+                null,
+                null,
+                LocalDateTime.now()
+        );
     }
 
     @Test
     @DisplayName("GET /notifications retourne 200 et les notifications de l'utilisateur")
     void mesNotifications_retourne200() throws Exception {
-        when(notificationService.lister("ubisoft@mail.com")).thenReturn(List.of(dto(false)));
+        when(notificationService.lister("ubisoft@mail.com"))
+                .thenReturn(List.of(dto(false)));
 
         mockMvc.perform(get("/notifications").principal(employeur))
                 .andExpect(status().isOk())
@@ -76,7 +91,8 @@ class NotificationControllerTest {
     @Test
     @DisplayName("GET /notifications/unread-count retourne 200 et le nombre de non lues")
     void nonLues_retourne200() throws Exception {
-        when(notificationService.compterNonLues("ubisoft@mail.com")).thenReturn(3L);
+        when(notificationService.compterNonLues("ubisoft@mail.com"))
+                .thenReturn(3L);
 
         mockMvc.perform(get("/notifications/unread-count").principal(employeur))
                 .andExpect(status().isOk())
@@ -86,7 +102,8 @@ class NotificationControllerTest {
     @Test
     @DisplayName("PATCH /notifications/{id}/read retourne 200 et la notification lue")
     void marquerLue_retourne200() throws Exception {
-        when(notificationService.marquerLue(5L, "ubisoft@mail.com")).thenReturn(dto(true));
+        when(notificationService.marquerLue(5L, "ubisoft@mail.com"))
+                .thenReturn(dto(true));
 
         mockMvc.perform(patch("/notifications/5/read").principal(employeur))
                 .andExpect(status().isOk())
@@ -101,5 +118,32 @@ class NotificationControllerTest {
 
         mockMvc.perform(patch("/notifications/9/read").principal(employeur))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /notifications/preferences retourne 200 et les préférences")
+    void preferences_retourne200() throws Exception {
+        when(notificationService.preferences("ubisoft@mail.com"))
+                .thenReturn(new PreferencesNotificationDTO(true));
+
+        mockMvc.perform(get("/notifications/preferences").principal(employeur))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inAppActif").value(true));
+    }
+
+    @Test
+    @DisplayName("PUT /notifications/preferences retourne 200 et les préférences modifiées")
+    void modifierPreferences_retourne200() throws Exception {
+        when(notificationService.modifierPreferences("ubisoft@mail.com", false))
+                .thenReturn(new PreferencesNotificationDTO(false));
+
+        mockMvc.perform(put("/notifications/preferences")
+                        .principal(employeur)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "inAppActif": false }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inAppActif").value(false));
     }
 }

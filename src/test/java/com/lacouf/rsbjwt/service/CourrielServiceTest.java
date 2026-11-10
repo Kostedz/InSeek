@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.service;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -9,7 +10,8 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -20,30 +22,33 @@ class CourrielServiceTest {
     @Mock JavaMailSender sender;
 
     @Test
+    @DisplayName("Envoie le courriel quand le mail est configuré")
     void envoieLeCourrielQuandLeMailEstConfigure() {
         when(provider.getIfAvailable()).thenReturn(sender);
         CourrielService service = new CourrielService(provider, "no-reply@inseek.local");
 
-        service.envoyer("a@b.com", "Sujet", "Corps");
+        assertTrue(service.envoyer("a@b.com", "Sujet", "Corps"));
 
         verify(sender).send(any(SimpleMailMessage.class));
     }
 
     @Test
+    @DisplayName("Écrit dans les logs quand le mail n'est pas configuré")
     void ecritDansLesLogsQuandLeMailNEstPasConfigure() {
         when(provider.getIfAvailable()).thenReturn(null);
         CourrielService service = new CourrielService(provider, "no-reply@inseek.local");
 
-        assertDoesNotThrow(() -> service.envoyer("a@b.com", "Sujet", "Corps"));
+        assertTrue(service.envoyer("a@b.com", "Sujet", "Corps"));
         verifyNoInteractions(sender);
     }
 
     @Test
-    void neLancePasDExceptionSiLEnvoiEchoue() {
+    @DisplayName("Retourne false si l'envoi échoue")
+    void retourneFalseSiLEnvoiEchoue() {
         when(provider.getIfAvailable()).thenReturn(sender);
         doThrow(new MailSendException("panne")).when(sender).send(any(SimpleMailMessage.class));
         CourrielService service = new CourrielService(provider, "no-reply@inseek.local");
 
-        assertDoesNotThrow(() -> service.envoyer("a@b.com", "Sujet", "Corps"));
+        assertFalse(service.envoyer("a@b.com", "Sujet", "Corps"));
     }
 }
