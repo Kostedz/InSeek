@@ -2,10 +2,23 @@ import {useEffect, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import {useNavigate} from "react-router-dom";
 import BASE_URL from "../config/Config.jsx";
+import api from "../../utils/api.js";
 
 const notificationTypes = {
     "CV en attente de validation.": "cvToApprove",
 };
+
+const getAuthToken = () => localStorage.getItem("token") || sessionStorage.getItem("token") || "";
+
+function toNotification(data) {
+    const legacy = String(data.lienDirect ?? "").match(/^\/employeur\/offres\/(\d+)\/candidatures$/);
+    return {
+        id: data.id ?? `${Date.now()}-${Math.random()}`,
+        message: data.message ?? data.me ?? data.titre ?? "",
+        count: 1,
+        actionPath: legacy ? `/employeur?offre=${legacy[1]}` : data.lienDirect || "/employeur",
+    };
+}
 
 function NotificationBell({isLoggedIn}) {
     const {t} = useTranslation();
@@ -14,75 +27,101 @@ function NotificationBell({isLoggedIn}) {
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const containerRef = useRef(null);
+    const seenIds = useRef(new Set());
 
     useEffect(() => {
         if (!isLoggedIn) {
             setNotifications([]);
             setUnreadCount(0);
+            seenIds.current = new Set();
             return undefined;
         }
 
-        const eventSource = new EventSource(`${BASE_URL}notifications`);
-        const handleNotification = (event) => {
-            const message = event.data;
-            const messageKey = notificationTypes[message];
-            setNotifications((current) => {
-                const existingNotification = current.find(
-                    (notification) => notification.messageKey === messageKey && notification.message === message
-                );
+        let isMounted = true;
 
-                if (existingNotification) {
-                    return current.map((notification) =>
-                        notification.id === existingNotification.id
-                            ? {...notification, count: notification.count + 1}
-                            : notification
+        const addNotifications = (incoming) => {
+            const fresh = incoming.filter((n) => !seenIds.current.has(n.id));
+            if (fresh.length === 0) return;
+            fresh.forEach((n) => seenIds.current.add(n.id));
+            setNotifications((current) => [...fresh, ...current].slice(0, 20));
+            setUnreadCount((count) => count + fresh.length);
+        };
+
+        const loadStored = async () => {
+            try {
+                const response = await api.notifications.mine();
+                if (!response.ok || !isMounted) return;
+                const list = await response.json();
+                if (isMounted && Array.isArray(list)) addNotifications(list.map(toNotification));
+            } catch (err) {
+                console.error("Erreur chargement notifications:", err);
+            }
+        };
+
+        const handleNotification = (event) => {
+            const raw = event.data;
+
+            if (typeof raw === "string" && raw.startsWith("{")) {
+                try {
+                    addNotifications([toNotification(JSON.parse(raw))]);
+                } catch (err) {
+                    console.error("Erreur parsing notification SSE:", err);
+                }
+                return;
+            }
+
+            const messageKey = notificationTypes[raw];
+            setNotifications((current) => {
+                const existing = current.find(
+                    (n) => n.messageKey === messageKey && n.message === raw
+                );
+                if (existing) {
+                    return current.map((n) =>
+                        n.id === existing.id ? {...n, count: n.count + 1} : n
                     );
                 }
-
                 return [
-                    {id: `${Date.now()}-${Math.random()}`, message, messageKey, count: 1, actionPath: "/gestionnaire/cv"},
+                    {id: `${Date.now()}-${Math.random()}`, message: raw, messageKey, count: 1, actionPath: "/gestionnaire/cv"},
                     ...current,
                 ].slice(0, 20);
             });
             setUnreadCount((count) => count + 1);
         };
 
+        const token = getAuthToken();
+        const url = `${BASE_URL}notifications${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+        const eventSource = new EventSource(url);
+
+        loadStored();
+        eventSource.onopen = loadStored;
         eventSource.addEventListener("notification", handleNotification);
+
         return () => {
+            isMounted = false;
             eventSource.removeEventListener("notification", handleNotification);
             eventSource.close();
         };
     }, [isLoggedIn]);
 
-    useEffect(() => {
-        const closeOnOutsideClick = (event) => {
-            if (containerRef.current && !containerRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-        const closeOnEscape = (event) => {
-            if (event.key === "Escape") setIsOpen(false);
-        };
-
-        document.addEventListener("pointerdown", closeOnOutsideClick);
-        document.addEventListener("keydown", closeOnEscape);
-        return () => {
-            document.removeEventListener("pointerdown", closeOnOutsideClick);
-            document.removeEventListener("keydown", closeOnEscape);
-        };
-    }, []);
+    const markAsRead = (notification) => {
+        if (typeof notification.id === "number") {
+            api.notifications.markRead(notification.id).catch(() => {});
+        }
+    };
 
     const toggleNotifications = () => {
         setIsOpen((open) => !open);
         setUnreadCount(0);
     };
 
-    const clearNotification = (notificationId, event) => {
+    const clearNotification = (notification, event) => {
         event.stopPropagation();
-        setNotifications((current) => current.filter(({id}) => id !== notificationId));
+        markAsRead(notification);
+        setNotifications((current) => current.filter(({id}) => id !== notification.id));
     };
 
     const openNotification = (notification) => {
+        markAsRead(notification);
         setIsOpen(false);
         navigate(notification.actionPath);
     };
@@ -146,7 +185,7 @@ function NotificationBell({isLoggedIn}) {
                                         <button
                                             type="button"
                                             aria-label={t("notifications.clear")}
-                                            onClick={(event) => clearNotification(notification.id, event)}
+                                            onClick={(event) => clearNotification(notification, event)}
                                             className="shrink-0 rounded-md px-1 text-lg leading-4 text-ink/50 transition-colors hover:bg-ink/10 hover:text-ink focus:outline-none focus:ring-2 focus:ring-pink"
                                         >
                                             ×

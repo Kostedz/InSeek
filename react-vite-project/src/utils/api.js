@@ -347,6 +347,11 @@ export const api = {
             }),
     },
 
+    notifications: {
+        mine: () => fetcher("/api/notifications/mine", {headers: {Accept: "application/json"}}),
+        markRead: (id) => fetcher(`/api/notifications/${encodeURIComponent(id)}/read`, {method: "PUT"}),
+    },
+
 };
 
 export default api;
