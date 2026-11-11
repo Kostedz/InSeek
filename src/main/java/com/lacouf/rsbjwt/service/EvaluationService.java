@@ -4,14 +4,8 @@ import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
-import com.lacouf.rsbjwt.repository.ContratRepository;
-import com.lacouf.rsbjwt.repository.EtudiantRepository;
-import com.lacouf.rsbjwt.repository.EvaluationRepository;
-import com.lacouf.rsbjwt.repository.ProfesseurRepository;
-import com.lacouf.rsbjwt.service.dto.CompanyEvaluationDTO;
-import com.lacouf.rsbjwt.service.dto.EvaluationDTO;
-import com.lacouf.rsbjwt.service.dto.PrefillCompanyEvaluationDTO;
-import com.lacouf.rsbjwt.service.dto.StudentEvaluationDTO;
+import com.lacouf.rsbjwt.repository.*;
+import com.lacouf.rsbjwt.service.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +20,7 @@ public class EvaluationService {
     private final ContratRepository contractRepository;
     private final EtudiantRepository studentRepository;
     private final ProfesseurRepository teacherRepository;
+    private final EmployerRepository employerRepository;
 
     @Transactional
     public EvaluationDTO submitEvaluation(EvaluationDTO dto, String userEmail)
@@ -52,6 +47,26 @@ public class EvaluationService {
                 activeContract.getSupervisorName() != null ? activeContract.getSupervisorName() : "",
                 activeContract.getInternshipOffer() != null ? activeContract.getInternshipOffer().getId() : null,
                 activeContract.getInternshipOffer() != null ? activeContract.getInternshipOffer().getPosition() : "",
+                activeContract.getId(),
+                activeContract.getStartingDate(),
+                activeContract.getEndingDate(),
+                student.getDiscipline()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PrefillStudentEvaluationDTO getPrefillStudentEvaluation(String employerEmail, Long studentId) throws NotFoundException, BadRequestException{
+        Employeur employer = findEmployerByEmail(employerEmail);
+        Etudiant student = findStudentById(studentId);
+        Contract activeContract = findContractForStudentAndEmployer(studentId,employer);
+        return new PrefillStudentEvaluationDTO(
+                employer.getId(),
+                employer.getPrenom() + " " + employer.getNom(),
+                employer.getNomCompagnie(),
+                studentId,
+                student.getPrenom() + " " + student.getNom(),
+                activeContract.getInternshipOffer().getId(),
+                activeContract.getInternshipOffer().getPosition(),
                 activeContract.getId(),
                 activeContract.getStartingDate(),
                 activeContract.getEndingDate(),
@@ -90,7 +105,7 @@ public class EvaluationService {
         return CompanyEvaluationDTO.of(evaluationRepository.save(evaluation));
     }
 
-    //private StudentEvaluationDTO submitStudentEvaluation(StudentEvaluationDTO dto, String employerEmail) {
+    //private StudentEvaluationDTO submitStudentEvaluation(StudentEvaluationDTO dto, String employerEmail) {}
 
     private CompanyEvaluation buildEvaluation(CompanyEvaluationDTO companyEvaluationDTO, Professeur teacher,
                                               Etudiant student, Contract activeContract) {
@@ -139,6 +154,17 @@ public class EvaluationService {
                 .orElseThrow(() -> new NotFoundException("Professeur introuvable."));
     }
 
+    /// --------------------------------
+    private Employeur findEmployerByEmail(String email) throws NotFoundException{
+        return employerRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("Employeur introuvable."));
+    }
+
+    private Etudiant findStudentById(Long id) throws NotFoundException{
+        return studentRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Etudiant introuvable."));
+    }
+
     private Etudiant findStudentAssignedToTeacher(Long studentId, Professeur teacher) throws NotFoundException {
         Etudiant student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new NotFoundException("Étudiant introuvable."));
@@ -163,14 +189,30 @@ public class EvaluationService {
         }
         if (contract.getStartingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getStartingDate())) {
             throw new BadRequestException("La date de soumission de l'évaluation ne peut pas être antérieure au début du stage.");
-        }
+        }/*
         if (contract.getEndingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getEndingDate())) {
             throw new BadRequestException("La date de soumission de l'évaluation de l'étudiant doit être après la fin du stage.");
-        }
+        }*/
         validateRating("professionalismRating", studentEvaluationDTO.professionalismRating());
         validateRating("workQualityRating", studentEvaluationDTO.workQualityRating());
         validateRating("teamworkRating", studentEvaluationDTO.teamworkRating());
         validateRating("communicationRating", studentEvaluationDTO.communicationRating());
         validateRating("objectiveReachedRating", studentEvaluationDTO.objectiveReachedRating());
+    }
+
+    private Contract findContractForStudentAndEmployer(
+            Long studentId, Employeur employer)
+            throws NotFoundException {
+
+        return contractRepository
+                .findByStudentIdOrderByDateCreationDesc(studentId)
+                .stream()
+                .filter(contract ->
+                        contract.getEmployer() != null
+                                && contract.getEmployer().getId().equals(employer.getId()))
+                .findFirst()
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Aucun contrat trouvé entre cet étudiant et votre entreprise."));
     }
 }
