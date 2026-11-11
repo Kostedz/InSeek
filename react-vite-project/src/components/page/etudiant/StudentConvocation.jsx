@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {useSearchParams} from "react-router-dom";
 import api from "../../../utils/api.js";
 import {normalizeMeetingLink} from "../../componentUtils/etudiant/convocationsUtils/InterviewUtils.jsx";
 import {notifyStudentTabCountsChanged} from "../../../utils/tabCounts.js";
@@ -563,6 +564,7 @@ function InterviewDetails({
 export default function StudentInterviews({user, page = false}) {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [interviews, setInterviews] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -624,6 +626,19 @@ export default function StudentInterviews({user, page = false}) {
             active = false;
         };
     }, [loadInterviews, user]);
+
+    // Lien direct depuis une notification : /...?entrevue=<id> ouvre le détail de la convocation.
+    useEffect(() => {
+        const id = Number(searchParams.get("entrevue"));
+        if (!id || loading) return;
+
+        const match = interviews.find((interview) => interview.id === id);
+        if (match) {
+            setError(null);
+            setSelected(match);
+        }
+        setSearchParams({}, {replace: true});
+    }, [loading, interviews, searchParams, setSearchParams]);
 
     const respond = async (interview, responseType, comment = "") => {
         setSaving(true);
