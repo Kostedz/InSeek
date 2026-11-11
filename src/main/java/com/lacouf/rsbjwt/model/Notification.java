@@ -32,5 +32,8 @@ public class Notification {
     private boolean lue = false;
 
     @Builder.Default
+    private Integer nombre = 1;
+
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }

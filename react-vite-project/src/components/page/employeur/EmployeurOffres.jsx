@@ -689,7 +689,6 @@ export default function EmployeurOffres({
         }
     };
 
-    // Lien de notification: /employeur?offre=7 ouvre les candidatures de l'offre 7.
     useEffect(() => {
         const offerParam = searchParams.get("offre");
         if (!offerParam || isLoadingOffers || offerList.length === 0) return;

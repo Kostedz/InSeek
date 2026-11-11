@@ -27,24 +27,40 @@ function NotificationBell({isLoggedIn}) {
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const containerRef = useRef(null);
-    const seenIds = useRef(new Set());
+    const knownMessages = useRef(new Map());
 
     useEffect(() => {
         if (!isLoggedIn) {
             setNotifications([]);
             setUnreadCount(0);
-            seenIds.current = new Set();
+            knownMessages.current = new Map();
             return undefined;
         }
 
         let isMounted = true;
 
         const addNotifications = (incoming) => {
-            const fresh = incoming.filter((n) => !seenIds.current.has(n.id));
-            if (fresh.length === 0) return;
-            fresh.forEach((n) => seenIds.current.add(n.id));
-            setNotifications((current) => [...fresh, ...current].slice(0, 20));
-            setUnreadCount((count) => count + fresh.length);
+            const fresh = [];
+            const updated = new Map();
+
+            incoming.forEach((n) => {
+                if (!knownMessages.current.has(n.id)) {
+                    fresh.push(n);
+                } else if (knownMessages.current.get(n.id) !== n.message) {
+                    updated.set(n.id, n);
+                }
+            });
+            if (fresh.length === 0 && updated.size === 0) return;
+
+            fresh.forEach((n) => knownMessages.current.set(n.id, n.message));
+            updated.forEach((n, id) => knownMessages.current.set(id, n.message));
+
+            setNotifications((current) => {
+                const bumped = current.filter(({id}) => updated.has(id)).map(({id}) => updated.get(id));
+                const rest = current.filter(({id}) => !updated.has(id));
+                return [...fresh, ...bumped, ...rest].slice(0, 20);
+            });
+            setUnreadCount((count) => count + fresh.length + updated.size);
         };
 
         const loadStored = async () => {
