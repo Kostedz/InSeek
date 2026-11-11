@@ -96,9 +96,7 @@ public class EvaluationControllerTest {
                 }
                 """;
     }
-    // =========================================================================
-    // GET /evaluations/milieu/prefill/{studentId}
-    // =========================================================================
+
     @Test
     @DisplayName("Pré-remplir évaluation milieu par GET /evaluations/milieu/prefill/{studentId} - Success")
     void getPreFillCompanyEvaluationSuccess() throws Exception {
@@ -126,9 +124,7 @@ public class EvaluationControllerTest {
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isBadRequest());
     }
-    // =========================================================================
-    // POST /evaluations/milieu
-    // =========================================================================
+
     @Test
     @DisplayName("Soumettre évaluation milieu par POST /evaluations/milieu - Success (201 Created)")
     void submitCompanyEvaluationSuccess() throws Exception {
@@ -173,9 +169,7 @@ public class EvaluationControllerTest {
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isNotFound());
     }
-    // =========================================================================
-    // GET /evaluations/milieu/{studentId}
-    // =========================================================================
+
     @Test
     @DisplayName("Obtenir évaluation soumise par GET /evaluations/milieu/{studentId} - Success")
     void getSubmittedCompanyEvaluationSuccess() throws Exception {
