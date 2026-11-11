@@ -11,6 +11,7 @@ import com.lacouf.rsbjwt.repository.ProfesseurRepository;
 import com.lacouf.rsbjwt.service.dto.CompanyEvaluationDTO;
 import com.lacouf.rsbjwt.service.dto.EvaluationDTO;
 import com.lacouf.rsbjwt.service.dto.PrefillCompanyEvaluationDTO;
+import com.lacouf.rsbjwt.service.dto.StudentEvaluationDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -152,5 +153,24 @@ public class EvaluationService {
                 .filter(contract -> contract.getContractStatus() == StatutContrat.EXECUTED)
                 .findFirst()
                 .orElseThrow(() -> new BadRequestException("Aucun contrat en cours (EXECUTED) trouvé pour cet étudiant. Le stage doit être actif."));
+    }
+
+    /// //////////////////////////////////////////////////////////////////////////////////////
+    private void validateStudentEvaluationSubmission(StudentEvaluationDTO studentEvaluationDTO, Contract contract)
+            throws BadRequestException {
+        if (studentEvaluationDTO.evaluationSubmittedAt() == null) {
+            throw new BadRequestException("La date de soumission de l'évaluation est obligatoire.");
+        }
+        if (contract.getStartingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getStartingDate())) {
+            throw new BadRequestException("La date de soumission de l'évaluation ne peut pas être antérieure au début du stage.");
+        }
+        if (contract.getEndingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getEndingDate())) {
+            throw new BadRequestException("La date de soumission de l'évaluation de l'étudiant doit être après la fin du stage.");
+        }
+        validateRating("professionalismRating", studentEvaluationDTO.professionalismRating());
+        validateRating("workQualityRating", studentEvaluationDTO.workQualityRating());
+        validateRating("teamworkRating", studentEvaluationDTO.teamworkRating());
+        validateRating("communicationRating", studentEvaluationDTO.communicationRating());
+        validateRating("objectiveReachedRating", studentEvaluationDTO.objectiveReachedRating());
     }
 }
