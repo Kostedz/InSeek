@@ -627,7 +627,6 @@ export default function StudentInterviews({user, page = false}) {
         };
     }, [loadInterviews, user]);
 
-    // Lien direct depuis une notification : /...?entrevue=<id> ouvre le détail de la convocation.
     useEffect(() => {
         const id = Number(searchParams.get("entrevue"));
         if (!id || loading) return;

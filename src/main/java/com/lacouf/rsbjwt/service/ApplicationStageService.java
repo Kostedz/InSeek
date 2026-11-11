@@ -1,6 +1,6 @@
 package com.lacouf.rsbjwt.service;
 
-import com.lacouf.rsbjwt.event.CandidatureSoumiseEvent;
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
@@ -17,7 +17,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -91,7 +90,7 @@ public class ApplicationStageService {
         ApplicationStage sauvegarde =
                 applicationStageRepository.save(applicationStage);
 
-        eventPublisher.publishEvent(new CandidatureSoumiseEvent(this, sauvegarde));
+        eventPublisher.publishEvent(NotificationEvent.candidature(sauvegarde));
 
         return toDto(sauvegarde);
     }
