@@ -20,6 +20,9 @@ public class StudentEvaluation extends Evaluation{
     @ManyToOne
     Etudiant intern;
 
+    @ManyToOne
+    private Contract contract;
+
     private double professionalismRating;
     private double workQualityRating;
     private double teamworkRating;
