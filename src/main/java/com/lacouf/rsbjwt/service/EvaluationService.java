@@ -27,7 +27,7 @@ public class EvaluationService {
             throws NotFoundException, BadRequestException, ConflictException {
         return switch (dto) {
             case CompanyEvaluationDTO companyDto -> submitCompanyEvaluation(companyDto, userEmail);
-            //case StudentEvaluationDTO studentDto -> submitStudentEvaluation(studentDto, userEmail);
+            case StudentEvaluationDTO studentDto -> submitStudentEvaluation(studentDto, userEmail);
             default -> throw new BadRequestException("Type d'évaluation non reconnu.");
         };
     }
@@ -85,6 +85,16 @@ public class EvaluationService {
                 .orElseThrow(() -> new NotFoundException("Aucune évaluation trouvée pour cet étudiant."));
     }
 
+    @Transactional(readOnly = true)
+    public StudentEvaluationDTO getSubmittedStudentEvaluation(String employerEmail, Long studentId) throws NotFoundException, BadRequestException {
+        Employeur employer = findEmployerByEmail(employerEmail);
+        Contract activeContract = findActiveContract(studentId);
+
+        return evaluationRepository.findStudentEvaluation(employer.getId(),studentId,activeContract.getId())
+                .map(StudentEvaluationDTO::of)
+                .orElseThrow(() -> new NotFoundException("Aucune évaluation trouvée pour cet étudiant."));
+    }
+
     private CompanyEvaluationDTO submitCompanyEvaluation(CompanyEvaluationDTO companyEvaluationDTO, String teacherEmail)
             throws NotFoundException, BadRequestException, ConflictException {
         Professeur teacher = findTeacherByEmail(teacherEmail);
@@ -105,7 +115,33 @@ public class EvaluationService {
         return CompanyEvaluationDTO.of(evaluationRepository.save(evaluation));
     }
 
-    //private StudentEvaluationDTO submitStudentEvaluation(StudentEvaluationDTO dto, String employerEmail) {}
+    private StudentEvaluationDTO submitStudentEvaluation(
+            StudentEvaluationDTO dto, String employerEmail)
+            throws NotFoundException, BadRequestException, ConflictException {
+
+        Employeur employer = findEmployerByEmail(employerEmail);
+
+        Etudiant student = findStudentById(dto.internId());
+
+        Contract contract = findContractForStudentAndEmployer(student.getId(), employer);
+
+        // Prevent a second evaluation for the same contract
+        if (evaluationRepository.existsCompanyEvaluationByContractAndEvaluationState(contract.getId(),EvaluationState.SUBMITTED)) {
+            throw new ConflictException(
+                    "Une évaluation de cet étudiant existe déjà pour ce contrat.");
+        }
+
+        validateStudentEvaluationSubmission(dto, contract);
+
+        StudentEvaluation evaluation =
+                buildStudentEvaluation(dto, employer, student, contract);
+
+        evaluation.setEvaluationState(EvaluationState.SUBMITTED);
+        evaluation.setEvaluationSubmittedDate(LocalDate.now());
+
+        return StudentEvaluationDTO.of(
+                evaluationRepository.save(evaluation));
+    }
 
     private CompanyEvaluation buildEvaluation(CompanyEvaluationDTO companyEvaluationDTO, Professeur teacher,
                                               Etudiant student, Contract activeContract) {
@@ -121,6 +157,26 @@ public class EvaluationService {
         evaluation.setSupervisionRating(companyEvaluationDTO.supervisionRating());
         evaluation.setTaskComplianceRating(companyEvaluationDTO.taskComplianceRating());
         evaluation.setWorkEnvironmentRating(companyEvaluationDTO.workEnvironmentRating());
+        return evaluation;
+    }
+
+    private StudentEvaluation buildStudentEvaluation(StudentEvaluationDTO studentEvaluationDTO, Employeur employer, Etudiant student, Contract activeContract){
+        StudentEvaluation evaluation = new StudentEvaluation();
+        evaluation.setEmployer(employer);
+        evaluation.setIntern(student);
+        evaluation.setContract(activeContract);
+
+        evaluation.setInternshipOffer(activeContract.getInternshipOffer());
+        evaluation.setDiscipline(student.getDiscipline());
+
+        evaluation.setEvaluationComment(studentEvaluationDTO.evaluationComment());
+
+        evaluation.setProfessionalismRating(studentEvaluationDTO.professionalismRating());
+        evaluation.setWorkQualityRating(studentEvaluationDTO.workQualityRating());
+        evaluation.setTeamworkRating(studentEvaluationDTO.teamworkRating());
+        evaluation.setCommunicationRating(studentEvaluationDTO.communicationRating());
+        evaluation.setObjectiveReachedRating(studentEvaluationDTO.objectiveReachedRating());
+
         return evaluation;
     }
 
@@ -154,7 +210,6 @@ public class EvaluationService {
                 .orElseThrow(() -> new NotFoundException("Professeur introuvable."));
     }
 
-    /// --------------------------------
     private Employeur findEmployerByEmail(String email) throws NotFoundException{
         return employerRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("Employeur introuvable."));
@@ -181,7 +236,6 @@ public class EvaluationService {
                 .orElseThrow(() -> new BadRequestException("Aucun contrat en cours (EXECUTED) trouvé pour cet étudiant. Le stage doit être actif."));
     }
 
-    /// //////////////////////////////////////////////////////////////////////////////////////
     private void validateStudentEvaluationSubmission(StudentEvaluationDTO studentEvaluationDTO, Contract contract)
             throws BadRequestException {
         if (studentEvaluationDTO.evaluationSubmittedAt() == null) {

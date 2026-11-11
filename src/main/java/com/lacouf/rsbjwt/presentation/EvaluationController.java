@@ -7,6 +7,8 @@ import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.EvaluationService;
 import com.lacouf.rsbjwt.service.dto.CompanyEvaluationDTO;
 import com.lacouf.rsbjwt.service.dto.PrefillCompanyEvaluationDTO;
+import com.lacouf.rsbjwt.service.dto.PrefillStudentEvaluationDTO;
+import com.lacouf.rsbjwt.service.dto.StudentEvaluationDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -65,6 +67,68 @@ public class EvaluationController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (BadRequestException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/etudiant/prefill/{studentId}")
+    public ResponseEntity<?> getPreFillStudentEvaluation(
+            @PathVariable Long studentId,
+            HttpServletRequest request) {
+
+        try {
+            String email = getEmailFromRequest(request);
+
+            PrefillStudentEvaluationDTO prefill =
+                    evaluationService.getPrefillStudentEvaluation(email, studentId);
+
+            return ResponseEntity.ok(prefill);
+
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (BadRequestException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/etudiant")
+    public ResponseEntity<?> submitStudentEvaluation(
+            @RequestBody StudentEvaluationDTO dto,
+            HttpServletRequest request) {
+
+        try {
+            String email = getEmailFromRequest(request);
+
+            StudentEvaluationDTO result =
+                    (StudentEvaluationDTO) evaluationService.submitEvaluation(dto, email);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+
+        } catch (ConflictException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (BadRequestException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/etudiant/{studentId}")
+    public ResponseEntity<?> getSubmittedStudentEvaluation(
+            @PathVariable Long studentId,
+            HttpServletRequest request) {
+
+        try {
+            String email = getEmailFromRequest(request);
+
+            StudentEvaluationDTO evaluation =
+                    evaluationService.getSubmittedStudentEvaluation(email, studentId);
+
+            return ResponseEntity.ok(evaluation);
+
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (BadRequestException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }
