@@ -27,7 +27,7 @@ public class CandidatureNotificationListener {
         Utilisateur employeur = offre.getUtilisateur();
         if (employeur == null) return;
 
-        String lien = "/employeur?offre=" + offre.getId();
+        String lien = "/employeur/offre/" + offre.getId();
 
         Notification notification = notificationRepository
                 .findFirstByDestinataireIdAndLienDirectAndLueFalseOrderByCreatedAtDesc(employeur.getId(), lien)
