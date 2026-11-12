@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
-import {useSearchParams} from "react-router-dom";
+import {useParams} from "react-router-dom";
 import DropdownSelect from "../../DropdownSelect.jsx";
 import {createTranslationMessage, translateMessage} from "../../../utils/i18nMessage.js";
 import api from "../../../utils/api.js";
@@ -533,7 +533,7 @@ export default function EmployeurOffres({
     const formRef = useRef(null);
     const editorScrollRef = useRef(null);
     const {t, i18n} = useTranslation();
-    const [searchParams, setSearchParams] = useSearchParams();
+    const {offerId} = useParams();
     const employerCompanyName = String(
         user?.nomCompagnie
         || user?.nomEntreprise
@@ -690,17 +690,11 @@ export default function EmployeurOffres({
     };
 
     useEffect(() => {
-        const offerParam = searchParams.get("offre");
-        if (!offerParam || isLoadingOffers || offerList.length === 0) return;
+        if (!offerId || isLoadingOffers || offerList.length === 0) return;
 
-        const offer = offerList.find((o) => String(o.id) === offerParam && o.statut === "VALIDE");
+        const offer = offerList.find((o) => String(o.id) === offerId && o.statut === "VALIDE");
         if (offer) loadApplications(offer);
-
-        setSearchParams((params) => {
-            params.delete("offre");
-            return params;
-        }, {replace: true});
-    }, [searchParams, offerList, isLoadingOffers]);
+    }, [offerId, offerList, isLoadingOffers]);
 
     useEffect(() => {
         if (!usesRemoteOffers) return undefined;

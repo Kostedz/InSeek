@@ -46,7 +46,7 @@ public class SecurityConfiguration {
     private static final String H2_CONSOLE_PATH = "/h2-console/**";
     private static final String USER_LOGIN_PATH = "/user/login";
     private static final String USER_REGISTER_PATH = "/user/register";
-    private static final String DEMO_LOGIN_PATH = "/user/demo/login";
+    private static final String DEMO_LOGIN_PATH = "/user/demo/login/**";
     private static final String DEMO_STUDENT_PATH = "/user/demo/student-demo";
     private static final String DEMO_SIGNED_CONTRACT_STUDENT_PATH = "/user/demo/student-contract-demo";
     private static final String DEMO_DELAYED_NOTIFICATIONS_PATH = "/user/demo/delayed-notifications-demo";

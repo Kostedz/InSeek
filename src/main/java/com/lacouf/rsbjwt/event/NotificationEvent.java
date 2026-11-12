@@ -33,7 +33,7 @@ public record NotificationEvent(
         return new NotificationEvent(
                 offre.getUtilisateur(),
                 "Nouvelle candidature !",
-                "/employeur?offre=" + offre.getId(),
+                "/employeur/offre/" + offre.getId(),
                 true,
                 n -> n + (n > 1 ? " nouveaux candidats" : " nouveau candidat") + " pour le poste de " + poste);
     }
@@ -47,7 +47,7 @@ public record NotificationEvent(
         return new NotificationEvent(
                 e.getStudent(),
                 titre,
-                "/etudiant/convocations?entrevue=" + e.getId(),
+                "/etudiant/convocations/" + e.getId(),
                 false,
                 n -> texte);
     }

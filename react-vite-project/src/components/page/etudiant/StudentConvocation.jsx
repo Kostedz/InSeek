@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
-import {useSearchParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import api from "../../../utils/api.js";
 import {normalizeMeetingLink} from "../../componentUtils/etudiant/convocationsUtils/InterviewUtils.jsx";
 import {notifyStudentTabCountsChanged} from "../../../utils/tabCounts.js";
@@ -564,7 +564,8 @@ function InterviewDetails({
 export default function StudentInterviews({user, page = false}) {
     const {t, i18n} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
-    const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const {interviewId: directInterviewId} = useParams();
 
     const [interviews, setInterviews] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -628,16 +629,21 @@ export default function StudentInterviews({user, page = false}) {
     }, [loadInterviews, user]);
 
     useEffect(() => {
-        const id = Number(searchParams.get("entrevue"));
-        if (!id || loading) return;
+        if (!directInterviewId || loading) return;
+        const id = Number(directInterviewId);
+        if (!Number.isSafeInteger(id) || id <= 0) {
+            navigate("/etudiant/convocations", {replace: true});
+            return;
+        }
 
         const match = interviews.find((interview) => interview.id === id);
         if (match) {
             setError(null);
             setSelected(match);
+        } else {
+            navigate("/etudiant/convocations", {replace: true});
         }
-        setSearchParams({}, {replace: true});
-    }, [loading, interviews, searchParams, setSearchParams]);
+    }, [directInterviewId, loading, interviews, navigate]);
 
     const respond = async (interview, responseType, comment = "") => {
         setSaving(true);
@@ -721,6 +727,12 @@ export default function StudentInterviews({user, page = false}) {
     const openInterview = (interview) => {
         setError(null);
         setSelected(interview);
+        navigate(`/etudiant/convocations/${interview.id}`);
+    };
+
+    const closeInterview = () => {
+        setSelected(null);
+        if (directInterviewId) navigate("/etudiant/convocations", {replace: true});
     };
 
     if (page) {
@@ -754,7 +766,7 @@ export default function StudentInterviews({user, page = false}) {
                         interview={selected}
                         language={language}
                         t={t}
-                        onClose={() => setSelected(null)}
+                        onClose={closeInterview}
                         onRespond={respond}
                         saving={saving}
                         error={error}
@@ -933,7 +945,7 @@ export default function StudentInterviews({user, page = false}) {
                     interview={selected}
                     language={language}
                     t={t}
-                    onClose={() => setSelected(null)}
+                    onClose={closeInterview}
                     onRespond={respond}
                     saving={saving}
                     error={error}

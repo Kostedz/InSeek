@@ -11,12 +11,20 @@ const notificationTypes = {
 const getAuthToken = () => localStorage.getItem("token") || sessionStorage.getItem("token") || "";
 
 function toNotification(data) {
-    const legacy = String(data.lienDirect ?? "").match(/^\/employeur\/offres\/(\d+)\/candidatures$/);
+    const directLink = String(data.lienDirect ?? "");
+    const legacyOfferPath = directLink.match(/^\/employeur\/offres\/(\d+)\/candidatures$/);
+    const legacyOfferQuery = directLink.match(/^\/employeur\?offre=(\d+)$/);
+    const legacyInterviewQuery = directLink.match(/^\/etudiant\/convocations\?entrevue=(\d+)$/);
+    const offerId = legacyOfferPath?.[1] ?? legacyOfferQuery?.[1];
     return {
         id: data.id ?? `${Date.now()}-${Math.random()}`,
         message: data.message ?? data.me ?? data.titre ?? "",
         count: 1,
-        actionPath: legacy ? `/employeur?offre=${legacy[1]}` : data.lienDirect || "/employeur",
+        actionPath: offerId
+            ? `/employeur/offre/${offerId}`
+            : legacyInterviewQuery
+                ? `/etudiant/convocations/${legacyInterviewQuery[1]}`
+                : directLink || "/employeur",
     };
 }
 

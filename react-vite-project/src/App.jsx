@@ -166,6 +166,14 @@ function App() {
                         }
                     />
                     <Route
+                        path="etudiant/convocations/:interviewId"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <StudentHomePage user={user}/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
                         path="etudiant/contrat"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
@@ -185,6 +193,22 @@ function App() {
                                     isAccountEmailValidated={
                                         user?.emailValidated !== false
                                     }
+                                    contracts={user?.contracts}
+                                    drafts={offerDrafts}
+                                    setDrafts={setOfferDrafts}
+                                />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="employeur/offre/:offerId"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["EMPLOYEUR"]}>
+                                <EmployerHomePage
+                                    user={user}
+                                    canManageOffers={Boolean(user?.isLoggedIn)}
+                                    companyName={user?.nomCompagnie ?? ""}
+                                    isAccountEmailValidated={user?.emailValidated !== false}
                                     contracts={user?.contracts}
                                     drafts={offerDrafts}
                                     setDrafts={setOfferDrafts}
