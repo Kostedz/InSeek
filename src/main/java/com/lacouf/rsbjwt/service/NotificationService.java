@@ -48,7 +48,10 @@ public class NotificationService {
     @Value("${app.frontend.contract-path:/contrats/{id}}")
     private String contractPath;
 
-    // ======================= Évaluation du stagiaire =======================
+    @Value("${app.frontend.evaluation-professeur-path:/professeur/evaluations/{id}}")
+    private String evaluationProfesseurPath;
+
+    // ======================= Évaluation du stagiaire (employeur) =======================
 
     /** Notifie les employeurs dont le stage se termine dans <= alertDays jours et sans évaluation. */
     @Scheduled(cron = "${app.evaluation.cron:0 0 8 * * *}")
@@ -84,6 +87,54 @@ public class NotificationService {
         }
         log.info("Alerte d'évaluation : {} notification(s) créée(s)", crees);
         return crees;
+    }
+
+    // ======================= Nouvelle évaluation → professeur =======================
+
+    /** Appelée quand l'employeur soumet l'évaluation : notifie le professeur assigné à l'étudiant. */
+    @Transactional
+    public int notifierProfesseurNouvelleEvaluation(Contract contrat) {
+        Etudiant etudiant = contrat.getStudent();
+        Professeur professeur = etudiant == null ? null : etudiant.getProfesseur();
+
+        // Aucun professeur assigné : on journalise pour que le GS assigne un professeur
+        if (professeur == null) {
+            log.warn("Nouvelle évaluation (contrat {}) : aucun professeur assigné à l'étudiant. "
+                    + "Le gestionnaire doit assigner un professeur.", contrat.getId());
+            return 0;
+        }
+        // Pas de doublon
+        if (notificationRepository.existsByTypeAndContratIdAndDestinataireId(
+                TypeNotification.NOUVELLE_EVALUATION_PROFESSEUR, contrat.getId(), professeur.getId())) {
+            return 0;
+        }
+
+        String nomEtudiant = nomComplet(etudiant);
+        String entreprise = entreprise(contrat);
+        String lien = frontendUrl + evaluationProfesseurPath.replace("{id}", String.valueOf(contrat.getId()));
+
+        String messageFr = "L'employeur " + entreprise + " a soumis l'évaluation du stagiaire "
+                + nomEtudiant + ". Vous pouvez la consulter.";
+        String messageEn = "The employer " + entreprise + " has submitted the evaluation of intern "
+                + nomEtudiant + ". You can review it.";
+
+        PreferenceNotification preference = preferenceRepository
+                .findByUtilisateurId(professeur.getId()).orElse(null);
+
+        Notification notification = new Notification();
+        notification.setDestinataire(professeur);
+        notification.setType(TypeNotification.NOUVELLE_EVALUATION_PROFESSEUR);
+        notification.setContrat(contrat);
+        notification.setMessage(messageFr);
+        notification.setMessageEn(messageEn);
+        notification.setLien(lien);
+        // La préférence ne contrôle que l'In-App : le courriel part toujours.
+        notification.setInApp(preference == null || preference.isInAppActif());
+        notification.setSujetCourriel("Nouvelle évaluation de stage / New internship evaluation");
+        notification.setCorpsCourriel(messageFr + "\nConsulter l'évaluation : " + lien
+                + "\n\n" + messageEn + "\nView the evaluation: " + lien);
+        tenterEnvoi(notification);
+        return 1;
     }
 
     // ======================= Nouveau contrat =======================
@@ -134,6 +185,7 @@ public class NotificationService {
         notification.setType(type);
         notification.setContrat(contrat);
         notification.setMessage(messageFr);
+        notification.setMessageEn(messageEn);
         notification.setLien(lien);
         // La préférence ne contrôle que l'In-App : le courriel transactionnel est toujours envoyé.
         notification.setInApp(preference == null || preference.isInAppActif());

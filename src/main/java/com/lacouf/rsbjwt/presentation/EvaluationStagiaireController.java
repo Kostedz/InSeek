@@ -4,6 +4,7 @@ import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.service.EvaluationStagiaireService;
+import com.lacouf.rsbjwt.service.dto.EvaluationStagiaireDTO;
 import com.lacouf.rsbjwt.service.dto.SoumettreEvaluationDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,5 +30,13 @@ public class EvaluationStagiaireController {
             throws NotFoundException, BadRequestException, ConflictException {
         Long id = evaluationService.soumettre(contratId, dto.commentaire(), principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id));
+    }
+
+    @GetMapping("/contracts/{contratId}")
+    @PreAuthorize("hasAuthority('PROFESSEUR')")
+    public ResponseEntity<EvaluationStagiaireDTO> consulter(@PathVariable Long contratId,
+                                                            Principal principal)
+            throws NotFoundException {
+        return ResponseEntity.ok(evaluationService.consulterPourProfesseur(contratId, principal.getName()));
     }
 }

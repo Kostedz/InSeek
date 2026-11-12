@@ -66,6 +66,7 @@ class NotificationControllerTest {
                 5L,
                 TypeNotification.EVALUATION_STAGIAIRE,
                 "Veuillez remplir l'évaluation",
+                "Please fill in the evaluation",
                 10L,
                 null,
                 lue,

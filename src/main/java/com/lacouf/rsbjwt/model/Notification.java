@@ -34,7 +34,10 @@ public class Notification {
     @Column(length = 1000)
     private String message;
 
-    /** Lien direct vers la ressource (page de signature du contrat). */
+    @Column(length = 1000)
+    private String messageEn;
+
+    /** Lien direct vers la ressource. */
     @Column(length = 500)
     private String lien;
 
@@ -43,7 +46,6 @@ public class Notification {
     /** false si l'utilisateur a désactivé les notifications In-App (le courriel part quand même). */
     private boolean inApp = true;
 
-    // Courriel : contenu conservé pour pouvoir le renvoyer, et suivi d'envoi
     @Column(length = 300)
     private String sujetCourriel;
 

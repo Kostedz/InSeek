@@ -53,6 +53,7 @@ class NotificationServiceTest {
         ReflectionTestUtils.setField(service, "maxTentatives", 5);
         ReflectionTestUtils.setField(service, "frontendUrl", "http://localhost:3000");
         ReflectionTestUtils.setField(service, "contractPath", "/contrats/{id}");
+        ReflectionTestUtils.setField(service, "evaluationProfesseurPath", "/professeur/evaluations/{id}");
 
         employeur = Employeur.builder()
                 .id(1L).nom("Soft").prenom("Ubi")
@@ -69,7 +70,7 @@ class NotificationServiceTest {
                 .email("gestionnaire@inseek.com").password("x").build();
     }
 
-    // ---------- Helpers ----------
+    // helpers
 
     private Contract contrat(Long id, Employeur employer) {
         Contract c = Contract.builder()
@@ -117,8 +118,7 @@ class NotificationServiceTest {
         return captor.getAllValues();
     }
 
-    // ---------- Alertes d'évaluation des stagiaires ----------
-
+    // alerte devaluation des stagiaires
     @Test
     @DisplayName("Crée une notification et un courriel lorsqu'une évaluation est absente")
     void creeNotificationEtCourrielQuandEvaluationAbsente() {
@@ -180,7 +180,7 @@ class NotificationServiceTest {
                 any(), eq(today), eq(today.plusDays(21)));
     }
 
-    // ---------- Nouveau contrat ----------
+    // nouveau contrat
 
     @Test
     @DisplayName("Notifie l'étudiant et l'employeur d'un nouveau contrat")
@@ -314,7 +314,84 @@ class NotificationServiceTest {
         assertTrue(notificationsSauvegardees().get(0).getMessage().contains("dates à confirmer"));
     }
 
-    // ---------- Reprise des courriels ----------
+
+
+    // nouvelle evaluation - professeur
+
+    private Professeur professeur() {
+        return Professeur.builder().id(7L).nom("Gagnon").prenom("Bob")
+                .email("bob@mail.com").password("x").discipline(Disciplines.INFORMATIQUE).build();
+    }
+
+    @Test
+    @DisplayName("Notifie le professeur assigné d'une nouvelle évaluation")
+    void notifieLeProfesseurDUneNouvelleEvaluation() {
+        etudiant.setProfesseur(professeur());
+        courrielOk();
+
+        assertEquals(1, service.notifierProfesseurNouvelleEvaluation(contrat(10L, employeur)));
+
+        Notification n = notificationsSauvegardees().get(0);
+        assertEquals(TypeNotification.NOUVELLE_EVALUATION_PROFESSEUR, n.getType());
+        assertEquals("bob@mail.com", n.getDestinataire().getEmail());
+        assertEquals("http://localhost:3000/professeur/evaluations/10", n.getLien());
+        assertTrue(n.getMessage().contains("évaluation"));
+        assertTrue(n.getMessageEn().contains("evaluation"));
+        assertEquals(StatutEnvoiCourriel.ENVOYE, n.getStatutCourriel());
+        verify(courrielService).envoyer(eq("bob@mail.com"), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Ne notifie personne si aucun professeur n'est assigné")
+    void neNotifiePasSansProfesseur() {
+        assertEquals(0, service.notifierProfesseurNouvelleEvaluation(contrat(10L, employeur)));
+
+        verify(notificationRepository, never()).save(any());
+        verifyNoInteractions(courrielService);
+    }
+
+    @Test
+    @DisplayName("Ne crée pas de doublon pour le professeur")
+    void neCreePasDeDoublonPourLeProfesseur() {
+        etudiant.setProfesseur(professeur());
+        when(notificationRepository.existsByTypeAndContratIdAndDestinataireId(
+                TypeNotification.NOUVELLE_EVALUATION_PROFESSEUR, 10L, 7L)).thenReturn(true);
+
+        assertEquals(0, service.notifierProfesseurNouvelleEvaluation(contrat(10L, employeur)));
+
+        verify(notificationRepository, never()).save(any());
+        verifyNoInteractions(courrielService);
+    }
+
+    @Test
+    @DisplayName("Garde la notification In-App si le courriel échoue")
+    void gardeLaNotificationProfesseurSiCourrielEchoue() {
+        etudiant.setProfesseur(professeur());
+        courrielEnPanne();
+
+        assertEquals(1, service.notifierProfesseurNouvelleEvaluation(contrat(10L, employeur)));
+
+        Notification n = notificationsSauvegardees().get(0);
+        assertEquals(StatutEnvoiCourriel.ECHEC, n.getStatutCourriel());
+        assertTrue(n.isInApp());
+    }
+
+    @Test
+    @DisplayName("Respecte la préférence In-App du professeur")
+    void respectePreferenceInAppDuProfesseur() {
+        etudiant.setProfesseur(professeur());
+        PreferenceNotification pref = new PreferenceNotification();
+        pref.setInAppActif(false);
+        when(preferenceRepository.findByUtilisateurId(7L)).thenReturn(Optional.of(pref));
+        courrielOk();
+
+        service.notifierProfesseurNouvelleEvaluation(contrat(10L, employeur));
+
+        assertFalse(notificationsSauvegardees().get(0).isInApp());
+        verify(courrielService).envoyer(eq("bob@mail.com"), anyString(), anyString());
+    }
+
+    // reprise des courriels
 
     @Test
     @DisplayName("Réessaie les courriels en échec et les marque comme envoyés")
@@ -364,7 +441,7 @@ class NotificationServiceTest {
         verifyNoInteractions(courrielService);
     }
 
-    // ---------- Lecture des notifications ----------
+    // lecture
 
     @Test
     @DisplayName("Retourne les notifications de l'utilisateur")
@@ -417,7 +494,7 @@ class NotificationServiceTest {
         verify(notificationRepository, never()).save(any());
     }
 
-    // ---------- Préférences de notification ----------
+    // preferences de notifications
 
     @Test
     @DisplayName("Active les notifications In-App par défaut")

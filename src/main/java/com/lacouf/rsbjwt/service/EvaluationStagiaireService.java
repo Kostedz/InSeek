@@ -8,6 +8,7 @@ import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.EvaluationStagiaireRepository;
 import com.lacouf.rsbjwt.repository.NotificationRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.service.dto.EvaluationStagiaireDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class EvaluationStagiaireService {
     private final ContratRepository contratRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Long soumettre(Long contratId, String commentaire, String employeurEmail)
@@ -47,6 +49,22 @@ public class EvaluationStagiaireService {
         evaluationRepository.save(evaluation);
 
         notificationRepository.marquerLuesPourContrat(contratId, TypeNotification.EVALUATION_STAGIAIRE);
+        notificationService.notifierProfesseurNouvelleEvaluation(contrat);
         return evaluation.getId();
+    }
+
+    /** Consultation de l'évaluation par le professeur superviseur de l'étudiant. */
+    @Transactional(readOnly = true)
+    public EvaluationStagiaireDTO consulterPourProfesseur(Long contratId, String professeurEmail)
+            throws NotFoundException {
+        EvaluationStagiaire evaluation = evaluationRepository.findByContratId(contratId)
+                .orElseThrow(() -> new NotFoundException("Évaluation non trouvée"));
+        Etudiant etudiant = evaluation.getContrat().getStudent();
+        boolean estSuperviseur = etudiant != null && etudiant.getProfesseur() != null
+                && etudiant.getProfesseur().getEmail().equalsIgnoreCase(professeurEmail);
+        if (!estSuperviseur) {
+            throw new NotFoundException("Évaluation non trouvée");
+        }
+        return EvaluationStagiaireDTO.of(evaluation);
     }
 }
