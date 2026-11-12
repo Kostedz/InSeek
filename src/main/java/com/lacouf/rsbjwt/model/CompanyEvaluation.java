@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -15,14 +17,18 @@ import lombok.Setter;
 public class CompanyEvaluation extends Evaluation {
 
     @ManyToOne
-    private Professeur professeur;
+    private Professeur teacher;
 
     @ManyToOne
     private Employeur employerCompany;
 
-    private static final double MAXIMUM_RATING = 5.0;
+    @ManyToOne
+    private Etudiant studentIntern;
 
-    private static double MINIMUM_RATING = 1.0;
+    @ManyToOne
+    private Contract contract;
+
+    private LocalDate visitDate;
 
     private double supervisionRating;
 

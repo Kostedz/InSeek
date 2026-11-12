@@ -79,32 +79,31 @@ export default function EmployerHomePage({
             setContractsCount(contracts.filter((contract) =>
                 String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "SIGNED_BY_STUDENT"
             ).length);
-            let submitted = {};
-            try {
-                submitted = JSON.parse(localStorage.getItem("inseek.employer.internship-evaluation.submitted") || "{}");
-            } catch {
-                submitted = {};
-            }
             setEvaluationsCount(contracts.filter((contract) =>
                 ["EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase())
-                && !submitted[String(contract?.id ?? contract?.contractId)]
             ).length);
         } catch {
             setContractsCount(null);
         }
     }, [user?.id]);
 
+    const handleEvaluationsUpdated = useCallback((event) => {
+        const pendingCount = event.detail?.pendingCount;
+        if (Number.isFinite(pendingCount)) setEvaluationsCount(pendingCount);
+        else refreshContractsCount();
+    }, [refreshContractsCount]);
+
     useEffect(() => {
         refreshContractsCount();
         window.addEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshContractsCount);
-        window.addEventListener(EMPLOYER_EVALUATIONS_UPDATED_EVENT, refreshContractsCount);
+        window.addEventListener(EMPLOYER_EVALUATIONS_UPDATED_EVENT, handleEvaluationsUpdated);
         window.addEventListener("focus", refreshContractsCount);
         return () => {
             window.removeEventListener(STUDENT_TAB_COUNTS_CHANGED_EVENT, refreshContractsCount);
-            window.removeEventListener(EMPLOYER_EVALUATIONS_UPDATED_EVENT, refreshContractsCount);
+            window.removeEventListener(EMPLOYER_EVALUATIONS_UPDATED_EVENT, handleEvaluationsUpdated);
             window.removeEventListener("focus", refreshContractsCount);
         };
-    }, [refreshContractsCount]);
+    }, [refreshContractsCount, handleEvaluationsUpdated, activeTab]);
 
     return (
         <section className="flex flex-1 bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-8">

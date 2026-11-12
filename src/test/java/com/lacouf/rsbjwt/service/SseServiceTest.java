@@ -1,7 +1,6 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Gestionnaire;
 import com.lacouf.rsbjwt.model.Notification;
 import com.lacouf.rsbjwt.model.Utilisateur;
 import com.lacouf.rsbjwt.repository.NotificationRepository;
@@ -20,8 +19,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -50,68 +48,77 @@ public class SseServiceTest {
         clients = (Map<String, SseEmitter>) ReflectionTestUtils.getField(sseService, "clients");
     }
 
-
-    @Test
-    @DisplayName("streamNotifications() retourne un SseEmitter et enregistre le client - 200")
-    public void streamNotifications_ReturnsEmitter_RegistersClient() {
-        String recipient = "student@example.com";
-        SseEmitter emitter = sseService.streamNotifications(recipient);
-
-        assertNotNull(emitter);
-        assertTrue(clients.get(recipient) == emitter);
+    private void stubNotificationSave() {
+        when(notificationRepository.save(any(Notification.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
-    @DisplayName("sendNotification() envoie un événement aux clients connectés - 200")
-    public void sendNotification_SendsEvent_ToConnected_Clients() throws IOException {
+    @DisplayName("streamNotifications() returns an emitter and registers the client")
+    void streamNotifications_ReturnsEmitter_RegistersClient() {
+        String recipientEmail = "student@example.com";
+
+        SseEmitter emitter = sseService.streamNotifications(recipientEmail);
+
+        assertNotNull(emitter);
+        assertSame(clients.get(recipientEmail), emitter);
+    }
+
+    @Test
+    @DisplayName("sendNotification() sends an event to a connected client")
+    void sendNotification_SendsEvent_ToConnectedClient() throws IOException {
+        stubNotificationSave();
         SseEmitter emitter = mock(SseEmitter.class);
-        Utilisateur recipient = Etudiant
-                .builder()
+        Utilisateur recipient = Etudiant.builder()
                 .email("student@example.com")
                 .build();
 
+        String recipientEmail = recipient.getCredentials().getEmail();
+        clients.put(recipientEmail, emitter);
 
-        clients.put(recipient.getEmail(), emitter);
-
-        // n'importe quelle notification pour tester l'envoi
         sseService.sendNotification(NotificationType.CV_TO_APPROVE, recipient);
 
+        verify(notificationRepository).save(any(Notification.class));
         verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
     }
 
     @Test
-    @DisplayName("sendNotification() supprime un client en cas d'erreur - 200")
-    public void sendNotification_RemovesCleint_OnError() throws IOException {
+    @DisplayName("sendNotification() removes a client when sending fails")
+    void sendNotification_RemovesClient_OnError() throws IOException {
+        stubNotificationSave();
         SseEmitter emitter = mock(SseEmitter.class);
-        doThrow(new IllegalStateException("client disconnected")).when(emitter).send(any(SseEmitter.SseEventBuilder.class));
+        doThrow(new IllegalStateException("client disconnected"))
+                .when(emitter).send(any(SseEmitter.SseEventBuilder.class));
 
-        Utilisateur recipient = Etudiant
-                .builder()
+        Utilisateur recipient = Etudiant.builder()
                 .email("student@example.com")
                 .build();
 
-        clients.put(recipient.getEmail(), emitter);
+        String recipientEmail = recipient.getCredentials().getEmail();
+        clients.put(recipientEmail, emitter);
 
-        // n'importe quelle notification pour tester l'envoi
         sseService.sendNotification(NotificationType.CV_TO_APPROVE, recipient);
+
         assertTrue(clients.isEmpty());
+        verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
+        verify(emitter).complete();
         verify(notificationRepository).save(argThat(notification ->
                 notification.getMessage().equals(NotificationType.CV_TO_APPROVE.getMessage())
                         && notification.getRecipient().equals(recipient)));
     }
 
     @Test
-    @DisplayName("sendNotification() sauvegarde une notification si le client est absent")
+    @DisplayName("sendNotification() saves a notification when the client is absent")
     void sendNotification_SavesNotification_WhenClientIsAbsent() {
-        String recipient = "offline@example.com";
-        Utilisateur recipientUser = Etudiant
-                .builder()
-                .email(recipient)
+        stubNotificationSave();
+        Utilisateur recipient = Etudiant.builder()
+                .email("offline@example.com")
                 .build();
-        sseService.sendNotification(NotificationType.CV_APPROVED, recipientUser);
+
+        sseService.sendNotification(NotificationType.CV_APPROVED, recipient);
 
         verify(notificationRepository).save(argThat(notification ->
                 notification.getMessage().equals(NotificationType.CV_APPROVED.getMessage())
-                        && notification.getRecipient().equals(recipientUser)));
+                        && notification.getRecipient().equals(recipient)));
     }
 }

@@ -19,6 +19,7 @@ function DemoButtons({setUser}) {
     const navigate = useNavigate();
     const [loadingRole, setLoadingRole] = useState(null);
     const [error, setError] = useState(false);
+    const [hiddenScenarios, setHiddenScenarios] = useState({});
 
     if (!import.meta.env.DEV) {
         return null;
@@ -62,6 +63,7 @@ function DemoButtons({setUser}) {
     };
 
     const activateStudentScenario = async () => {
+        setHiddenScenarios((current) => ({...current, student: true}));
         setLoadingRole("STUDENT_SCENARIO");
         setError(false);
         setUser(null);
@@ -92,6 +94,7 @@ function DemoButtons({setUser}) {
             navigate("/", {replace: true});
         } catch {
             localStorage.removeItem("token");
+            setHiddenScenarios((current) => ({...current, student: false}));
             setError(true);
         } finally {
             setLoadingRole(null);
@@ -99,6 +102,7 @@ function DemoButtons({setUser}) {
     };
 
     const activateStudentContractScenario = async () => {
+        setHiddenScenarios((current) => ({...current, studentContract: true}));
         setLoadingRole("STUDENT_CONTRACT_SCENARIO");
         setError(false);
         setUser(null);
@@ -120,6 +124,7 @@ function DemoButtons({setUser}) {
             navigate("/", {replace: true});
         } catch {
             localStorage.removeItem("token");
+            setHiddenScenarios((current) => ({...current, studentContract: false}));
             setError(true);
         } finally {
             setLoadingRole(null);
@@ -183,22 +188,22 @@ function DemoButtons({setUser}) {
                         {loadingRole === demoRole.value ? t("demoButtons.loading") : t(`demoButtons.roles.${demoRole.label}`)}
                     </button>
                 ))}
-                <button
+                {!hiddenScenarios.student && <button
                     type="button"
                     onClick={activateStudentScenario}
                     disabled={loadingRole !== null}
                     className="whitespace-nowrap rounded-full border border-ink bg-lavender px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-lavender disabled:cursor-wait disabled:opacity-70"
                 >
                     {loadingRole === "STUDENT_SCENARIO" ? t("demoButtons.loading") : t("demoButtons.studentScenario")}
-                </button>
-                <button
+                </button>}
+                {!hiddenScenarios.studentContract && <button
                     type="button"
                     onClick={activateStudentContractScenario}
                     disabled={loadingRole !== null}
                     className="whitespace-nowrap rounded-full border border-ink bg-lavender px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-lavender disabled:cursor-wait disabled:opacity-70"
                 >
                     {loadingRole === "STUDENT_CONTRACT_SCENARIO" ? t("demoButtons.loading") : t("demoButtons.studentContractScenario")}
-                </button>
+                </button>}
             </div>
         </div>
     );

@@ -6,16 +6,20 @@ import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.SseService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
+import com.lacouf.rsbjwt.service.dto.NotificationDTO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 
+
+import java.util.List;
 
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.when;
@@ -26,31 +30,35 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(SseController.class)
 class SseControllerTest {
+
     @Autowired
-    MockMvc mockMvc;
+    private MockMvc mockMvc;
 
     @MockitoBean
-    SseService sseService;
+    private SseService sseService;
 
     @MockitoBean
-    UtilisateurService utilisateurService;
+    private UtilisateurService utilisateurService;
 
     @MockitoBean
-    DocumentService documentService;
+    private DocumentService documentService;
 
     @MockitoBean
-    UtilisateurRepository utilisateurRepository;
-
+    private UtilisateurRepository utilisateurRepository;
 
     @Test
     @DisplayName("Connects to event stream")
-    void connects_to_event_stream() throws Exception {
+    void connectsToEventStream() throws Exception {
         Utilisateur recipient = Gestionnaire.builder()
                 .email("email@mail.ca")
                 .build();
-        when(sseService.streamNotifications(recipient.getEmail())).thenReturn(new SseEmitter());
 
-        mockMvc.perform(get("/notifications").param("recipient", recipient.getEmail()))
+        when(sseService.streamNotifications(recipient.getEmail()))
+                .thenReturn(new SseEmitter());
+
+        mockMvc.perform(get("/notifications")
+                        .param("recipient", recipient.getEmail())
+                        .accept(MediaType.TEXT_EVENT_STREAM))
                 .andExpect(status().isOk())
                 .andExpect(request().asyncStarted());
 
@@ -58,16 +66,27 @@ class SseControllerTest {
     }
 
     @Test
-    @DisplayName("Recover notifications")
-    void recover_notifications() throws Exception {
+    @DisplayName("Recovers notifications")
+    void recoverNotifications() throws Exception {
+        when(sseService.recoverNotifications(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of(new NotificationDTO(1L, "Test notification")));
+
         mockMvc.perform(get("/notifications/recover"))
                 .andExpect(status().isOk());
+
+        then(sseService).should().recoverNotifications(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    @DisplayName("Clear notification")
-    void clear_notification() throws Exception {
-        mockMvc.perform(post("/notifications/clear/1"))
+    @DisplayName("Clears notifications")
+    void clearNotifications() throws Exception {
+        mockMvc.perform(post("/notifications/clear")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[1]"))
                 .andExpect(status().isOk());
+
+        then(sseService).should().clearNotifications(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq(List.of(1L)));
     }
 }

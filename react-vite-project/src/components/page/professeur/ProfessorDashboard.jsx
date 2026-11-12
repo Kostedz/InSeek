@@ -32,6 +32,30 @@ const sessionOptions = (date = new Date()) => {
 const draftKey = (id) => `inseek.professor.environment-evaluation.${id}`;
 const isSigned = (student) => [student?.statutRecherche, student?.statutContrat, student?.contractStatus]
     .some((status) => String(status ?? "").toUpperCase().includes("SIGNED") || String(status ?? "").toUpperCase().includes("SIGNE"));
+const dateOnly = (value) => value ? String(value).slice(0, 10) : "";
+const formatLocalDate = (value) => {
+    const [year, month, day] = dateOnly(value).split("-").map(Number);
+    return year && month && day ? new Date(year, month - 1, day).toLocaleDateString() : "";
+};
+const localDateString = (date = new Date()) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+const fromPrefill = (prefill) => ({
+    student: prefill.studentName ?? "",
+    discipline: prefill.discipline ?? "",
+    company: prefill.companyName ?? "",
+    employer: prefill.supervisorName ?? "",
+    offer: prefill.offerTitle ?? "",
+    startDate: dateOnly(prefill.contractStartDate),
+    endDate: dateOnly(prefill.contractEndDate),
+});
+const fromSubmittedEvaluation = (evaluation, prefill) => ({
+    ...fromPrefill(prefill),
+    visitDate: dateOnly(evaluation.visitDate),
+    supervision: String(evaluation.supervisionRating ?? ""),
+    taskFit: String(evaluation.taskComplianceRating ?? ""),
+    workEnvironment: String(evaluation.workEnvironmentRating ?? ""),
+    comments: evaluation.evaluationComment ?? "",
+    submittedAt: evaluation.evaluationSubmittedAt ?? "",
+});
 const defaultEvaluation = (student) => ({
     visitDate: "",
     supervision: "",
@@ -75,6 +99,9 @@ export default function ProfessorDashboard() {
     const [loadingApplicationsId, setLoadingApplicationsId] = useState(null);
     const [error, setError] = useState("");
     const [selectedEvaluationId, setSelectedEvaluationId] = useState(null);
+    const [submittingEvaluationId, setSubmittingEvaluationId] = useState(null);
+    const [submissionError, setSubmissionError] = useState("");
+    const evaluationContentRef = useRef(null);
     const [drafts, setDrafts] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem("inseek.professor.environment-evaluation.drafts") || "{}");
@@ -82,18 +109,11 @@ export default function ProfessorDashboard() {
             return {};
         }
     });
-    const [submitted, setSubmitted] = useState(() => {
-        try {
-            return JSON.parse(localStorage.getItem("inseek.professor.environment-evaluation.submitted") || "{}");
-        } catch {
-            return {};
-        }
-    });
+    const [submitted, setSubmitted] = useState({});
     const [fieldErrors, setFieldErrors] = useState({});
     const [saved, setSaved] = useState(false);
 
     useEffect(() => localStorage.setItem("inseek.professor.environment-evaluation.drafts", JSON.stringify(drafts)), [drafts]);
-    useEffect(() => localStorage.setItem("inseek.professor.environment-evaluation.submitted", JSON.stringify(submitted)), [submitted]);
     useEffect(() => {
         if (selectedEvaluationId === null) return undefined;
         const closeOnEscape = (event) => {
@@ -120,7 +140,23 @@ export default function ProfessorDashboard() {
         api.professor.getStudents(selectedSessionId).then(async (response) => {
             if (!response.ok) throw new Error("load_failed");
             const list = asList(await response.json());
-            if (active) setStudents(list);
+            const evaluations = await Promise.all(list.map(async (student) => {
+                const prefillResponse = await api.professor.getEvaluationPrefill(student.id);
+                if (!prefillResponse.ok) return null;
+                const prefill = await prefillResponse.json();
+                const evaluationResponse = await api.professor.getSubmittedEvaluation(student.id);
+                if (!evaluationResponse.ok && evaluationResponse.status !== 404) throw new Error("evaluation_load_failed");
+                const evaluation = evaluationResponse.ok ? await evaluationResponse.json() : null;
+                return {studentId: student.id, prefill, evaluation};
+            }));
+            if (!active) return;
+            setStudents(list);
+            setEvaluationPrefill(Object.fromEntries(evaluations.filter(Boolean).map(({
+                                                                                         studentId,
+                                                                                         prefill
+                                                                                     }) => [studentId, prefill])));
+            setSubmitted(Object.fromEntries(evaluations.filter(item => item?.evaluation)
+                .map(({studentId, prefill, evaluation}) => [studentId, fromSubmittedEvaluation(evaluation, prefill)])));
         }).catch(() => {
             if (active) setError(t("professorDashboard.errors.students", "Impossible de charger la liste de vos étudiants."));
         }).finally(() => {
@@ -162,72 +198,96 @@ export default function ProfessorDashboard() {
             setDrafts((current) => ({...current, [student.id]: defaultEvaluation(student)}));
         }
         setSelectedEvaluationId(student.id);
+        setSubmissionError("");
         setSaved(false);
         setFieldErrors({});
         if (evaluationPrefill[student.id]) {
-            mergeEvaluationPrefill(student.id, evaluationPrefill[student.id]);
+            mergeEvaluationPrefill(student.id, fromPrefill(evaluationPrefill[student.id]));
             return;
         }
-        const loadPrefill = async () => {
-            try {
-                const response = await api.professor.getStudentApplications(student.id);
-                if (!response.ok) return;
-                const records = asList(await response.json());
-                setApplications(current => ({...current, [student.id]: records}));
-                const selected = records.find(application => String(application.statutValidation ?? "").toUpperCase() === "ACCEPTE")
-                    ?? records.find(application => application.offreDeStageDTO);
-                const offer = selected?.offreDeStageDTO;
-                if (!offer) return;
-                const prefill = {
-                    company: offer.nomEntreprise ?? "",
-                    employer: offer.contactName ?? "",
-                    offer: offer.position ?? "",
-                    startDate: offer.dateDebutStage ?? "",
-                    endDate: offer.dateFinStage ?? "",
-                };
-                setEvaluationPrefill(current => ({...current, [student.id]: prefill}));
-                mergeEvaluationPrefill(student.id, prefill);
-            } catch {
-                // Keep the editable fields available if the optional prefill request fails.
-            }
-        };
-        loadPrefill();
+        api.professor.getEvaluationPrefill(student.id).then(async response => {
+            if (!response.ok) throw new Error("prefill_failed");
+            const prefill = await response.json();
+            setEvaluationPrefill(current => ({...current, [student.id]: prefill}));
+            mergeEvaluationPrefill(student.id, fromPrefill(prefill));
+        }).catch(() => setError(t("professorDashboard.errors.prefill", "Impossible de charger les renseignements du stage.")));
     };
     const mergeEvaluationPrefill = (studentId, prefill) => {
         setDrafts(current => {
             const existing = current[studentId] ?? {};
-            const filled = Object.fromEntries(Object.entries(prefill).filter(([key, value]) => !existing[key] && value));
             return {
                 ...current,
-                [studentId]: {...defaultEvaluation(students.find(item => item.id === studentId) ?? {}), ...existing, ...filled}
+                [studentId]: {...defaultEvaluation(students.find(item => item.id === studentId) ?? {}), ...existing, ...prefill}
             };
         });
     };
-    const submitEvaluation = (student) => {
+    const submitEvaluation = async (student) => {
+        setSubmissionError("");
         const data = drafts[student.id] ?? defaultEvaluation(student);
         const nextErrors = {};
         ["visitDate", "supervision", "taskFit", "workEnvironment"].forEach((field) => {
             if (!data[field]) nextErrors[field] = t("professorDashboard.evaluation.required", "Ce champ est obligatoire.");
         });
-        const visit = data.visitDate ? new Date(`${data.visitDate}T00:00:00`) : null;
-        const start = data.startDate ? new Date(`${data.startDate}T00:00:00`) : null;
-        const end = data.endDate ? new Date(`${data.endDate}T00:00:00`) : null;
-        if (visit && (visit > new Date(new Date().toDateString()) || (start && visit < start) || (end && visit > end))) {
-            nextErrors.visitDate = t("professorDashboard.evaluation.visitDateInvalid", "La visite doit être comprise dans la période du stage et ne peut pas être dans le futur.");
+        const today = localDateString();
+        if (data.visitDate && ((data.startDate && data.visitDate < data.startDate)
+            || (data.endDate && data.visitDate > data.endDate) || data.visitDate > today)) {
+            const earliest = data.startDate || "le début du stage";
+            const latest = [data.endDate, today].filter(Boolean).sort()[0];
+            nextErrors.visitDate = t(
+                "professorDashboard.evaluation.visitDateInvalid",
+                `La date de visite doit être comprise entre ${earliest} et ${latest}, et ne peut pas être dans le futur. (Date choisie : ${data.visitDate}.)`
+            );
         }
         setFieldErrors(nextErrors);
-        if (Object.keys(nextErrors).length) return;
-        if (!window.confirm(t("professorDashboard.evaluation.confirm", "Soumettre cette évaluation? Elle ne pourra plus être modifiée."))) return;
-        const record = {...data, status: "SOUMISE", submittedAt: new Date().toISOString()};
-        setSubmitted((current) => ({...current, [student.id]: record}));
-        setDrafts((current) => {
-            const next = {...current};
-            delete next[student.id];
-            return next;
-        });
-        setSelectedEvaluationId(null);
+        if (Object.keys(nextErrors).length) {
+            const firstErrorIndex = nextErrors.visitDate ? 0 : ["visitDate", "supervision", "taskFit", "workEnvironment"]
+                .findIndex((field) => !data[field]);
+            const fields = document.querySelectorAll('[role="dialog"] input[type="date"], [role="dialog"] input[type="range"]');
+            fields[firstErrorIndex]?.focus({preventScroll: true});
+            setSubmissionError(nextErrors.visitDate || t(
+                "professorDashboard.evaluation.completeRequiredFields",
+                "Complétez la date de visite et choisissez une note pour chacun des trois critères avant de soumettre."
+            ));
+            evaluationContentRef.current?.scrollTo({top: 0, behavior: "smooth"});
+            return;
+        }
+        const payload = {
+            studentId: Number(student.id),
+            visitDate: data.visitDate,
+            supervisionRating: Number(data.supervision),
+            taskComplianceRating: Number(data.taskFit),
+            workEnvironmentRating: Number(data.workEnvironment),
+            discipline: evaluationPrefill[student.id]?.discipline ?? student.discipline ?? null,
+            evaluationComment: data.comments ?? "",
+        };
+        try {
+            setSubmittingEvaluationId(student.id);
+            const response = await api.professor.submitEnvironmentEvaluation(payload);
+            if (!response.ok) {
+                const detail = (await response.text()).trim();
+                throw new Error(detail || `HTTP ${response.status}`);
+            }
+            const result = await response.json();
+            setSubmitted((current) => ({
+                ...current,
+                [student.id]: fromSubmittedEvaluation(result, evaluationPrefill[student.id])
+            }));
+            setError("");
+            setDrafts((current) => {
+                const next = {...current};
+                delete next[student.id];
+                return next;
+            });
+            setSelectedEvaluationId(null);
+        } catch (cause) {
+            const detail = cause instanceof Error ? cause.message : "";
+            setSubmissionError(`${t("professorDashboard.errors.submit", "Impossible de soumettre l’évaluation. Vérifiez que le stage est actif et réessayez.")}${detail ? ` (${detail})` : ""}`);
+        } finally {
+            setSubmittingEvaluationId(null);
+        }
     };
-    const pendingEvaluations = students.filter(student => isSigned(student) && !submitted[student.id]).length;
+    const hasActiveInternship = (student) => Boolean(evaluationPrefill[student.id]);
+    const pendingEvaluations = students.filter(student => hasActiveInternship(student) && !submitted[student.id]).length;
 
     return (
         <section className="flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
@@ -252,7 +312,7 @@ export default function ProfessorDashboard() {
                                 className="rounded-full bg-peach/50 px-3 py-1.5 text-sm font-black text-ink">{pendingEvaluations === 0 ? `0 ${t("professorDashboard.evaluation.remainingZero", "étudiant à évaluer")}` : `${pendingEvaluations} ${t("professorDashboard.evaluation.remaining", "à évaluer")}`}</span>
                         </div>
                         <div className="mt-4 grid gap-3">
-                            {students.filter(s => isSigned(s) || submitted[s.id]).map((student) => {
+                            {students.filter(s => hasActiveInternship(s) || submitted[s.id]).map((student) => {
                                 const complete = submitted[student.id];
                                 const open = selectedEvaluationId === student.id;
                                 const data = complete ?? drafts[student.id] ?? defaultEvaluation(student);
@@ -281,6 +341,8 @@ export default function ProfessorDashboard() {
                                         className="rounded-full bg-canvas px-2.5 py-1">{t("professorDashboard.evaluation.ratingLow", "1 · À améliorer")}</span><span
                                         className="rounded-full bg-canvas px-2.5 py-1">{t("professorDashboard.evaluation.ratingHigh", "5 · Excellent")}</span></span></> : <>{label}{type === "date" ?
                                         <input type="date" disabled={Boolean(complete)} value={data[name] || ""}
+                                               min={data.startDate || undefined}
+                                               max={[data.endDate, localDateString()].filter(Boolean).sort()[0]}
                                                onChange={e => setEvaluationField(student.id, name, e.target.value)}
                                                className="mt-1.5 w-full rounded-xl border border-line bg-white px-3 py-3 font-normal"/> :
                                         <textarea rows="4" disabled={Boolean(complete)} value={data[name] || ""}
@@ -325,7 +387,10 @@ export default function ProfessorDashboard() {
                                                     </div>
                                                 </div>
                                             </header>
-                                            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
+                                            <div ref={evaluationContentRef}
+                                                 className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
+                                                {submissionError && <p role="alert"
+                                                                       className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{submissionError}</p>}
                                                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                                                     <div className="min-w-0">
                                                         <h3 className="text-lg font-black tracking-tight text-ink">{t("professorDashboard.evaluation.internshipInfo", "Renseignements sur le stage")}</h3>
@@ -363,8 +428,6 @@ export default function ProfessorDashboard() {
                                                         </div>
                                                     </dl>
                                                 </section>
-                                                {complete &&
-                                                    <p className="mt-4 rounded-xl border border-lavender bg-lavender/20 p-4 text-sm font-bold text-ink">{t("professorDashboard.evaluation.submitted", "Soumise le")} {new Date(complete.submittedAt).toLocaleString()}</p>}
                                                 <section className="mt-6">
                                                     <div className="mb-4"><p
                                                         className="text-xs font-bold uppercase tracking-[0.14em] text-ink-soft">{t("professorDashboard.evaluation.reviewSection", "Visite et appréciation")}</p>
@@ -380,6 +443,8 @@ export default function ProfessorDashboard() {
                                                         {field("comments", t("professorDashboard.evaluation.comments", "Commentaires généraux"), "textarea")}
                                                     </div>
                                                 </section>
+                                                {complete &&
+                                                    <p className="mt-6 rounded-xl border border-lavender bg-lavender/20 p-4 text-sm font-bold text-ink">{t("professorDashboard.evaluation.submitted", "Soumise le")} {formatLocalDate(complete.submittedAt)}</p>}
                                             </div>
                                             {!complete && <footer
                                                 className="sticky bottom-0 flex shrink-0 flex-col gap-3 border-t border-line bg-surface px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
@@ -387,13 +452,14 @@ export default function ProfessorDashboard() {
                                                     className="text-xs font-bold text-ink-soft">{saved ? t("professorDashboard.evaluation.saved", "Brouillon sauvegardé sur cet appareil") : t("professorDashboard.evaluation.autoSave", "Le brouillon est sauvegardé automatiquement.")}</p>
                                                 </div>
                                                 <button type="button" onClick={() => submitEvaluation(student)}
-                                                        className="rounded-xl bg-ink px-6 py-3 text-sm font-bold text-white transition hover:bg-ink-soft">{t("professorDashboard.evaluation.submit", "Soumettre l’évaluation")}</button>
+                                                        disabled={submittingEvaluationId === student.id}
+                                                        className="rounded-xl bg-ink px-6 py-3 text-sm font-bold text-white transition hover:bg-ink-soft disabled:cursor-wait disabled:opacity-60">{submittingEvaluationId === student.id ? t("professorDashboard.evaluation.submitting", "Envoi en cours…") : t("professorDashboard.evaluation.submit", "Soumettre l’évaluation")}</button>
                                             </footer>}
                                         </section>
                                     </div>}
                                 </article>;
                             })}
-                            {!students.some(s => isSigned(s) || submitted[s.id]) &&
+                            {!students.some(s => hasActiveInternship(s) || submitted[s.id]) &&
                                 <p className="rounded-xl bg-canvas p-4 text-sm text-ink-soft">{t("professorDashboard.evaluation.none", "Aucun étudiant avec un contrat signé à évaluer pour le moment.")}</p>}
                         </div>
                     </section>}

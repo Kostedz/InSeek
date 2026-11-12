@@ -25,6 +25,9 @@ class GestionnaireServiceTest {
     @Mock
     private DocumentRepository documentRepository;
 
+    @Mock
+    private SseService sseService;
+
     @InjectMocks
     private GestionnaireService gestionnaireService;
 
