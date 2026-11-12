@@ -306,6 +306,25 @@ export const api = {
             fetcher(`/professeur/etudiants/${encodeURIComponent(studentId)}/demandes`, {
                 headers: {Accept: "application/json"},
             }),
+
+        getEvaluationPrefill: (studentId) =>
+            fetcher(`/evaluations/milieu/prefill/${encodeURIComponent(studentId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
+        getSubmittedEvaluation: (studentId) =>
+            fetcher(`/evaluations/milieu/${encodeURIComponent(studentId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
+        submitEnvironmentEvaluation: (payload) => fetcher("/evaluations/milieu", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify(payload),
+        }),
     },
 
 };
