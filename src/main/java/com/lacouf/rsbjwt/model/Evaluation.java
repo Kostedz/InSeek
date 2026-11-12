@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -17,8 +16,6 @@ public abstract class Evaluation {
     @GeneratedValue(strategy = GenerationType.AUTO)
     Long evaluationId;
 
-    LocalDate evaluationDate;
-
     Disciplines discipline;
 
     @ManyToOne
@@ -26,6 +23,12 @@ public abstract class Evaluation {
     OffreDeStage internshipOffer;
 
     String evaluationComment;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EvaluationState evaluationState = EvaluationState.DRAFT;
+
+    private LocalDate evaluationSubmittedDate;
 
     private static final double MAXIMUM_RATING = 5.0;
 
