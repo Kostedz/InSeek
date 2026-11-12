@@ -3,7 +3,7 @@ import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
 
 const listOf = (data) => Array.isArray(data) ? data : data?.items ?? data?.content ?? data?.contracts ?? [];
-const contractStatus = (contract) => String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase();
+const contractStatus = (contract) => String(contract?.contractStatus ?? contract?.status ?? "").trim().toUpperCase();
 const isEligible = (contract) => ["EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(contractStatus(contract));
 const studentName = (contract) => contract?.studentFullName
     || [contract?.student?.prenom ?? contract?.student?.firstName, contract?.student?.nom ?? contract?.student?.lastName].filter(Boolean).join(" ")
@@ -19,7 +19,7 @@ const readStorage = (key) => {
         return {};
     }
 };
-const initialDraft = () => ({skills: "", integration: "", objectives: "", overall: "", comments: ""});
+const initialDraft = () => ({skills: "3", integration: "3", objectives: "3", overall: "3", comments: ""});
 
 export default function EmployerEvaluationsPage() {
     const {t} = useTranslation();
@@ -30,7 +30,6 @@ export default function EmployerEvaluationsPage() {
     const [submitted, setSubmitted] = useState(() => readStorage(submittedStorageKey));
     const [selectedId, setSelectedId] = useState(null);
     const [confirming, setConfirming] = useState(false);
-    const [fieldErrors, setFieldErrors] = useState({});
 
     useEffect(() => {
         let active = true;
@@ -63,31 +62,32 @@ export default function EmployerEvaluationsPage() {
     }, [selectedId, confirming]);
 
     const eligibleContracts = useMemo(() => contracts.filter((contract) => isEligible(contract) || submitted[contract.id]), [contracts, submitted]);
+    const submittedCount = eligibleContracts.filter((contract) => submitted[String(contract.id)]).length;
+    const pendingCount = eligibleContracts.length - submittedCount;
     const selected = eligibleContracts.find((contract) => String(contract.id) === String(selectedId));
     const selectedKey = selected ? String(selected.id) : "";
-    const values = selected ? (submitted[selectedKey] ?? drafts[selectedKey] ?? initialDraft()) : initialDraft();
-    const pendingCount = eligibleContracts.filter((contract) => !submitted[contract.id]).length;
-
+    const storedValues = selected ? (submitted[selectedKey] ?? drafts[selectedKey] ?? initialDraft()) : initialDraft();
+    const values = {
+        ...storedValues,
+        skills: storedValues.skills || "3",
+        integration: storedValues.integration || "3",
+        objectives: storedValues.objectives || "3",
+        overall: storedValues.overall || "3",
+    };
     const updateField = (field, value) => {
         setDrafts((current) => ({
             ...current,
             [selectedKey]: {...(current[selectedKey] ?? initialDraft()), [field]: value}
         }));
-        setFieldErrors((current) => ({...current, [field]: ""}));
     };
     const openForm = (contract) => {
         setSelectedId(String(contract.id));
         setConfirming(false);
-        setFieldErrors({});
         if (!submitted[contract.id] && !drafts[contract.id]) {
             setDrafts((current) => ({...current, [contract.id]: initialDraft()}));
         }
     };
     const requestSubmit = () => {
-        const required = ["skills", "integration", "objectives", "overall"];
-        const errors = Object.fromEntries(required.filter((field) => !values[field]).map((field) => [field, t("employerEvaluation.required", "Veuillez choisir une note.")]));
-        setFieldErrors(errors);
-        if (Object.keys(errors).length) return;
         setConfirming(true);
     };
     const confirmSubmit = () => {
@@ -125,23 +125,31 @@ export default function EmployerEvaluationsPage() {
         </span>
         <span
             className="flex justify-between text-[10px] font-bold text-ink-soft"><span>1 · {t("employerEvaluation.ratingLow", "À améliorer")}</span><span>{t("employerEvaluation.ratingHigh", "Excellent")} · 5</span></span>
-        {fieldErrors[field] &&
-            <span className="mt-1 block text-xs font-semibold text-error">{fieldErrors[field]}</span>}
     </label>;
 
-    return <section className="rounded-[1.5rem] border border-line bg-surface p-5 shadow-sm sm:p-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-            <div><p
-                className="text-xs font-bold uppercase tracking-[0.14em] text-ink-soft">{t("employerEvaluation.eyebrow", "Suivi de stage")}</p>
-                <h2 className="mt-1 text-xl font-black text-ink">{t("employerEvaluation.title", "Évaluation des stagiaires")}</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{t("employerEvaluation.description", "Évaluez les stagiaires embauchés dans votre entreprise.")}</p>
+    return <section className="bg-canvas">
+        <div className="mx-auto w-full max-w-7xl">
+            <div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                    [t("employerEvaluation.stats.pending"), pendingCount],
+                    [t("employerEvaluation.stats.submitted"), submittedCount],
+                ].map(([label, value]) => <div key={label}
+                                               className="flex items-center justify-between rounded-xl border border-line bg-white p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)] xl:col-span-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{label}</p>
+                    <p className="text-xl font-black text-ink">{value}</p>
+                </div>)}
             </div>
-            <span
-                className="rounded-full bg-peach/50 px-3 py-1.5 text-sm font-black text-ink">{pendingCount} {t(pendingCount === 1 ? "employerEvaluation.toEvaluateSingular" : "employerEvaluation.toEvaluatePlural", pendingCount === 1 ? "stagiaire à évaluer" : "stagiaires à évaluer")}</span>
+            <section
+                className="mt-6 rounded-[2rem] border border-line bg-surface p-5 shadow-[0_18px_50px_rgba(48,35,55,0.08)] sm:p-6"
+                aria-labelledby="employer-evaluation-progress-title">
+                <div className="rounded-2xl border border-line bg-canvas p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerEvaluation.eyebrow", "Suivi de stage")}</p>
+                    <h2 id="employer-evaluation-progress-title"
+                        className="mt-1 text-xl font-black tracking-tight text-ink">{t("employerEvaluation.stats.title", "Progression des évaluations")}</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">{t("employerEvaluation.stats.description", "Suivez les stagiaires à évaluer et les évaluations envoyées.")}</p>
         </div>
-
         {loading ?
-            <p className="py-10 text-center text-sm text-ink-soft">{t("employerEvaluation.loading", "Chargement des stagiaires…")}</p> : error ?
+            <p className="mt-5 py-10 text-center text-sm text-ink-soft">{t("employerEvaluation.loading", "Chargement des stagiaires…")}</p> : error ?
                 <p role="alert"
                    className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">{error}</p> : eligibleContracts.length === 0 ?
                     <p className="mt-5 rounded-xl bg-canvas p-4 text-sm text-ink-soft">{t("employerEvaluation.empty", "Aucun stagiaire embauché à évaluer pour le moment.")}</p> :
@@ -160,6 +168,7 @@ export default function EmployerEvaluationsPage() {
                                     className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition hover:bg-ink-soft">{done ? t("employerEvaluation.view", "Voir l’évaluation") : t("employerEvaluation.start", "Évaluer le stagiaire")}</button>
                         </article>;
                     })}</div>}
+            </section>
 
         {selected && <div
             className="fixed inset-0 z-[90] flex items-end justify-center overflow-y-auto bg-ink/70 p-0 backdrop-blur-sm sm:items-center sm:p-5"
@@ -237,5 +246,6 @@ export default function EmployerEvaluationsPage() {
                     </div>
                 </section>
             </div>}
+        </div>
     </section>;
 }
