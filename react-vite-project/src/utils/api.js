@@ -54,6 +54,13 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
+        prepareDelayedNotificationsDemo: () =>
+            fetcher("/user/demo/delayed-notifications-demo", {
+                skipAuth: true,
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
         getMe: () => fetcher("user/me", {}),
     },
 

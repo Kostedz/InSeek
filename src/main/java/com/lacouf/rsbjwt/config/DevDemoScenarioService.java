@@ -21,26 +21,35 @@ import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.service.SseService;
 import com.lacouf.rsbjwt.service.util.SessionUtil;
+import com.lacouf.rsbjwt.service.util.NotificationType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @Profile("dev")
 @RequiredArgsConstructor
+@Slf4j
 public class DevDemoScenarioService {
     private static final String OFFER_FILE_PREFIX = "demo-offre-stage-";
     private static final String CV_RESOURCE = "demo/cv/camille-gagnon-cv.pdf";
+    private static final String SECOND_STUDENT_CV_RESOURCE = "demo/cv/Pascal_Carbonneau_CV_2026.pdf";
     private static final int DEMO_APPLICATION_COUNT = 3;
+    private static final long DELAYED_NOTIFICATIONS_DELAY_SECONDS = 5;
 
     private record DemoOffer(
             Disciplines discipline,
@@ -157,6 +166,9 @@ public class DevDemoScenarioService {
     private final ContratRepository contratRepository;
     private final EntrevueRepository interviewRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final TaskScheduler taskScheduler;
+    private final TransactionTemplate transactionTemplate;
+    private final SseService sseService;
 
     @Transactional
     public void prepareStudentScenario() {
@@ -262,11 +274,15 @@ public class DevDemoScenarioService {
     }
 
     private void prepareValidatedCv(Etudiant student) {
-        byte[] cvData = readDemoPdf(CV_RESOURCE);
+        prepareValidatedCv(student, CV_RESOURCE, "camille-gagnon-cv.pdf");
+    }
+
+    private void prepareValidatedCv(Etudiant student, String cvResource, String fileName) {
+        byte[] cvData = readDemoPdf(cvResource);
         CV cv = documentRepository.findByUtilisateur(student);
         if (cv == null) {
             cv = CV.builder()
-                    .fileName("camille-gagnon-cv.pdf")
+                    .fileName(fileName)
                     .targetDiscipline(student.getDiscipline())
                     .data(cvData)
                     .contentType("application/pdf")
@@ -274,7 +290,7 @@ public class DevDemoScenarioService {
                     .utilisateur(student)
                     .build();
         } else {
-            cv.setFileName("camille-gagnon-cv.pdf");
+            cv.setFileName(fileName);
             cv.setTargetDiscipline(student.getDiscipline());
             cv.setData(cvData);
             cv.setContentType("application/pdf");
@@ -457,5 +473,63 @@ public class DevDemoScenarioService {
 
         student.setDateInterview(pendingInterview.getDateInterview());
         utilisateurRepository.save(student);
+    }
+
+    @Transactional
+    public void prepareDelayedNotificationsScenario() {
+        taskScheduler.schedule(() -> {
+            try {
+                transactionTemplate.executeWithoutResult(status -> {
+                    prepareSignedContractStudentScenario();
+                    preparePendingNotificationsData();
+                });
+                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
+                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
+            } catch (RuntimeException exception) {
+                log.error("Impossible de préparer le scénario de notifications différées.", exception);
+            }
+        }, Instant.now().plusSeconds(DELAYED_NOTIFICATIONS_DELAY_SECONDS));
+    }
+
+    private void preparePendingNotificationsData() {
+        Utilisateur employerUser = utilisateurRepository.findByEmail(
+                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.EMPLOYEUR).email());
+        Utilisateur studentUser = utilisateurRepository.findByEmail(
+                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.ETUDIANT).email());
+
+        if (!(employerUser instanceof Employeur employer) || !(studentUser instanceof Etudiant student)) {
+            throw new IllegalStateException("Les comptes de démonstration pour les notifications sont introuvables.");
+        }
+
+        List<OffreDeStage> offers = documentRepository.findOffersByEmployer(employer);
+        int pendingOfferCount = (offers.size() + 1) / 2;
+        offers.stream()
+                .limit(pendingOfferCount)
+                .forEach(offer -> {
+                    offer.setStatut(StatutValidation.EN_ATTENTE);
+                    offer.setCommentaireRejet(null);
+                    documentRepository.save(offer);
+                });
+
+        CV studentCv = documentRepository.findByUtilisateur(student);
+        if (studentCv == null) {
+            throw new IllegalStateException("Le CV de démonstration est introuvable.");
+        }
+        studentCv.setStatut(StatutValidation.EN_ATTENTE);
+        studentCv.setCommentaireRejet(null);
+        documentRepository.save(studentCv);
+
+        Utilisateur secondStudentUser = utilisateurRepository.findByEmail(DevDemoAccounts.secondStudent().email());
+        if (!(secondStudentUser instanceof Etudiant secondStudent)) {
+            throw new IllegalStateException("Le deuxième compte étudiant de démonstration est introuvable.");
+        }
+        prepareValidatedCv(secondStudent, SECOND_STUDENT_CV_RESOURCE, "Pascal_Carbonneau_CV_2026.pdf");
+        CV secondStudentCv = documentRepository.findByUtilisateur(secondStudent);
+        if (secondStudentCv == null) {
+            throw new IllegalStateException("Le CV du deuxième étudiant de démonstration est introuvable.");
+        }
+        secondStudentCv.setStatut(StatutValidation.EN_ATTENTE);
+        secondStudentCv.setCommentaireRejet(null);
+        documentRepository.save(secondStudentCv);
     }
 }

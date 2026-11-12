@@ -49,6 +49,7 @@ public class SecurityConfiguration {
     private static final String DEMO_LOGIN_PATH = "/user/demo/login";
     private static final String DEMO_STUDENT_PATH = "/user/demo/student-demo";
     private static final String DEMO_SIGNED_CONTRACT_STUDENT_PATH = "/user/demo/student-contract-demo";
+    private static final String DEMO_DELAYED_NOTIFICATIONS_PATH = "/user/demo/delayed-notifications-demo";
     private static final String USER_PATH = "/user/**";
     private static final String ETUDIANT_PATH = "/etudiant/**";
     private static final String PROFESSEUR_PATH = "/professeur/**";
@@ -73,6 +74,8 @@ public class SecurityConfiguration {
                         .requestMatchers(POST, DEMO_LOGIN_PATH).permitAll()
                         .requestMatchers(POST, DEMO_STUDENT_PATH).permitAll()
                         .requestMatchers(POST, DEMO_SIGNED_CONTRACT_STUDENT_PATH).permitAll()
+                        .requestMatchers(POST, DEMO_DELAYED_NOTIFICATIONS_PATH).permitAll()
+                        .requestMatchers(GET, "/notifications").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(H2_CONSOLE_PATH).permitAll()
 

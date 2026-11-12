@@ -12,6 +12,14 @@ const resources = {
                 switch: "English",
                 switchAriaLabel: "Passer à l’anglais",
             },
+            notifications: {
+                open: "Ouvrir les notifications",
+                title: "Notifications",
+                empty: "Aucune notification pour le moment.",
+                clear: "Effacer la notification",
+                cvToApprove: "CV en attente de validation.",
+                cvToApproveCount: "{{count}} CV en attente de validation.",
+            },
             navigation: {
                 mainAriaLabel: "Navigation principale et actions utilisateur",
                 studentMenuAriaLabel: "Navigation de l’espace étudiant",
@@ -1264,6 +1272,14 @@ const resources = {
             language: {
                 switch: "Français",
                 switchAriaLabel: "Switch to French",
+            },
+            notifications: {
+                open: "Open notifications",
+                title: "Notifications",
+                empty: "No notifications yet.",
+                clear: "Clear notification",
+                cvToApprove: "Résumé pending approval.",
+                cvToApproveCount: "{{count}} résumés pending approval.",
             },
             navigation: {
                 mainAriaLabel: "Main navigation and user actions",

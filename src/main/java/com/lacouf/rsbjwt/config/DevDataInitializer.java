@@ -25,6 +25,7 @@ public class DevDataInitializer implements CommandLineRunner {
     public void run(String... args) {
         DevDemoAccounts.all().forEach(this::createDemoAccountIfMissing);
         createDemoAccountIfMissing(Role.ETUDIANT, DevDemoAccounts.signedContractStudent());
+        createDemoAccountIfMissing(Role.ETUDIANT, DevDemoAccounts.secondStudent());
     }
 
     private void createDemoAccountIfMissing(Role role, DevDemoAccounts.Account account) {
