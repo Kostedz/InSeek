@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,8 +26,8 @@ public class DevAuthController {
     private final UtilisateurService utilisateurService;
     private final DevDemoScenarioService demoScenarioService;
 
-    @PostMapping("/login")
-    public ResponseEntity<JWTAuthResponse> demoLogin(@RequestParam String role) {
+    @PostMapping("/login/{role}")
+    public ResponseEntity<JWTAuthResponse> demoLogin(@PathVariable String role) {
         try {
             Role demoRole = Role.valueOf(role.replaceFirst("^ROLE_", "").toUpperCase());
             DevDemoAccounts.Account demoAccount = DevDemoAccounts.forRole(demoRole);
