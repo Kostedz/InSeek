@@ -3,6 +3,7 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
@@ -14,6 +15,7 @@ import com.lacouf.rsbjwt.service.dto.RepondreConvocationDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,7 @@ public class EntrevueService {
     private final UtilisateurRepository userRepository;
     private final DocumentRepository documentRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public EntrevueDTO scheduleInterview(HttpServletRequest request, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
@@ -65,7 +68,9 @@ public class EntrevueService {
             interview = createInterview(employer, student, internshipOffer, interviewDTO);
         }
 
-       updateStudent(student, interviewDTO);
+        updateStudent(student, interviewDTO);
+
+        eventPublisher.publishEvent(NotificationEvent.convocation(interview, false));
 
         return EntrevueDTO.of(interview);
 
@@ -110,10 +115,16 @@ public class EntrevueService {
         interview.setModeInterview(dto.mode());
         interview.setLocationOrLink(dto.locationOrLink());
         interview.setMessage(dto.message());
+        interview.setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
+        interview.setInvitationResponseDate(null);
+        interview.setMessageWhenRejected(null);
 
         updateStudent(interview.getStudent(), dto);
 
-        return EntrevueDTO.of(interviewRepository.save(interview));
+        Entrevue saved = interviewRepository.save(interview);
+        eventPublisher.publishEvent(NotificationEvent.convocation(saved, true));
+
+        return EntrevueDTO.of(saved);
     }
 
     public List<EntrevueDTO> getInterviewsForStudent(HttpServletRequest request) throws NotFoundException {

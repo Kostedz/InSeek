@@ -100,12 +100,12 @@ class CandidatureControllerTest {
     }
 
     @Test
-    @DisplayName("GET /employeur/candidatures?offreId=10 filtre par offre")
+    @DisplayName("GET /employeur/candidatures/offre/{offreId} filtre par offre")
     void lister_parOffre_retourne200() throws Exception {
         when(candidatureService.listerCandidatures(eq(10L), any(HttpServletRequest.class)))
                 .thenReturn(List.of(dto(StatutCandidature.EN_ATTENTE, null)));
 
-        mockMvc.perform(get("/employeur/candidatures").queryParam("offreId", "10"))
+        mockMvc.perform(get("/employeur/candidatures/offre/10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].offreId").value(10));
     }

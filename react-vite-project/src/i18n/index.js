@@ -276,6 +276,7 @@ const resources = {
                     submitting: "Envoi en cours…",
                     successTitle: "Candidature envoyée",
                     successDescription: "Votre candidature a été enregistrée avec succès.",
+                    close: "Fermer",
                     errors: {
                         cvRequired: "Un CV validé est requis pour postuler.",
                         alreadySubmitted: "Vous avez déjà postulé à cette offre.",
@@ -1537,6 +1538,7 @@ const resources = {
                     submitting: "Submitting…",
                     successTitle: "Application submitted",
                     successDescription: "Your application was successfully recorded.",
+                    close: "Close",
                     errors: {
                         cvRequired: "A validated résumé is required to apply.",
                         alreadySubmitted: "You already applied for this offer.",

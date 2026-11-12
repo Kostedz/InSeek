@@ -166,6 +166,14 @@ function App() {
                         }
                     />
                     <Route
+                        path="etudiant/convocations/:interviewId"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
+                                <StudentHomePage user={user}/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
                         path="etudiant/contrat"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["ETUDIANT"]}>
