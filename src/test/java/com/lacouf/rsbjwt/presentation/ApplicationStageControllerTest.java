@@ -1,9 +1,8 @@
 package com.lacouf.rsbjwt.presentation;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import com.lacouf.rsbjwt.model.StatutValidation;
-import com.lacouf.rsbjwt.presentation.ApplicationStageController;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.ApplicationStageService;

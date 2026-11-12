@@ -1,7 +1,7 @@
 package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.Contract;
-import com.lacouf.rsbjwt.model.StatutContrat;
+import com.lacouf.rsbjwt.model.contract.Contract;
+import com.lacouf.rsbjwt.model.contract.StatutContrat;
 import lombok.Builder;
 
 import java.time.LocalDate;

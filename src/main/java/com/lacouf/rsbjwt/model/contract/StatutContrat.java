@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.contract;
 
 public enum StatutContrat {
     PENDING_SIGNATURE,

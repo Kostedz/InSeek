@@ -7,6 +7,8 @@ import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.*;
+import com.lacouf.rsbjwt.service.dto.auth.LoginDTO;
+import com.lacouf.rsbjwt.service.dto.auth.RegisterDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

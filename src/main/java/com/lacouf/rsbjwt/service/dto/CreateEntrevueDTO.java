@@ -1,6 +1,6 @@
 package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.ModeEntrevue;
+import com.lacouf.rsbjwt.model.entrevue.ModeEntrevue;
 
 import java.time.LocalDateTime;
 

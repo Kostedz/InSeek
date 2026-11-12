@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.utilisateur;
 
 import com.lacouf.rsbjwt.model.auth.Credentials;
 import com.lacouf.rsbjwt.model.auth.Role;
@@ -7,8 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
 
 @Entity
 @Getter

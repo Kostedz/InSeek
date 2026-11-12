@@ -1,6 +1,6 @@
 package com.lacouf.rsbjwt.security;
 
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import lombok.RequiredArgsConstructor;

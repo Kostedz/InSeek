@@ -1,9 +1,9 @@
 package com.lacouf.rsbjwt.service.dto;
 
 import com.lacouf.rsbjwt.model.Candidature;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
 import com.lacouf.rsbjwt.model.StatutCandidature;
 
 import java.time.LocalDateTime;

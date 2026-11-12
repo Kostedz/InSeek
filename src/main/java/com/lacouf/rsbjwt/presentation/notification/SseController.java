@@ -1,6 +1,6 @@
-package com.lacouf.rsbjwt.presentation;
+package com.lacouf.rsbjwt.presentation.notification;
 
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.SseService;

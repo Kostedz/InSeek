@@ -1,5 +1,9 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.document;
 
+import com.lacouf.rsbjwt.model.StatutValidation;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.service.util.OfferFields;
 import com.lacouf.rsbjwt.service.util.SessionUtil;
 import jakarta.persistence.*;

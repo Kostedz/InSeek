@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.utilisateur;
 
 public enum StatutRechercheEtudiant {
     LOOKING_FOR_INTERNSHIP,

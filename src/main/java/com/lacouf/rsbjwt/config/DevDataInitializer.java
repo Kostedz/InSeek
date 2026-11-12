@@ -1,11 +1,11 @@
 package com.lacouf.rsbjwt.config;
 
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Employeur;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Gestionnaire;
-import com.lacouf.rsbjwt.model.Professeur;
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Gestionnaire;
+import com.lacouf.rsbjwt.model.utilisateur.Professeur;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.util.SessionUtil;

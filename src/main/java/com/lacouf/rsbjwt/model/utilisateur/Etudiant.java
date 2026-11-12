@@ -1,7 +1,9 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.utilisateur;
 
+import com.lacouf.rsbjwt.model.ApplicationStage;
 import com.lacouf.rsbjwt.model.auth.Credentials;
 import com.lacouf.rsbjwt.model.auth.Role;
+import com.lacouf.rsbjwt.model.contract.Contract;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;

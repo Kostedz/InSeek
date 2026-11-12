@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.presentation;
+package com.lacouf.rsbjwt.presentation.dev;
 
 import com.lacouf.rsbjwt.service.ContratStageGenerator;
 import lombok.RequiredArgsConstructor;

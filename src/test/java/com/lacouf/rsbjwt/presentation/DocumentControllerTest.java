@@ -2,6 +2,8 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.presentation.document.DocumentController;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
@@ -279,7 +281,7 @@ public class DocumentControllerTest {
                 com.lacouf.rsbjwt.model.StatutValidation.EN_ATTENTE,
                 null,
                 25.0,
-                com.lacouf.rsbjwt.model.Disciplines.INFORMATIQUE,
+                Disciplines.INFORMATIQUE,
                 null,
                 null,
                 1,

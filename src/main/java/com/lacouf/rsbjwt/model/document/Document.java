@@ -1,5 +1,8 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.document;
 
+import com.lacouf.rsbjwt.model.StatutValidation;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.service.dto;
+package com.lacouf.rsbjwt.service.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

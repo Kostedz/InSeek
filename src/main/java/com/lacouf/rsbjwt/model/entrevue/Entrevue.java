@@ -1,5 +1,8 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.entrevue;
 
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import jakarta.persistence.*;
 import lombok.*;
 

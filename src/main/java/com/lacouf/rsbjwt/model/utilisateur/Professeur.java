@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.model;
+package com.lacouf.rsbjwt.model.utilisateur;
 
 import com.lacouf.rsbjwt.model.auth.Credentials;
 import com.lacouf.rsbjwt.model.auth.Role;

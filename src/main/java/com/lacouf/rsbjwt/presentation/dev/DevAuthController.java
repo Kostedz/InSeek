@@ -1,4 +1,4 @@
-package com.lacouf.rsbjwt.presentation;
+package com.lacouf.rsbjwt.presentation.dev;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
@@ -7,7 +7,7 @@ import com.lacouf.rsbjwt.config.DevDemoScenarioService;
 import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.service.UtilisateurService;
 import com.lacouf.rsbjwt.service.dto.JWTAuthResponse;
-import com.lacouf.rsbjwt.service.dto.LoginDTO;
+import com.lacouf.rsbjwt.service.dto.auth.LoginDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;

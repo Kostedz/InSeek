@@ -1,9 +1,9 @@
 package com.lacouf.rsbjwt.event;
 
 import com.lacouf.rsbjwt.model.ApplicationStage;
-import com.lacouf.rsbjwt.model.Entrevue;
-import com.lacouf.rsbjwt.model.OffreDeStage;
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.entrevue.Entrevue;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;

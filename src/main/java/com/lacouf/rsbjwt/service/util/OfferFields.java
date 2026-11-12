@@ -1,10 +1,9 @@
 package com.lacouf.rsbjwt.service.util;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
-import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import tools.jackson.databind.JsonNode;
 
 import java.time.LocalDate;

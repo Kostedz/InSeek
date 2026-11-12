@@ -1,8 +1,8 @@
-package com.lacouf.rsbjwt.presentation;
+package com.lacouf.rsbjwt.presentation.document;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
 import com.lacouf.rsbjwt.service.AuthService;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
@@ -10,7 +10,6 @@ import com.lacouf.rsbjwt.service.dto.DocumentValidationDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

@@ -1,7 +1,7 @@
 package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 
 public record EtudiantEligibleContratDTO(
         Long id,

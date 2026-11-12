@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.model;
 
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import jakarta.persistence.*;
 import lombok.*;
 

@@ -2,7 +2,7 @@ package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import com.lacouf.rsbjwt.repository.EtudiantRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.StagiaireDTO;

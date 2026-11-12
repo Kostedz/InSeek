@@ -1,5 +1,7 @@
 package com.lacouf.rsbjwt.model;
 
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
