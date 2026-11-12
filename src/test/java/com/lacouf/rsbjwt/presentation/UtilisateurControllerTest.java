@@ -294,7 +294,8 @@ class UtilisateurControllerTest {
                 "Alice",
                 "alice@mail.com",
                 "ROLE_ETUDIANT",
-                Disciplines.INFORMATIQUE
+                Disciplines.INFORMATIQUE,
+                "A26"
         );
 
         when(utilisateurService.getMe(any())).thenReturn(dto);

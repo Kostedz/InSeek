@@ -10,10 +10,12 @@ import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -232,5 +234,15 @@ public class ApplicationStageService {
         if (application.getStatutValidation() != StatutValidation.EN_ATTENTE) {
             throw new BadRequestException("Cette candidature a déjà été traitée.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<OffreDeStageDTO> listerOffresParSession(String sessionId) {
+        List<OffreDeStageDTO> toutesLesOffres = documentRepository.findAllOffreStageSummaries();
+
+        return toutesLesOffres.stream()
+                .filter(offre -> offre.updatedAt() != null
+                        && sessionId.equalsIgnoreCase(SessionUtil.getSession(offre.updatedAt().toLocalDate())))
+                .toList();
     }
 }

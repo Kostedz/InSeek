@@ -236,7 +236,7 @@ export const api = {
             fetcher("/gestionnaire/sessions", {headers: {Accept: "application/json"}}),
 
         getStudentsBySession: (sessionId) =>
-            fetcher(`/gestionnaire/etudiants?sessionId=${encodeURIComponent(sessionId)}`, {
+            fetcher(`/gestionnaire/stagiaires/${encodeURIComponent(sessionId)}`, {
                 headers: {Accept: "application/json"},
             }),
 
@@ -305,10 +305,34 @@ export const api = {
             headers: {Accept: "application/json", "Content-Type": "application/json;charset=UTF-8"},
             body: JSON.stringify({password}),
         }),
+
+        getSessions: () =>
+            fetcher("/gestionnaire/sessions", {
+                headers: { Accept: "application/json" },
+            }),
+
+        getAllOffers: () =>
+            fetcher("/documents/stage", {
+                headers: {Accept: "application/json"},
+            }),
+
+        getOffersBySession: (sessionId, filters = {}) => {
+            const queryParams = new URLSearchParams(filters).toString();
+            const query = queryParams ? `?${queryParams}` : "";
+            return fetcher(`/gestionnaire/sessions/${encodeURIComponent(sessionId)}/offres${query}`, {
+                headers: { Accept: "application/json" },
+            })
+        },
     },
 
     professor: {
-        getStudents: () => fetcher("/professeur/etudiants", {headers: {Accept: "application/json"}}),
+        getStudents: (sessionId) => {
+            const path = sessionId === "ALL"
+                ? "/professeur/etudiants"
+                : `/professeur/etudiants/${encodeURIComponent(sessionId)}`;
+            return fetcher(path,
+                {headers: {Accept: "application/json"}});
+        },
 
         getStudentApplications: (studentId) =>
             fetcher(`/professeur/etudiants/${encodeURIComponent(studentId)}/demandes`, {

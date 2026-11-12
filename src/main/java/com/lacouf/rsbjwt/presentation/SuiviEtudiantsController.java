@@ -27,6 +27,12 @@ public class SuiviEtudiantsController {
         return ResponseEntity.ok(suiviEtudiantsService.listEtudiantsDuProfesseur(principal.getName()));
     }
 
+    @GetMapping("/etudiants/{session}")
+    public ResponseEntity<List<StagiaireDTO>> listEtudiantsParSession(Principal principal,
+                                                                      @PathVariable String session) {
+        return ResponseEntity.ok(suiviEtudiantsService.listEtudiantsDuProfesseur(principal.getName(), session));
+    }
+
     @GetMapping("/etudiants/{etudiantId}/demandes")
     public ResponseEntity<List<ApplicationStageDTO>> listDemandes(Principal principal,
                                                                   @PathVariable Long etudiantId)

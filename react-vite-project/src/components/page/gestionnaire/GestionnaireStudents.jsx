@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
+import DropdownSelect from "../../DropdownSelect.jsx";
 
 const asList = (value) => Array.isArray(value) ? value : value?.items ?? value?.content ?? value?.sessions ?? [];
 const fullName = (student) => [student?.prenom ?? student?.firstName, student?.nom ?? student?.lastName].filter(Boolean).join(" ");
@@ -9,21 +10,28 @@ const sessionLabel = (session) => valueOf(session, "label", "nom", "name", "libe
 const sessionId = (session) => valueOf(session, "id", "sessionId", "code") ?? sessionLabel(session);
 const statusOf = (student) => String(valueOf(student, "statutRecherche", "statutRechercheEtudiant", "researchStatus", "status", "statut") ?? "").toUpperCase();
 const FALLBACK_SESSIONS = (date) => {
-    const currentYear = date.getFullYear();
-    const latestTerm = date.getMonth() < 4 ? ["HIVER", currentYear]
-        : date.getMonth() < 8 ? ["ETE", currentYear]
-            : ["AUTOMNE", currentYear];
-    const termOrder = ["HIVER", "ETE", "AUTOMNE"];
+    let currentYear = date.getFullYear();
+    let currentTerm = date.getMonth() < 4 ? 0 : date.getMonth() < 8 ? 1 : 2;
+    if (currentTerm === 2 && date.getDate() >= 15 && date.getMonth() === 11) {
+        currentYear += 1;
+        currentTerm = 0;
+    }
+    const terms = [
+        {code: "H", label: "Hiver"},
+        {code: "E", label: "Été"},
+        {code: "A", label: "Automne"},
+    ];
     const sessions = [];
-    let [term, year] = latestTerm;
+    let termIndex = currentTerm;
+    let year = currentYear;
     for (let index = 0; index < 6; index += 1) {
+        const term = terms[termIndex];
         sessions.push({
-            id: `${term}-${year}`,
-            label: `${term === "ETE" ? "Été" : term[0] + term.slice(1).toLocaleLowerCase()} ${year}`
+            id: `${term.code}${String(year % 100).padStart(2, "0")}`,
+            label: `${term.label} ${year}`
         });
-        const termIndex = termOrder.indexOf(term);
         if (termIndex === 0) year -= 1;
-        term = termOrder[(termIndex + termOrder.length - 1) % termOrder.length];
+        termIndex = (termIndex + terms.length - 1) % terms.length;
     }
     return sessions;
 };
@@ -31,7 +39,7 @@ const FALLBACK_SESSIONS = (date) => {
 export default function GestionnaireStudents({embedded = false}) {
     const {t} = useTranslation();
     const [sessions, setSessions] = useState([]);
-    const [selectedSessionId, setSelectedSessionId] = useState("");
+    const [selectedSessionId, setSelectedSessionId] = useState("ALL");
     const [students, setStudents] = useState([]);
     const [loadingSessions, setLoadingSessions] = useState(true);
     const [loadingStudents, setLoadingStudents] = useState(false);
@@ -53,14 +61,13 @@ export default function GestionnaireStudents({embedded = false}) {
                 if (!list.length) throw new Error("sessions_empty");
                 if (!mounted) return;
                 setSessions(list);
-                const active = list.find((session) => session.active || session.isActive || session.current || session.activeNow);
-                setSelectedSessionId(String(sessionId(active ?? list[0])));
+                setSelectedSessionId("ALL");
             } catch {
                 if (!mounted) return;
                 const fallback = FALLBACK_SESSIONS(new Date());
                 setSessions(fallback);
                 setSessionsUnavailable(true);
-                setSelectedSessionId(String(sessionId(fallback[0])));
+                setSelectedSessionId("ALL");
             } finally {
                 if (mounted) setLoadingSessions(false);
             }
@@ -76,7 +83,9 @@ export default function GestionnaireStudents({embedded = false}) {
         setLoadingStudents(true);
         setError(false);
         try {
-            const response = await api.gestionnaire.getStudentsBySession(id);
+            const response = id === "ALL"
+                ? await api.gestionnaire.getInternshipStudents()
+                : await api.gestionnaire.getStudentsBySession(id);
             if (!response.ok) throw new Error("students_unavailable");
             const data = asList(await response.json());
             if (sequence === loadSequence.current) setStudents(data);
@@ -114,7 +123,9 @@ export default function GestionnaireStudents({embedded = false}) {
     }, [students, search, statusFilter, programFilter, assignmentFilter]);
 
     const selectedSession = sessions.find((session) => String(sessionId(session)) === selectedSessionId);
-    const selectedLabel = sessionLabel(selectedSession) || selectedSessionId;
+    const selectedLabel = selectedSessionId === "ALL"
+        ? t("managerStudents.allSessions")
+        : sessionLabel(selectedSession) || selectedSessionId;
 
     return (
         <section className={embedded ? "mt-8 w-full" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
@@ -138,19 +149,21 @@ export default function GestionnaireStudents({embedded = false}) {
                         <label className="w-full lg:max-w-xs">
                             <span
                                 className="mb-2 block text-xs font-bold uppercase tracking-wide text-ink-soft">{t("managerStudents.session", "Session du Cégep")}</span>
-                            <select value={selectedSessionId} disabled={loadingSessions || sessions.length === 0}
+                            <DropdownSelect value={selectedSessionId}
+                                            disabled={loadingSessions || sessions.length === 0}
                                     onChange={(event) => setSelectedSessionId(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-semibold text-ink outline-none focus:border-lavender disabled:opacity-60">
-                                {sessions.map((session) => <option key={sessionId(session)}
-                                                                   value={sessionId(session)}>{sessionLabel(session)}</option>)}
-                            </select>
+                            <option value="ALL">{t("managerStudents.allSessions", "Toutes les sessions")}</option>
+                            {sessions.map((session) => <option key={sessionId(session)}
+                                                               value={sessionId(session)}>{sessionLabel(session)}</option>)}
+                            </DropdownSelect>
                         </label>
                     </div>
 
                     {sessionsUnavailable &&
                         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
                            role="status">
-                            {t("managerStudents.sessionsFallback", "Les sessions n’ont pas pu être chargées. La session la plus récente est sélectionnée.")}
+                            {t("managerStudents.sessionsFallback", "Les sessions n’ont pas pu être chargées.")}
                         </p>}
                     {error &&
                         <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
@@ -168,27 +181,29 @@ export default function GestionnaireStudents({embedded = false}) {
                         </label>
                         <label>
                             <span className="sr-only">{t("managerStudents.filterStatus", "Filtrer par statut")}</span>
-                            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}
+                            <DropdownSelect value={statusFilter}
+                                            onChange={(event) => setStatusFilter(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender">
                                 <option value="all">{t("managerStudents.allStatuses", "Tous les statuts")}</option>
                                 {statuses.map((status) => <option key={status}
                                                                   value={status}>{t(`managerStudents.statuses.${status}`, {defaultValue: status.replaceAll("_", " ").toLocaleLowerCase()})}</option>)}
-                            </select>
+                            </DropdownSelect>
                         </label>
                         <label>
                             <span
                                 className="sr-only">{t("managerStudents.filterProgram", "Filtrer par programme")}</span>
-                            <select value={programFilter} onChange={(event) => setProgramFilter(event.target.value)}
+                            <DropdownSelect value={programFilter}
+                                            onChange={(event) => setProgramFilter(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender">
                                 <option value="all">{t("managerStudents.allPrograms", "Tous les programmes")}</option>
                                 {programs.map((program) => <option key={program}
                                                                    value={program}>{t(`employerOffers.disciplines.${String(program).toUpperCase()}`, {defaultValue: program})}</option>)}
-                            </select>
+                            </DropdownSelect>
                         </label>
                         <label>
                             <span
                                 className="sr-only">{t("managerStudents.filterAssignment", "Filtrer par assignation")}</span>
-                            <select value={assignmentFilter}
+                            <DropdownSelect value={assignmentFilter}
                                     onChange={(event) => setAssignmentFilter(event.target.value)}
                                     className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink outline-none focus:border-lavender">
                                 <option
@@ -197,7 +212,7 @@ export default function GestionnaireStudents({embedded = false}) {
                                     value="assigned">{t("managerStudents.assigned", "Avec professeur assigné")}</option>
                                 <option
                                     value="unassigned">{t("managerStudents.unassigned", "Sans professeur assigné")}</option>
-                            </select>
+                            </DropdownSelect>
                         </label>
                     </div>
 
@@ -228,7 +243,7 @@ export default function GestionnaireStudents({embedded = false}) {
                                         const status = statusOf(student);
                                         const professorValue = valueOf(student, "professeurNom", "professorName", "professeur", "professor");
                                         const professor = typeof professorValue === "object" ? fullName(professorValue) : professorValue ?? [student.professeurPrenom, student.professeurNom].filter(Boolean).join(" ");
-                                        const company = valueOf(student, "entreprise", "nomEntreprise", "companyName", "employeurNom");
+                                        const company = valueOf(student, "entrepriseAccueil", "entreprise", "nomEntreprise", "companyName", "employeurNom");
                                         const program = valueOf(student, "discipline", "programme", "program", "programName");
                                         return <tr key={student.id ?? student.email}>
                                             <td className="px-4 py-4"><p

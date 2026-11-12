@@ -25,4 +25,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     @Query("SELECT p FROM Professeur p WHERE p.discipline = :discipline")
     List<Professeur> findProfesseursByDiscipline(@Param("discipline") Disciplines fieldOfStudy);
+
+    @Query("SELECT e FROM Etudiant e WHERE e.session = :session")
+    List<Etudiant> findBySession(String session);
 }

@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import {createTranslationMessage, translateMessage} from "../../../utils/i18nMessage.js";
 import api from "../../../utils/api.js";
 import Loading from "../../Loading.jsx";
@@ -1258,14 +1259,14 @@ export default function EmployeurOffres({
                                                        label={t("employerOffers.fields.discipline")}
                                                        required
                                                        error={fieldErrors.targetDiscipline}>
-                                                    <select id="targetDiscipline" name="targetDiscipline"
+                                                    <DropdownSelect id="targetDiscipline" name="targetDiscipline"
                                                             value={formValues.targetDiscipline} onChange={updateField}
                                                             className={inputClass(fieldErrors.targetDiscipline)}>
                                                         <option
                                                             value="">{t("employerOffers.fields.selectDiscipline")}</option>
                                                         {DISCIPLINES.map(([value]) => <option key={value}
                                                                                               value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
-                                                    </select>
+                                                    </DropdownSelect>
                                                 </Field>
                                                 <Field id="adresseEntreprise"
                                                        label={t("employerOffers.fields.companyAddress")}

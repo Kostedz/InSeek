@@ -1,12 +1,12 @@
 package com.lacouf.rsbjwt.model;
 
 import com.lacouf.rsbjwt.service.util.OfferFields;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.coyote.BadRequestException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -29,6 +29,8 @@ public class OffreDeStage extends Document {
     private String contactPhone;
     private int version = 1;
     private LocalDateTime updatedAt;
+    private String session;
+
     @ManyToOne
     @JoinColumn(name = "employeur_id")
     private Utilisateur employeur;
@@ -40,7 +42,7 @@ public class OffreDeStage extends Document {
                         String nomEntreprise,
                         String position, String descriptionPosition,
                         LocalDate dateDebutStage, LocalDate dateFinStage, String adresseEntreprise, Double salaire,
-                        String contactName, String contactPhone) {
+                        String contactName, String contactPhone, String session) {
 
         super(id, fileName, targetDiscipline, employeur, data, contentType, size, StatutValidation.EN_ATTENTE, null);
 
@@ -56,6 +58,7 @@ public class OffreDeStage extends Document {
         this.contactName = contactName;
         this.contactPhone = contactPhone;
         this.updatedAt = LocalDateTime.now();
+        this.session = session;
     }
 
     public static OffreDeStage create(MultipartFile file, OfferFields fields, Utilisateur uploader) throws IOException {
@@ -75,6 +78,7 @@ public class OffreDeStage extends Document {
                 .salaire(fields.getSalaire())
                 .contactName(fields.getContactName())
                 .contactPhone(fields.getContactPhone())
+                .session(SessionUtil.getCurrentSession())
                 .build();
     }
 
