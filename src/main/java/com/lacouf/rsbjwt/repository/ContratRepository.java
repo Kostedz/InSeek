@@ -25,4 +25,5 @@ public interface ContratRepository extends JpaRepository<Contract, Long> {
     List<Contract> findByEmployer_IdOrderByDateCreationDesc(Long employerId);
 
 
+    Optional<Contract> findByStudentId(Long studentId);
 }
