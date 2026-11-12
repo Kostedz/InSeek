@@ -10,7 +10,6 @@ const studentName = (contract) => contract?.studentFullName
     || contract?.studentName || "";
 const contractTitle = (contract) => contract?.offerTitle ?? contract?.position ?? contract?.internshipOffer?.position ?? "";
 const draftStorageKey = "inseek.employer.internship-evaluation.drafts";
-const submittedStorageKey = "inseek.employer.internship-evaluation.submitted";
 export const EMPLOYER_EVALUATIONS_UPDATED_EVENT = "inseek:employer-evaluations-updated";
 const readStorage = (key) => {
     try {
@@ -27,7 +26,7 @@ export default function EmployerEvaluationsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [drafts, setDrafts] = useState(() => readStorage(draftStorageKey));
-    const [submitted, setSubmitted] = useState(() => readStorage(submittedStorageKey));
+    const [submitted, setSubmitted] = useState({});
     const [selectedId, setSelectedId] = useState(null);
     const [confirming, setConfirming] = useState(false);
 
@@ -48,7 +47,7 @@ export default function EmployerEvaluationsPage() {
     }, [t]);
 
     useEffect(() => localStorage.setItem(draftStorageKey, JSON.stringify(drafts)), [drafts]);
-    useEffect(() => localStorage.setItem(submittedStorageKey, JSON.stringify(submitted)), [submitted]);
+    useEffect(() => localStorage.removeItem("inseek.employer.internship-evaluation.submitted"), []);
     useEffect(() => {
         if (!selectedId && !confirming) return undefined;
         const closeOnEscape = (event) => {
@@ -93,14 +92,15 @@ export default function EmployerEvaluationsPage() {
     const confirmSubmit = () => {
         const record = {...values, submittedAt: new Date().toISOString()};
         const nextSubmitted = {...submitted, [selectedKey]: record};
-        localStorage.setItem(submittedStorageKey, JSON.stringify(nextSubmitted));
         setSubmitted(nextSubmitted);
         setDrafts((current) => {
             const next = {...current};
             delete next[selectedKey];
             return next;
         });
-        window.dispatchEvent(new Event(EMPLOYER_EVALUATIONS_UPDATED_EVENT));
+        window.dispatchEvent(new CustomEvent(EMPLOYER_EVALUATIONS_UPDATED_EVENT, {
+            detail: {pendingCount: Math.max(0, pendingCount - 1)},
+        }));
         setConfirming(false);
         setSelectedId(null);
     };
