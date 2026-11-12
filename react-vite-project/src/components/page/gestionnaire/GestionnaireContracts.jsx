@@ -15,6 +15,7 @@ export default function GestionnaireContracts({embedded = false}) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [contractView, setContractView] = useState("PENDING");
     const [selectedContract, setSelectedContract] = useState(null);
     const [signatureContract, setSignatureContract] = useState(null);
     const statusLabel = (status) =>
@@ -79,6 +80,12 @@ export default function GestionnaireContracts({embedded = false}) {
             return student.includes(searchTerm.toLowerCase()) || company.includes(searchTerm.toLowerCase());
         });
     }, [contracts, searchTerm]);
+    const isHistoryContract = (contract) => FINAL_CONTRACT_STATUSES.has(contract.status) || contract.status === "REFUSED";
+    const pendingCount = contracts.filter((contract) => !isHistoryContract(contract)).length;
+    const historyCount = contracts.length - pendingCount;
+    const visibleContracts = filteredContracts.filter((contract) =>
+        contractView === "PENDING" ? !isHistoryContract(contract) : isHistoryContract(contract)
+    );
 
     const formatDate = (val) => {
         if (!val) return "—";
@@ -124,19 +131,42 @@ export default function GestionnaireContracts({embedded = false}) {
                     />
                 </div>
 
+                <div
+                    className="mt-5 inline-flex max-w-full gap-1 rounded-2xl border border-line bg-surface p-1 shadow-[0_12px_30px_rgba(48,35,55,0.04)]"
+                    role="tablist" aria-label={t("managerContracts.views.label", "Filtrer les contrats")}>
+                    {[{
+                        id: "PENDING",
+                        label: t("managerContracts.views.pending", "En attente"),
+                        count: pendingCount
+                    }, {
+                        id: "HISTORY",
+                        label: t("managerContracts.views.history", "Historique"),
+                        count: historyCount
+                    }].map((tab) => (
+                        <button key={tab.id} type="button" role="tab" aria-selected={contractView === tab.id}
+                                onClick={() => setContractView(tab.id)}
+                                className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${contractView === tab.id ? "bg-ink text-white shadow-sm" : "text-ink-soft hover:bg-canvas hover:text-ink"}`}>
+                            {tab.label}<span
+                            className="ml-2 rounded-full bg-lavender/40 px-2 py-0.5 text-xs">{tab.count}</span>
+                        </button>
+                    ))}
+                </div>
+
                 <div className="mt-6">
                     {loading ? (
                         <div className="py-12 text-center text-ink-soft font-medium">
                             {t("managerValidation.loading", "Chargement…")}
                         </div>
-                    ) : filteredContracts.length === 0 ? (
+                    ) : visibleContracts.length === 0 ? (
                         <div className="rounded-2xl border border-line bg-surface p-12 text-center text-ink-soft">
-                            {t("managerContracts.empty", "Aucun contrat enregistré.")}
+                            {contractView === "PENDING"
+                                ? t("managerContracts.views.emptyPending", "Aucun contrat en attente.")
+                                : t("managerContracts.views.emptyHistory", "Aucun contrat dans l’historique.")}
                         </div>
                     ) : (
                         <>
                             <div className="grid gap-4 sm:hidden">
-                                {filteredContracts.map((contract) => (
+                                {visibleContracts.map((contract) => (
                                     <div
                                         key={contract.id || contract.contractId}
                                         onClick={() => setSelectedContract(contract)}
@@ -170,7 +200,7 @@ export default function GestionnaireContracts({embedded = false}) {
                                     </tr>
                                     </thead>
                                     <tbody className="divide-y divide-line text-sm">
-                                    {filteredContracts.map((contract) => (
+                                    {visibleContracts.map((contract) => (
                                         <tr
                                             key={contract.id || contract.contractId}
                                             onClick={() => setSelectedContract(contract)}

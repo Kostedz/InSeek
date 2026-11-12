@@ -1,6 +1,6 @@
 import PageLayout from "./components/PageLayout.jsx";
 import React, {useEffect, useState} from "react";
-import {Route, Routes, useNavigate} from "react-router-dom";
+import {Navigate, Route, Routes, useNavigate} from "react-router-dom";
 import MainContainer from "./components/MainContainer.jsx";
 import About from "./components/About.jsx";
 import LoginForm from "./components/auth/LoginForm.jsx";
@@ -44,7 +44,6 @@ function App() {
                                     switch (res.status) {
                                         case 401:
                                             localStorage.removeItem("token");
-                                            localStorage.removeItem("devAccess");
                                             setUser(null);
                                             throw {status: 401, ...createTranslationMessage("errors.unauthorized")};
                                         case 403:
@@ -59,7 +58,6 @@ function App() {
                                 let newUser = {
                                     ...data,
                                     isLoggedIn: true,
-                                    isDevAccess: localStorage.getItem("devAccess") === "true",
                                 }
                                 setUser(newUser)
                             }
@@ -100,7 +98,7 @@ function App() {
                                         canManageOffers={Boolean(user?.isLoggedIn)}
                                         companyName={user?.nomCompagnie ?? ""}
                                         isAccountEmailValidated={
-                                            Boolean(user?.isDevAccess) || user?.emailValidated !== false
+                                            user?.emailValidated !== false
                                         }
                                         contracts={user?.contracts}
                                         drafts={offerDrafts}
@@ -113,7 +111,7 @@ function App() {
                                 </ProtectedRoute>
                             ) : user?.isLoggedIn && userRole === "PROFESSEUR" ? (
                                 <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["PROFESSEUR"]}>
-                                    <ProfessorDashboard/>
+                                    <Navigate to="/professeur/etudiants" replace/>
                                 </ProtectedRoute>
                             ) : (
                                 <MainContainer user={user}/>
@@ -185,7 +183,7 @@ function App() {
                                     canManageOffers={Boolean(user?.isLoggedIn)}
                                     companyName={user?.nomCompagnie ?? ""}
                                     isAccountEmailValidated={
-                                        Boolean(user?.isDevAccess) || user?.emailValidated !== false
+                                        user?.emailValidated !== false
                                     }
                                     contracts={user?.contracts}
                                     drafts={offerDrafts}
@@ -202,12 +200,36 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+                    <Route
+                        path="employeur/evaluations"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["EMPLOYEUR"]}>
+                                <EmployerHomePage user={user} contracts={user?.contracts}/>
+                            </ProtectedRoute>
+                        }
+                    />
 
                     <Route
                         path="gestionnaire"
                         element={
                             <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["GESTIONNAIRE"]}>
                                 <GestionnaireDashboard/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="professeur/etudiants"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["PROFESSEUR"]}>
+                                <ProfessorDashboard/>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="professeur/evaluations"
+                        element={
+                            <ProtectedRoute user={user} authChecked={authChecked} allowedRoles={["PROFESSEUR"]}>
+                                <ProfessorDashboard/>
                             </ProtectedRoute>
                         }
                     />

@@ -1,12 +1,16 @@
 package com.lacouf.rsbjwt.config;
 
 import com.lacouf.rsbjwt.model.CV;
+import com.lacouf.rsbjwt.model.Contract;
 import com.lacouf.rsbjwt.model.Disciplines;
 import com.lacouf.rsbjwt.model.Entrevue;
 import com.lacouf.rsbjwt.model.Employeur;
 import com.lacouf.rsbjwt.model.Etudiant;
+import com.lacouf.rsbjwt.model.Gestionnaire;
 import com.lacouf.rsbjwt.model.ModeEntrevue;
 import com.lacouf.rsbjwt.model.OffreDeStage;
+import com.lacouf.rsbjwt.model.Professeur;
+import com.lacouf.rsbjwt.model.StatutContrat;
 import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
 import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.model.StatutRechercheEtudiant;
@@ -170,6 +174,90 @@ public class DevDemoScenarioService {
         prepareDemoApplications(etudiant, offers);
         prepareAcceptedStudentWithoutContract(etudiant, offers);
         prepareDemoInterviews(etudiant, employeur, offers);
+    }
+
+    @Transactional
+    public void prepareSignedContractStudentScenario() {
+        prepareStudentScenario();
+
+        Utilisateur sourceUser = utilisateurRepository.findByEmail(DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.ETUDIANT).email());
+        Utilisateur employerUser = utilisateurRepository.findByEmail(DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.EMPLOYEUR).email());
+        Utilisateur targetUser = utilisateurRepository.findByEmail(DevDemoAccounts.signedContractStudent().email());
+        if (!(sourceUser instanceof Etudiant source) || !(employerUser instanceof Employeur employer)
+                || !(targetUser instanceof Etudiant target)) {
+            throw new IllegalStateException("Les comptes de démonstration pour le contrat signé sont introuvables.");
+        }
+
+        List<ApplicationStage> sourceApplications = applicationStageRepository.findByEtudiantId(source.getId());
+        ApplicationStage accepted = sourceApplications.stream()
+                .filter(application -> application.getStatutValidation() == StatutValidation.ACCEPTE)
+                .findFirst().orElseThrow(() -> new IllegalStateException("La demande de stage acceptée de démonstration est introuvable."));
+        OffreDeStage acceptedOffer = accepted.getOffreDeStage();
+
+        Utilisateur professorUser = utilisateurRepository.findByEmail(DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.PROFESSEUR).email());
+        Utilisateur managerUser = utilisateurRepository.findByEmail(
+                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.GESTIONNAIRE).email());
+        if (!(professorUser instanceof Professeur professor) || !(managerUser instanceof Gestionnaire manager)) {
+            throw new IllegalStateException("Les comptes professeur ou gestionnaire nécessaires sont introuvables.");
+        }
+        target.setDiscipline(source.getDiscipline());
+        target.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        target.setProfesseur(professor);
+        utilisateurRepository.save(target);
+
+        CV sourceCv = documentRepository.findByUtilisateur(source);
+        if (sourceCv != null) {
+            CV targetCv = documentRepository.findByUtilisateur(target);
+            if (targetCv == null) {
+                targetCv = CV.builder().fileName(sourceCv.getFileName()).targetDiscipline(sourceCv.getTargetDiscipline())
+                        .data(sourceCv.getData()).contentType(sourceCv.getContentType()).size(sourceCv.getSize())
+                        .utilisateur(target).build();
+            } else {
+                targetCv.setFileName(sourceCv.getFileName());
+                targetCv.setTargetDiscipline(sourceCv.getTargetDiscipline());
+                targetCv.setData(sourceCv.getData());
+                targetCv.setContentType(sourceCv.getContentType());
+                targetCv.setSize(sourceCv.getSize());
+            }
+            targetCv.setStatut(sourceCv.getStatut());
+            targetCv.setCommentaireRejet(sourceCv.getCommentaireRejet());
+            documentRepository.save(targetCv);
+        }
+
+        for (ApplicationStage sourceApplication : sourceApplications) {
+            ApplicationStage copy = applicationStageRepository
+                    .findByEtudiantIdAndOffreDeStageId(target.getId(), sourceApplication.getOffreDeStage().getId())
+                    .orElseGet(ApplicationStage::new);
+            copy.setEtudiant(target);
+            copy.setOffreDeStage(sourceApplication.getOffreDeStage());
+            copy.setStatutValidation(sourceApplication.getStatutValidation());
+            copy.setDateApplique(sourceApplication.getDateApplique());
+            copy.setDateDecision(sourceApplication.getDateDecision());
+            copy.setCommentaireRefus(sourceApplication.getCommentaireRefus());
+            applicationStageRepository.save(copy);
+        }
+
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        Contract contract = contratRepository.findByStudentIdAndInternshipOfferId(target.getId(), acceptedOffer.getId())
+                .orElseGet(Contract::new);
+        contract.setStudent(target);
+        contract.setEmployer(employer);
+        contract.setInternshipOffer(acceptedOffer);
+        contract.setAdmin(manager);
+        contract.setTeacher(professor);
+        contract.setSupervisorName(acceptedOffer.getContactName() == null ? "Julien Roy" : acceptedOffer.getContactName());
+        contract.setStartingDate(LocalDate.now().minusDays(7));
+        contract.setEndingDate(LocalDate.now().plusMonths(3));
+        contract.setSchedule("Du lundi au vendredi, de 9 h à 17 h");
+        contract.setWeeklyHours(35);
+        contract.setHourlySalary(acceptedOffer.getSalaire());
+        contract.setInternshipLocation(acceptedOffer.getAdresseEntreprise());
+        contract.setContractStatus(StatutContrat.EXECUTED);
+        contract.setDateCreation(now.minusDays(5));
+        contract.setStudentSignedAt(now.minusDays(4));
+        contract.setEmployerSignedAt(now.minusDays(3));
+        contract.setManagerSignedAt(now.minusDays(2));
+        contratRepository.save(contract);
     }
 
     private void prepareValidatedCv(Etudiant student) {

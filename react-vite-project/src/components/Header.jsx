@@ -18,8 +18,7 @@ function Header({user}) {
     const lastName = user?.lastName ?? user?.nom ?? "";
     const displayName = [firstName, lastName].filter(Boolean).join(" ");
     const isLoggedIn = Boolean(user?.isLoggedIn);
-    const isDevAccess = Boolean(user?.isDevAccess);
-    const canAccessRole = (requiredRole) => isLoggedIn && (isDevAccess || role === requiredRole);
+    const canAccessRole = (requiredRole) => isLoggedIn && role === requiredRole;
 
     const navLinkClass = ({isActive}) => [
         "inline-flex w-full justify-center rounded-full px-4 py-2 text-center text-sm font-semibold transition-colors md:w-auto md:px-3",
@@ -131,16 +130,6 @@ function Header({user}) {
                     <ul className="flex flex-col gap-1 md:flex-row md:flex-wrap md:items-center">
                         <li><NavLink to="/" end className={navLinkClass} onClick={closeMenus}>{t("navigation.home")}</NavLink></li>
                         <li><NavLink to="/about" className={navLinkClass} onClick={closeMenus}>{t("navigation.about")}</NavLink></li>
-                        {canAccessRole("ETUDIANT") && <li><NavLink to="/etudiant" end className={navLinkClass}
-                                                                   onClick={closeMenus}>{t("navigation.uploadCv")}</NavLink>
-                        </li>}
-                        {canAccessRole("EMPLOYEUR") && (
-                            <li>
-                                <NavLink to="/employeur" className={navLinkClass} onClick={closeMenus}>
-                                    {t("navigation.publishOffer")}
-                                </NavLink>
-                            </li>
-                        )}
                     </ul>
 
                     <span className="flex h-6 w-full items-center justify-center md:w-px" aria-hidden="true">
