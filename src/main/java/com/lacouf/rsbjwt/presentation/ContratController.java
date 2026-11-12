@@ -4,10 +4,12 @@ import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.service.ContratService;
+import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import com.lacouf.rsbjwt.service.dto.ContratDTO;
 import com.lacouf.rsbjwt.service.dto.CreateContratDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantEligibleContratDTO;
 import com.lacouf.rsbjwt.service.dto.PreRemplirContratDTO;
+import com.lacouf.rsbjwt.service.dto.SignatureConfirmationDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -119,9 +121,14 @@ public class ContratController {
     }
 
     @RequestMapping(value = "/sign/{contractId}", method = {RequestMethod.PATCH, RequestMethod.POST})
-    public ResponseEntity<ContratDTO> signContract(@PathVariable Long contractId, HttpServletRequest request) {
+    public ResponseEntity<ContratDTO> signContract(@PathVariable Long contractId,
+                                                   @RequestBody(required = false) SignatureConfirmationDTO confirmation,
+                                                   HttpServletRequest request) {
         try {
-            return ResponseEntity.ok(contratService.signContract(contractId, request));
+            return ResponseEntity.ok(contratService.signContract(contractId, request,
+                    confirmation == null ? null : confirmation.password()));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(e.getStatus()).build();
         } catch (ConflictException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (NotFoundException e) {

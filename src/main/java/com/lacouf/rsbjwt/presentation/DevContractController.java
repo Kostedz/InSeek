@@ -49,16 +49,6 @@ public class DevContractController {
         data.dateSignatureEtudiant = displayDate(studentSignedAt);
         data.dateSignatureEmployeur = displayDate(employerSignedAt);
         data.dateSignatureGestionnaire = displayDate(managerSignedAt);
-        if (!data.dateSignatureEtudiant.isBlank()) {
-            data.signatureEtudiant = "Signé électroniquement par Camille Gagnon";
-        }
-        if (!data.dateSignatureEmployeur.isBlank()) {
-            data.signatureEmployeur = "Signé électroniquement par Alexandre Bouchard";
-        }
-        if (!data.dateSignatureGestionnaire.isBlank()) {
-            data.signatureGestionnaire = "Signé électroniquement par Marc-André Fortin";
-        }
-
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=contrat-stage-demo.pdf")

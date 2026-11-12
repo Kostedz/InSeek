@@ -32,8 +32,9 @@ export default function GestionnaireContracts({embedded = false}) {
         status: c.contractStatus ?? c.status,
     });
 
-    const signManagerContract = async (contract) => {
-        const response = await api.gestionnaire.signContract(contract.id ?? contract.contractId);
+    const signManagerContract = async (contract, password) => {
+        const response = await api.gestionnaire.signContract(contract.id ?? contract.contractId, password);
+        if (response.status === 422) throw new Error("signature_password_invalid");
         if (!response.ok) {
             if (response.status === 401) throw new Error("signature_unauthorized");
             if (response.status === 403) throw new Error("signature_forbidden");
@@ -191,11 +192,17 @@ export default function GestionnaireContracts({embedded = false}) {
                                                     type="button"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setSelectedContract(contract);
+                                                        if (contract.status === MANAGER_SIGNABLE_STATUS) {
+                                                            setSignatureContract(contract);
+                                                        } else {
+                                                            setSelectedContract(contract);
+                                                        }
                                                     }}
                                                     className="text-xs font-bold text-ink hover:underline"
                                                 >
-                                                    {t("managerContracts.viewDetails", "Voir détail")}
+                                                    {contract.status === MANAGER_SIGNABLE_STATUS
+                                                        ? t("managerContracts.signContract", "Signer le contrat")
+                                                        : t("managerContracts.viewDetails", "Voir détail")}
                                                 </button>
                                             </td>
                                         </tr>

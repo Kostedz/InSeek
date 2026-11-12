@@ -3,6 +3,7 @@ import {useTranslation} from "react-i18next";
 import api from "../../../utils/api.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import ContractCreationModal from "../../gestionnaire/ContractCreationModal.jsx";
+import {notifyManagerStudentsChanged} from "../../../utils/tabCounts.js";
 
 export default function GestionnaireStudents({embedded = false}) {
     const {t} = useTranslation();
@@ -179,6 +180,7 @@ export default function GestionnaireStudents({embedded = false}) {
                         onClose={() => setSelectedStudentForContract(null)}
                         onSuccess={() => {
                             setSelectedStudentForContract(null);
+                            notifyManagerStudentsChanged();
                             loadStudents();
                         }}
                     />

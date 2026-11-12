@@ -5,6 +5,7 @@ import api from "../../../utils/api.js";
 import {
     countPendingDocuments,
     MANAGER_CONTRACTS_CHANGED_EVENT,
+    MANAGER_STUDENTS_CHANGED_EVENT,
     PENDING_DOCUMENT_PROCESSED_EVENT
 } from "../../../utils/tabCounts.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
@@ -19,19 +20,29 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
         let isMounted = true;
         const requests = [];
 
+        const refreshStudentsCount = async () => {
+            try {
+                const response = await api.gestionnaire.getEligibleStudents();
+                if (!response.ok) return;
+                const data = await response.json();
+                const students = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+                const studentsWithoutContract = students.filter((student) => !student.hasContract && !student.contractExists).length;
+                if (isMounted) {
+                    setLoadedCounts((current) => ({...current, students: studentsWithoutContract}));
+                }
+            } catch {
+                // Keep the last known count when a refresh fails.
+            }
+        };
+
         if (offersCount === undefined) {
             requests.push(countPendingDocuments("OffreDeStage").then((count) => ["offers", count]));
         }
         if (cvsCount === undefined) {
             requests.push(countPendingDocuments("CV").then((count) => ["cvs", count]));
         }
-        requests.push(api.gestionnaire.getEligibleStudents().then(async (response) => {
-            if (!response.ok) return ["students", null];
-            const data = await response.json();
-            const students = Array.isArray(data) ? data : data.items ?? data.content ?? [];
-            const studentsWithoutContract = students.filter((student) => !student.hasContract && !student.contractExists).length;
-            return ["students", studentsWithoutContract];
-        }).catch(() => ["students", null]));
+        refreshStudentsCount();
+        window.addEventListener(MANAGER_STUDENTS_CHANGED_EVENT, refreshStudentsCount);
         requests.push(api.gestionnaire.getInternshipStudents().then(async (response) => {
             if (!response.ok) return ["assignments", null];
             const data = await response.json();
@@ -51,6 +62,7 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
 
         return () => {
             isMounted = false;
+            window.removeEventListener(MANAGER_STUDENTS_CHANGED_EVENT, refreshStudentsCount);
         };
     }, [offersCount, cvsCount]);
 
@@ -116,19 +128,19 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
     const tabs = [
         {
             id: "offers",
-            label: t("managerValidation.tabs.offers", "Offres à valider"),
+            label: t("managerValidation.tabs.offers", "Offres à approuver"),
             path: "/gestionnaire/offres",
             count: displayedOffersCount
         },
         {
             id: "cvs",
-            label: t("managerValidation.tabs.cvs", "CV des étudiants"),
+            label: t("managerValidation.tabs.cvs", "CV à approuver"),
             path: "/gestionnaire/cv",
             count: displayedCvsCount
         },
         {
             id: "students",
-            label: t("managerStudents.tabLabel", "Étudiants admissibles"),
+            label: t("managerStudents.tabLabel", "Étudiants ayant trouvé un stage"),
             path: "/gestionnaire/etudiants",
             count: displayedStudentsCount,
             countLabel: t("managerContracts.pendingStudentsNotification", {

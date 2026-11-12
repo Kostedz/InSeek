@@ -6,6 +6,7 @@ import { FormValidator } from "../../utils/formValidator.js";
 import Loading from "../Loading.jsx";
 import {translateMessage} from "../../utils/i18nMessage.js";
 import {getRedirectPathByRole} from "../../utils/authRedirect.js";
+import PasswordInput from "./PasswordInput.jsx";
 
 const LoginForm = ({ user, authChecked, setUser }) => {
   const navigate = useNavigate();
@@ -167,9 +168,8 @@ const LoginForm = ({ user, authChecked, setUser }) => {
                     <label htmlFor="password" className="mb-2 block text-sm font-bold text-ink">
                       {t("auth.login.password")}
                     </label>
-                    <input
+                    <PasswordInput
                         id="password"
-                        type="password"
                         autoComplete="current-password"
                         className={`w-full rounded-xl border bg-canvas px-4 py-3 text-sm text-ink outline-none transition focus:ring-4 focus:ring-pink/40 ${
                             warnings.password ? "border-red-500 focus:border-red-500" : "border-line focus:border-lavender"

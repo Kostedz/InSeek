@@ -80,9 +80,10 @@ export const api = {
             headers: {Accept: "application/pdf"},
         }),
 
-        signContract: (contractId) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+        signContract: (contractId, password) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
             method: "PATCH",
-            headers: {Accept: "application/json"},
+            headers: {Accept: "application/json", "Content-Type": "application/json;charset=UTF-8"},
+            body: JSON.stringify({password}),
         }),
 
         getDemoContractPdf: (signatureDates = {}) => {
@@ -163,10 +164,11 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
-        signContract: (contractId) =>
+        signContract: (contractId, password) =>
             fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
                 method: "PATCH",
-                headers: {Accept: "application/json"},
+                headers: {Accept: "application/json", "Content-Type": "application/json;charset=UTF-8"},
+                body: JSON.stringify({password}),
             }),
 
         offers: {
@@ -283,9 +285,10 @@ export const api = {
                 headers: { Accept: "application/json" },
             }),
 
-        signContract: (contractId) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
+        signContract: (contractId, password) => fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
             method: "PATCH",
-            headers: {Accept: "application/json"},
+            headers: {Accept: "application/json", "Content-Type": "application/json;charset=UTF-8"},
+            body: JSON.stringify({password}),
         }),
     },
 

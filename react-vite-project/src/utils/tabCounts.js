@@ -3,6 +3,7 @@ import api from "./api.js";
 export const PENDING_DOCUMENT_PROCESSED_EVENT = "gestionnaire:pending-document-processed";
 export const STUDENT_TAB_COUNTS_CHANGED_EVENT = "inseek:student-tab-counts-changed";
 export const MANAGER_CONTRACTS_CHANGED_EVENT = "gestionnaire:contracts-changed";
+export const MANAGER_STUDENTS_CHANGED_EVENT = "gestionnaire:students-changed";
 
 export function notifyPendingDocumentProcessed(type) {
     window.dispatchEvent(new CustomEvent(PENDING_DOCUMENT_PROCESSED_EVENT, {detail: {type}}));
@@ -14,6 +15,10 @@ export function notifyStudentTabCountsChanged() {
 
 export function notifyManagerContractsChanged() {
     window.dispatchEvent(new Event(MANAGER_CONTRACTS_CHANGED_EVENT));
+}
+
+export function notifyManagerStudentsChanged() {
+    window.dispatchEvent(new Event(MANAGER_STUDENTS_CHANGED_EVENT));
 }
 
 export async function countPendingDocuments(type) {

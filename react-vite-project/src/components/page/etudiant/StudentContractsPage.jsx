@@ -137,9 +137,9 @@ export default function StudentContractsPage({user}) {
     const hasSignedOne = useMemo(() => contracts.some(isSigned), [contracts]);
     const selectedContract = contracts.find((contract) => contractId(contract) === selectedId);
 
-    const signContract = async (contract) => {
+    const signContract = async (contract, password) => {
         const id = contractId(contract);
-        const response = await api.student.signContract(id);
+        const response = await api.student.signContract(id, password);
         if (response.status === 409) {
             const latestContractsResponse = await api.student.getContracts();
             if (latestContractsResponse.ok) {
@@ -149,6 +149,9 @@ export default function StudentContractsPage({user}) {
             }
             throw new Error("another_contract_signed");
         }
+        if (response.status === 422) throw new Error("signature_password_invalid");
+        if (response.status === 401) throw new Error("signature_unauthorized");
+        if (response.status === 403) throw new Error("signature_forbidden");
         if (!response.ok) throw new Error("contract_sign_failed");
         const updated = await response.json();
         setContracts((current) => current.map((item) => contractId(item) === id ? updated : item));

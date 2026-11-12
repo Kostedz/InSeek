@@ -7,6 +7,7 @@ import { RoleEnum } from "../../constants/role.js";
 import { DisciplineEnum } from "../../constants/disciplines.js";
 import Loading from "../Loading.jsx";
 import {translateMessage, createTranslationMessage} from "../../utils/i18nMessage.js";
+import PasswordInput from "./PasswordInput.jsx";
 
 export default function RegisterForm({ user, authChecked, setUser }) {
     const { t } = useTranslation();
@@ -287,9 +288,8 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="password">
                             {t("auth.register.password")}
                         </label>
-                        <input
+                        <PasswordInput
                             id="password"
-                            type="password"
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
@@ -307,9 +307,8 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                         <label className="mb-1 block text-sm font-bold text-ink" htmlFor="confirmPassword">
                             {t("auth.register.confirmPassword")}
                         </label>
-                        <input
+                        <PasswordInput
                             id="confirmPassword"
-                            type="password"
                             name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleChange}
