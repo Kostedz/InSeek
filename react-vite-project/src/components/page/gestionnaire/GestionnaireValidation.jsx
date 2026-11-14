@@ -418,7 +418,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
                             </option>
                             {sessions.map((session) => (
                                 <option key={session.id || session.code} value={session.id || session.code}>
-                                    {session.name || session.libelle || session.code} {session.isCurrent || session.active || session.courante ? " (Courante)" : ""}
+                                    {session.name || session.libelle || session.code} {session.isCurrent || session.active || session.courante ? ` (${t("managerOffersSession.current")})` : ""}
                                 </option>
                             ))}
                         </DropdownSelect>

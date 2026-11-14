@@ -31,6 +31,8 @@ export default function EmployerEvaluationsPage() {
     const [selectedId, setSelectedId] = useState(null);
     const [confirming, setConfirming] = useState(false);
     const [fieldErrors, setFieldErrors] = useState({});
+    const [submitError, setSubmitError] = useState("");
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -90,7 +92,18 @@ export default function EmployerEvaluationsPage() {
         if (Object.keys(errors).length) return;
         setConfirming(true);
     };
-    const confirmSubmit = () => {
+    const confirmSubmit = async () => {
+        if (!selected || submitting) return;
+        setSubmitting(true);
+        setSubmitError("");
+        try {
+            const response = await api.employer.notifyEvaluationSubmitted(selected.id);
+            if (!response.ok) throw new Error("submit_failed");
+        } catch {
+            setSubmitError(t("employerEvaluation.errors.submit", "Impossible d’envoyer l’évaluation. Veuillez réessayer."));
+            setSubmitting(false);
+            return;
+        }
         const record = {...values, submittedAt: new Date().toISOString()};
         const nextSubmitted = {...submitted, [selectedKey]: record};
         localStorage.setItem(submittedStorageKey, JSON.stringify(nextSubmitted));
@@ -103,6 +116,7 @@ export default function EmployerEvaluationsPage() {
         window.dispatchEvent(new Event(EMPLOYER_EVALUATIONS_UPDATED_EVENT));
         setConfirming(false);
         setSelectedId(null);
+        setSubmitting(false);
     };
 
     const slider = (field, label) => <label key={field} className="block py-3 text-sm font-bold text-ink">
@@ -229,11 +243,13 @@ export default function EmployerEvaluationsPage() {
                     <h2 id="evaluation-confirm-title"
                         className="mt-2 text-xl font-black text-ink">{t("employerEvaluation.confirmTitle", "Envoyer cette évaluation ?")}</h2>
                     <p className="mt-2 text-sm leading-6 text-ink-soft">{t("employerEvaluation.confirmDescription", "Vérifiez vos réponses avant de confirmer l’envoi.")}</p>
+                    {submitError && <p role="alert"
+                                       className="mt-3 rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-700">{submitError}</p>}
                     <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                         <button type="button" onClick={() => setConfirming(false)}
                                 className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink">{t("employerEvaluation.cancel", "Continuer à modifier")}</button>
-                        <button type="button" onClick={confirmSubmit}
-                                className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white">{t("employerEvaluation.confirm", "Confirmer l’envoi")}</button>
+                        <button type="button" onClick={confirmSubmit} disabled={submitting}
+                                className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{submitting ? t("employerEvaluation.submitting", "Envoi…") : t("employerEvaluation.confirm", "Confirmer l’envoi")}</button>
                     </div>
                 </section>
             </div>}

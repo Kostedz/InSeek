@@ -10,21 +10,71 @@ const notificationTypes = {
 
 const getAuthToken = () => localStorage.getItem("token") || sessionStorage.getItem("token") || "";
 
-function toNotification(data) {
+function translateNotification(data, t) {
+    const title = String(data.titre ?? "");
+    const message = String(data.message ?? data.me ?? data.titre ?? "");
+
+    if (title === "Nouvelle candidature !") {
+        const match = message.match(/^(\d+) nouveaux? candidats? pour le poste de (.+)$/);
+        if (match) {
+            const count = Number(match[1]);
+            return t(count === 1 ? "notifications.newApplicant" : "notifications.newApplicants", {
+                count,
+                position: match[2],
+            });
+        }
+    }
+
+    if (title === "Nouvelle convocation" || title === "Convocation modifiée") {
+        const match = message.match(/^(?:Nouvelle convocation|Convocation modifiée) de (.+) pour le poste de (.+) le (.+)$/);
+        if (match) {
+            return t(title === "Nouvelle convocation" ? "notifications.newInterview" : "notifications.updatedInterview", {
+                company: match[1],
+                position: match[2],
+                date: match[3],
+            });
+        }
+    }
+
+    if (title === "Nouveau contrat de stage" || title === "Contrat de stage modifié") {
+        const match = message.match(/^(?:Nouveau contrat de stage|Contrat de stage modifié) pour le poste de (.+) chez (.+)\.$/);
+        if (match) {
+            return t(title === "Nouveau contrat de stage" ? "notifications.newContract" : "notifications.updatedContract", {
+                position: match[1],
+                company: match[2],
+            });
+        }
+    }
+
+    if (title === "Évaluation de stage à remplir") {
+        const match = message.match(/^Veuillez remplir l’évaluation de stage de (.+) pour le poste de (.+)\.$/);
+        if (match) return t("notifications.evaluationToComplete", {student: match[1], position: match[2]});
+    }
+
+    if (title === "Nouvelle évaluation de stage") {
+        const match = message.match(/^L’employeur a soumis l’évaluation de stage de (.+) pour le poste de (.+)\.$/);
+        if (match) return t("notifications.newEvaluation", {student: match[1], position: match[2]});
+    }
+
+    if (message === "CV en attente de validation.") return t("notifications.cvToApprove");
+    return message;
+}
+
+function toNotification(data, t) {
     const directLink = String(data.lienDirect ?? "");
     const legacyOfferPath = directLink.match(/^\/employeur\/offres\/(\d+)\/candidatures$/);
     const legacyOfferQuery = directLink.match(/^\/employeur\?offre=(\d+)$/);
     const offerId = legacyOfferPath?.[1] ?? legacyOfferQuery?.[1];
     return {
         id: data.id ?? `${Date.now()}-${Math.random()}`,
-        message: data.message ?? data.me ?? data.titre ?? "",
+        message: translateNotification(data, t),
         count: 1,
         actionPath: offerId ? `/employeur/offre/${offerId}` : data.lienDirect || "/employeur",
     };
 }
 
 function NotificationBell({isLoggedIn}) {
-    const {t} = useTranslation();
+    const {t, i18n} = useTranslation();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
@@ -84,7 +134,9 @@ function NotificationBell({isLoggedIn}) {
                 const response = await api.notifications.mine();
                 if (!response.ok || !isMounted) return;
                 const list = await response.json();
-                if (isMounted && Array.isArray(list)) addNotifications(list.map(toNotification));
+                if (isMounted && Array.isArray(list)) {
+                    addNotifications(list.map((notification) => toNotification(notification, t)));
+                }
             } catch (err) {
                 console.error("Erreur chargement notifications:", err);
             }
@@ -95,7 +147,7 @@ function NotificationBell({isLoggedIn}) {
 
             if (typeof raw === "string" && raw.startsWith("{")) {
                 try {
-                    addNotifications([toNotification(JSON.parse(raw))]);
+                    addNotifications([toNotification(JSON.parse(raw), t)]);
                 } catch (err) {
                     console.error("Erreur parsing notification SSE:", err);
                 }
@@ -133,7 +185,7 @@ function NotificationBell({isLoggedIn}) {
             eventSource.removeEventListener("notification", handleNotification);
             eventSource.close();
         };
-    }, [isLoggedIn]);
+    }, [isLoggedIn, i18n.language]);
 
     const markAsRead = (notification) => {
         if (typeof notification.id === "number") {

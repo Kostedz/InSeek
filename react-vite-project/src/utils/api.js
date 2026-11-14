@@ -178,6 +178,12 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
+        notifyEvaluationSubmitted: (contractId) =>
+            fetcher(`/contracts/employer/${encodeURIComponent(contractId)}/evaluation-submitted`, {
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
         signContract: (contractId, password) =>
             fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
                 method: "PATCH",

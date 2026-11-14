@@ -269,13 +269,13 @@ export default function GestionnaireContracts({embedded = false}) {
                                         className="rounded-2xl border border-line bg-surface p-4 shadow-sm cursor-pointer hover:border-ink"
                                     >
                                         <div className="flex items-start justify-between gap-2">
-                                            <h3 className="font-black text-ink">{contract.studentName || contract.nomEtudiant || "Étudiant"}</h3>
+                                            <h3 className="font-black text-ink">{contract.studentName || contract.nomEtudiant || t("managerContracts.student")}</h3>
                                             <span
                                                 className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
                                                {statusLabel(contract.status)}
                                             </span>
                                         </div>
-                                        <p className="mt-1 text-xs font-semibold text-ink-soft">{contract.companyName || contract.nomEntreprise || "Entreprise"}</p>
+                                        <p className="mt-1 text-xs font-semibold text-ink-soft">{contract.companyName || contract.nomEntreprise || t("managerContracts.company")}</p>
                                         <p className="mt-3 text-xs text-ink-soft">
                                             {formatDate(contract.startDate || contract.dateDebut)} → {formatDate(contract.endDate || contract.dateFin)}
                                         </p>
@@ -395,22 +395,34 @@ export default function GestionnaireContracts({embedded = false}) {
                                 <div className="rounded-xl border border-line p-4 space-y-3">
                                     <h3 className="font-black text-ink text-xs uppercase tracking-wider text-ink-soft">{t("managerContracts.modalities", "Modalités")}</h3>
                                     <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div><span className="text-ink-soft">Début :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.start")} :</span>
+                                            <strong
                                             className="text-ink">{formatDate(selectedContract.startDate || selectedContract.dateDebut)}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Fin :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.end")} :</span>
+                                            <strong
                                             className="text-ink">{formatDate(selectedContract.endDate || selectedContract.dateFin)}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Horaire :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.schedule")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.schedule || selectedContract.horaire || "—"}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Heures/semaine :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.weeklyHours")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.weeklyHours || selectedContract.heuresParSemaine || "—"}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Lieu :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.location")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.location || selectedContract.lieu || "—"}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Rémunération :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.hourlyRate")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.remuneration ?? selectedContract.salaire ?? 0} $/h</strong>
                                         </div>
                                     </div>

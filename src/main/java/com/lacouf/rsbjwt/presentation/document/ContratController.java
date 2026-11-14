@@ -103,6 +103,20 @@ public class ContratController {
         }
     }
 
+    @PostMapping("/employer/{contractId}/evaluation-submitted")
+    @PreAuthorize("hasAuthority('EMPLOYEUR')")
+    public ResponseEntity<Void> evaluationSubmitted(@PathVariable Long contractId,
+                                                    HttpServletRequest request) {
+        try {
+            contratService.notifierNouvelleEvaluationStage(contractId, request);
+            return ResponseEntity.noContent().build();
+        } catch (NotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (BadRequestException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     @PreAuthorize("hasAuthority('GESTIONNAIRE') or hasAuthority('ETUDIANT') or hasAuthority('EMPLOYEUR')")
     public ResponseEntity<byte[]> downloadContractPdf(@PathVariable Long id, HttpServletRequest request) {

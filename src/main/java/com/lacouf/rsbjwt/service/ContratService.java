@@ -131,6 +131,22 @@ public class ContratService {
                 .toList();
     }
 
+    @Transactional
+    public void notifierNouvelleEvaluationStage(Long contractId, HttpServletRequest request)
+            throws NotFoundException, BadRequestException {
+        Contract contract = contratRepository.findById(contractId)
+                .orElseThrow(() -> new NotFoundException("Contrat non trouvé."));
+        Utilisateur user = getAuthUser(request);
+        if (!(user instanceof Employeur employer)
+                || contract.getEmployer() == null
+                || !employer.getId().equals(contract.getEmployer().getId())) {
+            throw new BadRequestException("L'utilisateur connecté n'est pas l'employeur associé à ce contrat.");
+        }
+        if (contract.getTeacher() != null) {
+            eventPublisher.publishEvent(NotificationEvent.nouvelleEvaluationStage(contract));
+        }
+    }
+
     //donne le detail d'un contrat
     @Transactional(readOnly = true)
     public ContratDTO getContrat(Long id) throws NotFoundException {

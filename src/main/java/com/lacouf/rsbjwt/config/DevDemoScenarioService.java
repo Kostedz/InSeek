@@ -275,6 +275,7 @@ public class DevDemoScenarioService {
         contract.setManagerSignedAt(now.minusDays(2));
         Contract savedContract = contratRepository.save(contract);
         eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
+        eventPublisher.publishEvent(NotificationEvent.nouvelleEvaluationStage(savedContract));
     }
 
     private void prepareValidatedCv(Etudiant student) {
