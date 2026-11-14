@@ -33,6 +33,19 @@ function NotificationBell({isLoggedIn}) {
     const knownMessages = useRef(new Map());
 
     useEffect(() => {
+        if (!isOpen) return undefined;
+
+        const closeOnOutsidePointer = (event) => {
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener("pointerdown", closeOnOutsidePointer);
+        return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+    }, [isOpen]);
+
+    useEffect(() => {
         if (!isLoggedIn) {
             setNotifications([]);
             setUnreadCount(0);
@@ -159,7 +172,7 @@ function NotificationBell({isLoggedIn}) {
             <button
                 type="button"
                 onClick={toggleNotifications}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-ink text-white transition-colors hover:bg-ink-soft focus:outline-none focus:ring-2 focus:ring-pink md:bg-transparent md:hover:bg-white/10"
+                className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-ink text-white transition-colors hover:bg-ink-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-pink md:bg-transparent md:hover:bg-white/10"
                 aria-label={t("notifications.open")}
                 aria-expanded={isOpen}
                 aria-controls="notification-menu"
@@ -197,7 +210,7 @@ function NotificationBell({isLoggedIn}) {
                                         <button
                                             type="button"
                                             onClick={() => openNotification(notification)}
-                                            className="min-w-0 flex-1 text-left focus:outline-none focus:ring-2 focus:ring-pink"
+                                            className="min-w-0 flex-1 text-left hover:underline focus:outline-none focus:ring-2 focus:ring-pink"
                                         >
                                             {getNotificationMessage(notification)}
                                         </button>

@@ -26,6 +26,11 @@ public class DevAuthController {
     private final UtilisateurService utilisateurService;
     private final DevDemoScenarioService demoScenarioService;
 
+    @PostMapping("/login")
+    public ResponseEntity<JWTAuthResponse> defaultDemoLogin() {
+        return demoLogin(Role.ETUDIANT.name());
+    }
+
     @PostMapping("/login/{role}")
     public ResponseEntity<JWTAuthResponse> demoLogin(@PathVariable String role) {
         try {

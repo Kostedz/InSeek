@@ -125,7 +125,7 @@ function DemoButtons({setUser}) {
     };
 
     const activateDelayedNotificationsScenario = async () => {
-        setLoadingRole("GESTIONNAIRE");
+        setLoadingRole("DELAYED_NOTIFICATIONS");
         setError(false);
         setUser(null);
         navigate("/login", {replace: true});
@@ -159,14 +159,12 @@ function DemoButtons({setUser}) {
                     {t("demoButtons.error")}
                 </p>
             )}
-            <div className="flex flex-nowrap gap-1">
+            <div className="flex flex-wrap justify-end gap-1">
                 {demoRoles.map((demoRole) => (
                     <button
                         key={demoRole.value}
                         type="button"
-                        onClick={() => demoRole.value === "GESTIONNAIRE"
-                            ? activateDelayedNotificationsScenario()
-                            : activateDemoAccess(demoRole)}
+                        onClick={() => activateDemoAccess(demoRole)}
                         disabled={loadingRole !== null}
                         className={`whitespace-nowrap rounded-full border border-ink px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors ${demoRole.color} disabled:cursor-wait disabled:opacity-70`}
                     >
@@ -180,6 +178,16 @@ function DemoButtons({setUser}) {
                     className="whitespace-nowrap rounded-full border border-ink bg-lavender px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-lavender disabled:cursor-wait disabled:opacity-70"
                 >
                     {loadingRole === "STUDENT_SCENARIO" ? t("demoButtons.loading") : t("demoButtons.studentScenario")}
+                </button>
+                <button
+                    type="button"
+                    onClick={activateDelayedNotificationsScenario}
+                    disabled={loadingRole !== null}
+                    className="whitespace-nowrap rounded-full border border-ink bg-gold px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-gold disabled:cursor-wait disabled:opacity-70"
+                >
+                    {loadingRole === "DELAYED_NOTIFICATIONS"
+                        ? t("demoButtons.loading")
+                        : t("demoButtons.delayedNotificationsScenario")}
                 </button>
                 <button
                     type="button"

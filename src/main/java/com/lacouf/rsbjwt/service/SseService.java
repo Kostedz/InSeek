@@ -12,17 +12,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 public class SseService {
-    private static final long ANONYMOUS = -1L;
+    private static final String ANONYMOUS = "";
 
-    private final Map<SseEmitter, Long> clients = new ConcurrentHashMap<>();
+    private final Map<SseEmitter, String> clients = new ConcurrentHashMap<>();
 
     public SseEmitter streamNotifications() {
         return streamNotifications(null);
     }
 
-    public SseEmitter streamNotifications(Long userId) {
+    public SseEmitter streamNotifications(String userEmail) {
         SseEmitter emitter = new SseEmitter(0L);
-        clients.put(emitter, userId != null ? userId : ANONYMOUS);
+        clients.put(emitter, userEmail != null ? userEmail : ANONYMOUS);
 
         Runnable remove = () -> clients.remove(emitter);
         emitter.onCompletion(remove);
@@ -45,10 +45,10 @@ public class SseService {
         clients.keySet().forEach(emitter -> send(emitter, type.getMessage()));
     }
 
-    public void notifyUser(Long userId, Object payload) {
-        if (userId == null) return;
-        clients.forEach((emitter, id) -> {
-            if (userId.equals(id)) send(emitter, payload);
+    public void notifyUser(String userEmail, Object payload) {
+        if (userEmail == null) return;
+        clients.forEach((emitter, email) -> {
+            if (userEmail.equals(email)) send(emitter, payload);
         });
     }
 

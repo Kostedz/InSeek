@@ -46,6 +46,7 @@ public class SecurityConfiguration {
     private static final String H2_CONSOLE_PATH = "/h2-console/**";
     private static final String USER_LOGIN_PATH = "/user/login";
     private static final String USER_REGISTER_PATH = "/user/register";
+    private static final String DEMO_LOGIN_DEFAULT_PATH = "/user/demo/login";
     private static final String DEMO_LOGIN_PATH = "/user/demo/login/**";
     private static final String DEMO_STUDENT_PATH = "/user/demo/student-demo";
     private static final String DEMO_SIGNED_CONTRACT_STUDENT_PATH = "/user/demo/student-contract-demo";
@@ -71,6 +72,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(POST, USER_LOGIN_PATH).permitAll()
                         .requestMatchers(POST, USER_REGISTER_PATH).permitAll()
+                        .requestMatchers(POST, DEMO_LOGIN_DEFAULT_PATH).permitAll()
                         .requestMatchers(POST, DEMO_LOGIN_PATH).permitAll()
                         .requestMatchers(POST, DEMO_STUDENT_PATH).permitAll()
                         .requestMatchers(POST, DEMO_SIGNED_CONTRACT_STUDENT_PATH).permitAll()

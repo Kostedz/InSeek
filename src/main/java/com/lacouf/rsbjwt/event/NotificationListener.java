@@ -41,6 +41,6 @@ public class NotificationListener {
         notification.setLue(false);
 
         Notification saved = notificationRepository.save(notification);
-        sseService.notifyUser(event.destinataire().getId(), NotificationDTO.of(saved));
+        sseService.notifyUser(event.destinataire().getEmail(), NotificationDTO.of(saved));
     }
 }

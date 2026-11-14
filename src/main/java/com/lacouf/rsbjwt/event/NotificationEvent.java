@@ -1,6 +1,7 @@
 package com.lacouf.rsbjwt.event;
 
 import com.lacouf.rsbjwt.model.ApplicationStage;
+import com.lacouf.rsbjwt.model.contract.Contract;
 import com.lacouf.rsbjwt.model.entrevue.Entrevue;
 import com.lacouf.rsbjwt.model.document.OffreDeStage;
 import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
@@ -48,6 +49,20 @@ public record NotificationEvent(
                 e.getStudent(),
                 titre,
                 "/etudiant/convocations/" + e.getId(),
+                false,
+                n -> texte);
+    }
+
+    public static NotificationEvent contrat(Contract contrat, Utilisateur destinataire,
+                                            String lienDirect, boolean modifie) {
+        String titre = modifie ? "Contrat de stage modifié" : "Nouveau contrat de stage";
+        String poste = contrat.getInternshipOffer().getPosition();
+        String entreprise = contrat.getEmployer().getNomCompagnie();
+        String texte = titre + " pour le poste de " + poste + " chez " + entreprise + ".";
+        return new NotificationEvent(
+                destinataire,
+                titre,
+                lienDirect,
                 false,
                 n -> texte);
     }
