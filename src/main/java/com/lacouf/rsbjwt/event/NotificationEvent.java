@@ -66,4 +66,18 @@ public record NotificationEvent(
                 false,
                 n -> texte);
     }
+
+    public static NotificationEvent evaluationStage(Contract contrat) {
+        String studentName = (contrat.getStudent().getPrenom() + " " + contrat.getStudent().getNom()).trim();
+        String poste = contrat.getInternshipOffer().getPosition();
+        String titre = "Évaluation de stage à remplir";
+        String texte = "Veuillez remplir l’évaluation de stage de " + studentName
+                + " pour le poste de " + poste + ".";
+        return new NotificationEvent(
+                contrat.getEmployer(),
+                titre,
+                "/employeur/evaluations",
+                false,
+                n -> texte);
+    }
 }

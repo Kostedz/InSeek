@@ -208,6 +208,9 @@ public class ContratService {
         updateContractStatusBasedOnUser(user, contract);
 
         contratRepository.save(contract);
+        if (user instanceof Gestionnaire) {
+            eventPublisher.publishEvent(NotificationEvent.evaluationStage(contract));
+        }
         return ContratDTO.of(contract);
     }
 

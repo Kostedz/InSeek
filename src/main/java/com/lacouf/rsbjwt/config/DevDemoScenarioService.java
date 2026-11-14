@@ -16,6 +16,7 @@ import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.model.ApplicationStage;
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
@@ -28,6 +29,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -169,6 +171,7 @@ public class DevDemoScenarioService {
     private final TaskScheduler taskScheduler;
     private final TransactionTemplate transactionTemplate;
     private final SseService sseService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void prepareStudentScenario() {
@@ -270,7 +273,8 @@ public class DevDemoScenarioService {
         contract.setStudentSignedAt(now.minusDays(4));
         contract.setEmployerSignedAt(now.minusDays(3));
         contract.setManagerSignedAt(now.minusDays(2));
-        contratRepository.save(contract);
+        Contract savedContract = contratRepository.save(contract);
+        eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
     }
 
     private void prepareValidatedCv(Etudiant student) {
