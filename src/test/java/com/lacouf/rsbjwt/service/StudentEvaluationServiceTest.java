@@ -1,3 +1,4 @@
+
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
@@ -5,10 +6,10 @@ import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.repository.ContratRepository;
-import com.lacouf.rsbjwt.repository.EvaluationRepository;
-import com.lacouf.rsbjwt.repository.EtudiantRepository;
-import com.lacouf.rsbjwt.repository.ProfesseurRepository;
 import com.lacouf.rsbjwt.repository.EmployerRepository;
+import com.lacouf.rsbjwt.repository.EtudiantRepository;
+import com.lacouf.rsbjwt.repository.EvaluationRepository;
+import com.lacouf.rsbjwt.repository.ProfesseurRepository;
 import com.lacouf.rsbjwt.service.dto.StudentEvaluationDTO;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -79,7 +81,6 @@ class StudentEvaluationServiceTest {
                 .password("x")
                 .discipline(Disciplines.INFORMATIQUE)
                 .build();
-
         etudiant.setProfesseur(professeur);
 
         offre = new OffreDeStage();
@@ -92,39 +93,36 @@ class StudentEvaluationServiceTest {
                 .internshipOffer(offre)
                 .build();
         contrat.setId(10L);
+        // Needed by findActiveContract(...) used when retrieving an evaluation
+        contrat.setContractStatus(StatutContrat.EXECUTED);
     }
 
     private StudentEvaluationDTO studentEvaluationDTO() {
         return new StudentEvaluationDTO(
-                null,
-                null,
-                2L,
-                null,
-                null,
-                4.0,
-                5.0,
-                4.0,
-                5.0,
-                4.0,
-                Disciplines.INFORMATIQUE,
-                "Très bon stagiaire",
-                null,
-                null
+                null, null, 2L, null, null,
+                4.0, 5.0, 4.0, 5.0, 4.0,
+                Disciplines.INFORMATIQUE, "Très bon stagiaire", null, null
         );
     }
 
-
-    @Test
-    void submitsStudentEvaluationSuccessfully() throws Exception {
+    /** Stubs everything the service calls before it reaches rating validation. */
+    private void stubHappyPathLookups() {
         when(employerRepository.findByEmail("ubisoft@mail.com"))
                 .thenReturn(Optional.of(employeur));
         when(studentRepository.findById(2L))
                 .thenReturn(Optional.of(etudiant));
-        when(contractRepository.findByStudentId(2L))
-                .thenReturn(Optional.of(contrat));
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat));
         when(evaluationRepository.existsStudentEvaluationByContractAndEvaluationState(
                 10L, EvaluationState.SUBMITTED))
                 .thenReturn(false);
+    }
+
+    // ==================== Submit student evaluation ====================
+
+    @Test
+    void submitsStudentEvaluationSuccessfully() throws Exception {
+        stubHappyPathLookups();
         when(evaluationRepository.save(any(StudentEvaluation.class)))
                 .thenAnswer(invocation -> {
                     StudentEvaluation evaluation = invocation.getArgument(0);
@@ -147,6 +145,8 @@ class StudentEvaluationServiceTest {
 
     @Test
     void rejectsRatingBelowOne() {
+        stubHappyPathLookups();
+
         StudentEvaluationDTO dto = new StudentEvaluationDTO(
                 null, null, 2L, null, null,
                 0.0, 5.0, 4.0, 5.0, 4.0,
@@ -160,6 +160,8 @@ class StudentEvaluationServiceTest {
 
     @Test
     void rejectsRatingAboveFive() {
+        stubHappyPathLookups();
+
         StudentEvaluationDTO dto = new StudentEvaluationDTO(
                 null, null, 2L, null, null,
                 4.0, 6.0, 4.0, 5.0, 4.0,
@@ -177,8 +179,7 @@ class StudentEvaluationServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> service.submitEvaluation(
-                        studentEvaluationDTO(), "demo@inseek.local"));
+                () -> service.submitEvaluation(studentEvaluationDTO(), "demo@inseek.local"));
         verify(evaluationRepository, never()).save(any());
     }
 
@@ -190,8 +191,7 @@ class StudentEvaluationServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
-                () -> service.submitEvaluation(
-                        studentEvaluationDTO(), "ubisoft@mail.com"));
+                () -> service.submitEvaluation(studentEvaluationDTO(), "ubisoft@mail.com"));
         verify(evaluationRepository, never()).save(any());
     }
 
@@ -201,12 +201,11 @@ class StudentEvaluationServiceTest {
                 .thenReturn(Optional.of(employeur));
         when(studentRepository.findById(2L))
                 .thenReturn(Optional.of(etudiant));
-        when(contractRepository.findByStudentId(2L))
-                .thenReturn(Optional.empty());
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of());
 
         assertThrows(NotFoundException.class,
-                () -> service.submitEvaluation(
-                        studentEvaluationDTO(), "ubisoft@mail.com"));
+                () -> service.submitEvaluation(studentEvaluationDTO(), "ubisoft@mail.com"));
         verify(evaluationRepository, never()).save(any());
     }
 
@@ -218,12 +217,11 @@ class StudentEvaluationServiceTest {
                 .thenReturn(Optional.of(employeur));
         when(studentRepository.findById(2L))
                 .thenReturn(Optional.of(etudiant));
-        when(contractRepository.findByStudentId(2L))
-                .thenReturn(Optional.of(contrat));
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat));
 
         assertThrows(NotFoundException.class,
-                () -> service.submitEvaluation(
-                        studentEvaluationDTO(), "ubisoft@mail.com"));
+                () -> service.submitEvaluation(studentEvaluationDTO(), "ubisoft@mail.com"));
         verify(evaluationRepository, never()).save(any());
     }
 
@@ -233,15 +231,14 @@ class StudentEvaluationServiceTest {
                 .thenReturn(Optional.of(employeur));
         when(studentRepository.findById(2L))
                 .thenReturn(Optional.of(etudiant));
-        when(contractRepository.findByStudentId(2L))
-                .thenReturn(Optional.of(contrat));
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat));
         when(evaluationRepository.existsStudentEvaluationByContractAndEvaluationState(
                 10L, EvaluationState.SUBMITTED))
                 .thenReturn(true);
 
         assertThrows(ConflictException.class,
-                () -> service.submitEvaluation(
-                        studentEvaluationDTO(), "ubisoft@mail.com"));
+                () -> service.submitEvaluation(studentEvaluationDTO(), "ubisoft@mail.com"));
         verify(evaluationRepository, never()).save(any());
     }
 
@@ -269,8 +266,8 @@ class StudentEvaluationServiceTest {
     void employerRetrievesSubmittedStudentEvaluation() throws Exception {
         when(employerRepository.findByEmail("ubisoft@mail.com"))
                 .thenReturn(Optional.of(employeur));
-        when(contractRepository.findByStudentId(2L))
-                .thenReturn(Optional.of(contrat));
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat));
         when(evaluationRepository.findStudentEvaluation(1L, 2L, 10L))
                 .thenReturn(Optional.of(evaluation()));
 
@@ -288,27 +285,28 @@ class StudentEvaluationServiceTest {
     }
 
     @Test
-    void rejectsRetrievalByAnotherEmployer() {
+    void anotherEmployerCannotRetrieveEvaluation() {
         when(employerRepository.findByEmail("autre@mail.com"))
                 .thenReturn(Optional.of(autreEmployeur));
-        when(contractRepository.findByStudentId(2L))
-                .thenReturn(Optional.of(contrat));
-
-        assertThrows(NotFoundException.class,
-                () -> service.getSubmittedStudentEvaluation("autre@mail.com", 2L));
-
-        verify(evaluationRepository, never())
-                .findStudentEvaluation(any(), any(), any());
-    }
-
-    @Test
-    void rejectsRetrievalWhenStudentHasNoContract() {
-        when(employerRepository.findByEmail("ubisoft@mail.com"))
-                .thenReturn(Optional.of(employeur));
-        when(contractRepository.findByStudentId(2L))
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat));
+        // The query is scoped by employer id, so the other employer finds nothing
+        when(evaluationRepository.findStudentEvaluation(99L, 2L, 10L))
                 .thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class,
+                () -> service.getSubmittedStudentEvaluation("autre@mail.com", 2L));
+    }
+
+    @Test
+    void rejectsRetrievalWhenStudentHasNoActiveContract() {
+        when(employerRepository.findByEmail("ubisoft@mail.com"))
+                .thenReturn(Optional.of(employeur));
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of());
+
+        // findActiveContract throws BadRequestException, not NotFoundException
+        assertThrows(BadRequestException.class,
                 () -> service.getSubmittedStudentEvaluation("ubisoft@mail.com", 2L));
 
         verify(evaluationRepository, never())
@@ -316,11 +314,24 @@ class StudentEvaluationServiceTest {
     }
 
     @Test
+    void rejectsRetrievalWhenContractIsNotExecuted() {
+        contrat.setContractStatus(StatutContrat.PENDING_SIGNATURE);
+
+        when(employerRepository.findByEmail("ubisoft@mail.com"))
+                .thenReturn(Optional.of(employeur));
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat));
+
+        assertThrows(BadRequestException.class,
+                () -> service.getSubmittedStudentEvaluation("ubisoft@mail.com", 2L));
+    }
+
+    @Test
     void rejectsRetrievalWhenEvaluationDoesNotExist() {
         when(employerRepository.findByEmail("ubisoft@mail.com"))
                 .thenReturn(Optional.of(employeur));
-        when(contractRepository.findByStudentId(2L))
-                .thenReturn(Optional.of(contrat));
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat));
         when(evaluationRepository.findStudentEvaluation(1L, 2L, 10L))
                 .thenReturn(Optional.empty());
 
@@ -328,3 +339,4 @@ class StudentEvaluationServiceTest {
                 () -> service.getSubmittedStudentEvaluation("ubisoft@mail.com", 2L));
     }
 }
+ 
