@@ -272,6 +272,16 @@ public class DevDemoScenarioService {
         contract.setManagerSignedAt(now.minusDays(2));
         Contract savedContract = contratRepository.save(contract);
         eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
+
+        // Préparer le 3e et 4e étudiant avec contrat signé
+        Utilisateur thirdUser = utilisateurRepository.findByEmail(DevDemoAccounts.thirdStudent().email());
+        Utilisateur fourthUser = utilisateurRepository.findByEmail(DevDemoAccounts.fourthStudent().email());
+        if (sourceUser instanceof Etudiant source2 && thirdUser instanceof Etudiant third) {
+            applySignedContractToTarget(source2, third, employer, manager, professor, acceptedOffer, now);
+        }
+        if (sourceUser instanceof Etudiant source3 && fourthUser instanceof Etudiant fourth) {
+            applySignedContractToTarget(source3, fourth, employer, manager, professor, acceptedOffer, now);
+        }
     }
 
     private void prepareValidatedCv(Etudiant student) {
@@ -474,5 +484,74 @@ public class DevDemoScenarioService {
 
         student.setDateInterview(pendingInterview.getDateInterview());
         utilisateurRepository.save(student);
+    }
+
+    private void applySignedContractToTarget(Etudiant source, Etudiant target, Employeur employer,
+                                             Gestionnaire manager, Professeur professor,
+                                             OffreDeStage acceptedOffer, LocalDateTime now) {
+        target.setDiscipline(source.getDiscipline());
+        target.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        target.setProfesseur(professor);
+        utilisateurRepository.save(target);
+
+        CV sourceCv = documentRepository.findByUtilisateur(source);
+        if (sourceCv != null) {
+            CV targetCv = documentRepository.findByUtilisateur(target);
+            if (targetCv == null) {
+                targetCv = CV.builder()
+                        .fileName(sourceCv.getFileName())
+                        .targetDiscipline(sourceCv.getTargetDiscipline())
+                        .data(sourceCv.getData())
+                        .contentType(sourceCv.getContentType())
+                        .size(sourceCv.getSize())
+                        .utilisateur(target)
+                        .build();
+            } else {
+                targetCv.setFileName(sourceCv.getFileName());
+                targetCv.setTargetDiscipline(sourceCv.getTargetDiscipline());
+                targetCv.setData(sourceCv.getData());
+                targetCv.setContentType(sourceCv.getContentType());
+                targetCv.setSize(sourceCv.getSize());
+            }
+            targetCv.setStatut(sourceCv.getStatut());
+            targetCv.setCommentaireRejet(sourceCv.getCommentaireRejet());
+            documentRepository.save(targetCv);
+        }
+
+        List<ApplicationStage> sourceApplications = applicationStageRepository.findByEtudiantId(source.getId());
+        for (ApplicationStage sourceApplication : sourceApplications) {
+            ApplicationStage copy = applicationStageRepository
+                    .findByEtudiantIdAndOffreDeStageId(target.getId(), sourceApplication.getOffreDeStage().getId())
+                    .orElseGet(ApplicationStage::new);
+            copy.setEtudiant(target);
+            copy.setOffreDeStage(sourceApplication.getOffreDeStage());
+            copy.setStatutValidation(sourceApplication.getStatutValidation());
+            copy.setDateApplique(sourceApplication.getDateApplique());
+            copy.setDateDecision(sourceApplication.getDateDecision());
+            copy.setCommentaireRefus(sourceApplication.getCommentaireRefus());
+            applicationStageRepository.save(copy);
+        }
+
+        Contract contract = contratRepository.findByStudentIdAndInternshipOfferId(target.getId(), acceptedOffer.getId())
+                .orElseGet(Contract::new);
+        contract.setStudent(target);
+        contract.setEmployer(employer);
+        contract.setInternshipOffer(acceptedOffer);
+        contract.setAdmin(manager);
+        contract.setTeacher(professor);
+        contract.setSupervisorName(acceptedOffer.getContactName() == null ? "Julien Roy" : acceptedOffer.getContactName());
+        contract.setStartingDate(LocalDate.now().minusDays(7));
+        contract.setEndingDate(LocalDate.now().plusMonths(3));
+        contract.setSchedule("Du lundi au vendredi, de 9 h à 17 h");
+        contract.setWeeklyHours(35);
+        contract.setHourlySalary(acceptedOffer.getSalaire());
+        contract.setInternshipLocation(acceptedOffer.getAdresseEntreprise());
+        contract.setContractStatus(StatutContrat.EXECUTED);
+        contract.setDateCreation(now.minusDays(5));
+        contract.setStudentSignedAt(now.minusDays(4));
+        contract.setEmployerSignedAt(now.minusDays(3));
+        contract.setManagerSignedAt(now.minusDays(2));
+        Contract savedContract = contratRepository.save(contract);
+        eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
     }
 }

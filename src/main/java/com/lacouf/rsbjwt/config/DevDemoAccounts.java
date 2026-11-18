@@ -55,6 +55,22 @@ public final class DevDemoAccounts {
             "INFORMATIQUE"
     );
 
+    private static final Account THIRD_STUDENT = new Account(
+            "maya.chen@inseek.local",
+            "DemoContrat!2026",
+            "Chen",
+            "Maya",
+            "INFORMATIQUE"
+    );
+
+    private static final Account FOURTH_STUDENT = new Account(
+            "lucas.bergeron@inseek.local",
+            "DemoContrat!2026",
+            "Bergeron",
+            "Lucas",
+            "INFORMATIQUE"
+    );
+
     private DevDemoAccounts() {
     }
 
@@ -72,5 +88,13 @@ public final class DevDemoAccounts {
 
     public static Account secondStudent() {
         return SECOND_STUDENT;
+    }
+
+    public static Account thirdStudent() {
+        return THIRD_STUDENT;
+    }
+
+    public static Account fourthStudent() {
+        return FOURTH_STUDENT;
     }
 }
