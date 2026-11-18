@@ -78,4 +78,14 @@ public class DevAuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
+
+    @PostMapping("/extra-offers-demo")
+    public ResponseEntity<Void> prepareExtraOffersDemo() {
+        try {
+            demoScenarioService.prepareExtraOffersScenario();
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
 }

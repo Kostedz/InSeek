@@ -2,6 +2,7 @@ package com.lacouf.rsbjwt.config;
 
 import com.lacouf.rsbjwt.model.auth.Role;
 
+import java.util.List;
 import java.util.Map;
 
 public final class DevDemoAccounts {
@@ -71,6 +72,37 @@ public final class DevDemoAccounts {
             "INFORMATIQUE"
     );
 
+    private static final List<Account> HIVER_2026_STUDENTS = List.of(
+            new Account(
+                    "sarah.lavoie@inseek.local",
+                    "DemoEtudiant!2026",
+                    "Lavoie",
+                    "Sarah",
+                    "INFORMATIQUE"
+            ),
+            new Account(
+                    "felix.ouellet@inseek.local",
+                    "DemoEtudiant!2026",
+                    "Ouellet",
+                    "Félix",
+                    "ADMINISTRATION"
+            ),
+            new Account(
+                    "nadia.khalil@inseek.local",
+                    "DemoEtudiant!2026",
+                    "Khalil",
+                    "Nadia",
+                    "COMPTABILITE"
+            ),
+            new Account(
+                    "thomas.desjardins@inseek.local",
+                    "DemoEtudiant!2026",
+                    "Desjardins",
+                    "Thomas",
+                    "INFORMATIQUE"
+            )
+    );
+
     private DevDemoAccounts() {
     }
 
@@ -96,5 +128,9 @@ public final class DevDemoAccounts {
 
     public static Account fourthStudent() {
         return FOURTH_STUDENT;
+    }
+
+    public static List<Account> hiver2026Students() {
+        return HIVER_2026_STUDENTS;
     }
 }

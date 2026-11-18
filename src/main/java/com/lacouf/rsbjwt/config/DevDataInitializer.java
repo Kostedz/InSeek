@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class DevDataInitializer implements CommandLineRunner {
     private final UtilisateurRepository utilisateurRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DevDemoScenarioService demoScenarioService;
     @Override
     public void run(String... args) {
         DevDemoAccounts.all().forEach(this::createDemoAccountIfMissing);
@@ -28,6 +29,8 @@ public class DevDataInitializer implements CommandLineRunner {
         createDemoAccountIfMissing(Role.ETUDIANT, DevDemoAccounts.secondStudent());
         createDemoAccountIfMissing(Role.ETUDIANT, DevDemoAccounts.thirdStudent());
         createDemoAccountIfMissing(Role.ETUDIANT, DevDemoAccounts.fourthStudent());
+        DevDemoAccounts.hiver2026Students().forEach(account -> createDemoAccountWithSession(Role.ETUDIANT, account, "H26"));
+        demoScenarioService.prepareExtraOffersScenario();
     }
 
     private void createDemoAccountIfMissing(Role role, DevDemoAccounts.Account account) {
@@ -70,6 +73,28 @@ public class DevDataInitializer implements CommandLineRunner {
                     encodedPassword
             );
             default -> throw new IllegalArgumentException("Rôle de démonstration non pris en charge: " + role);
+        };
+
+        utilisateurRepository.save(utilisateur);
+    }
+
+    private void createDemoAccountWithSession(Role role, DevDemoAccounts.Account account, String session) {
+        if (utilisateurRepository.findByEmail(account.email()) != null) {
+            return;
+        }
+
+        String encodedPassword = passwordEncoder.encode(account.password());
+        Utilisateur utilisateur = switch (role) {
+            case ETUDIANT -> new Etudiant(
+                    null,
+                    account.nom(),
+                    account.prenom(),
+                    Disciplines.valueOf(account.affiliation()),
+                    session,
+                    account.email(),
+                    encodedPassword
+            );
+            default -> throw new IllegalArgumentException("Session personnalisée non prise en charge pour le rôle: " + role);
         };
 
         utilisateurRepository.save(utilisateur);
