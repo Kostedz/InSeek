@@ -6,12 +6,9 @@ import NotificationBell from "./componentUtils/NotificationBell.jsx";
 function Header({user}) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    const [isHeaderInViewport, setIsHeaderInViewport] = useState(true);
-    const [showHeaderBell, setShowHeaderBell] = useState(true);
-    const [showFloatingBell, setShowFloatingBell] = useState(false);
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const userMenuRef = useRef(null);
-    const headerRef = useRef(null);
-    const bellTransitionTimeoutRef = useRef(null);
+    const lastScrollYRef = useRef(0);
     const { t, i18n } = useTranslation();
     const currentLanguage = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const nextLanguage = currentLanguage === "fr" ? "en" : "fr";
@@ -61,43 +58,24 @@ function Header({user}) {
     }, []);
 
     useEffect(() => {
-        const header = headerRef.current;
-        if (!header) return undefined;
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            const previousScrollY = lastScrollYRef.current;
 
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                const headerIsVisible = entry.isIntersecting;
-                setIsHeaderInViewport(headerIsVisible);
-
-                if (bellTransitionTimeoutRef.current) {
-                    window.clearTimeout(bellTransitionTimeoutRef.current);
-                }
-
-                if (headerIsVisible) {
-                    setShowHeaderBell(true);
-                    bellTransitionTimeoutRef.current = window.setTimeout(
-                        () => setShowFloatingBell(false),
-                        280
-                    );
-                } else {
-                    setShowFloatingBell(true);
-                    bellTransitionTimeoutRef.current = window.setTimeout(
-                        () => setShowHeaderBell(false),
-                        280
-                    );
-                }
-            },
-            {threshold: 0.01}
-        );
-        observer.observe(header);
-
-        return () => {
-            observer.disconnect();
-            if (bellTransitionTimeoutRef.current) {
-                window.clearTimeout(bellTransitionTimeoutRef.current);
+            if (isMenuOpen || currentScrollY <= 8) {
+                setIsHeaderVisible(true);
+            } else if (currentScrollY > previousScrollY) {
+                setIsHeaderVisible(false);
+            } else if (currentScrollY < previousScrollY) {
+                setIsHeaderVisible(true);
             }
+
+            lastScrollYRef.current = currentScrollY;
         };
-    }, []);
+
+        window.addEventListener("scroll", handleScroll, {passive: true});
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, [isMenuOpen]);
 
     const closeMenus = () => {
         setIsMenuOpen(false);
@@ -110,9 +88,7 @@ function Header({user}) {
     };
 
     return (
-        <>
         <header
-            ref={headerRef}
             className="z-50 w-full border-b-4 border-pink bg-ink text-white shadow-[0_8px_24px_rgba(48,35,55,0.18)]">
             <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
                 <Link to="/" className="group -my-1 flex shrink-0 items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-white/10 focus:outline-none" onClick={closeMenus}>
@@ -175,48 +151,48 @@ function Header({user}) {
                                 {t("language.switch")}
                             </button>
                             <div ref={userMenuRef} className="relative hidden w-full md:block md:w-auto">
-                            <button
-                                type="button"
-                                className={`inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-center text-sm font-bold text-white transition-colors ${isUserMenuOpen ? "bg-white/10" : "bg-white/5"} hover:bg-white/10 focus:outline-none md:w-auto`}
-                                aria-haspopup="menu"
-                                aria-expanded={isUserMenuOpen}
-                                aria-controls="user-menu"
-                                aria-label={isUserMenuOpen ? t("navigation.closeUserMenu") : t("navigation.openUserMenu")}
-                                onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
-                            >
-                                <span>{displayName || t("navigation.account")}</span>
-                                <svg aria-hidden="true" className={`h-4 w-4 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="m6 9 6 6 6-6" />
-                                </svg>
-                            </button>
+                                <button
+                                    type="button"
+                                    className={`inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-center text-sm font-bold text-white transition-colors ${isUserMenuOpen ? "bg-white/10" : "bg-white/5"} hover:bg-white/10 focus:outline-none md:w-auto`}
+                                    aria-haspopup="menu"
+                                    aria-expanded={isUserMenuOpen}
+                                    aria-controls="user-menu"
+                                    aria-label={isUserMenuOpen ? t("navigation.closeUserMenu") : t("navigation.openUserMenu")}
+                                    onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
+                                >
+                                    <span>{displayName || t("navigation.account")}</span>
+                                    <svg aria-hidden="true" className={`h-4 w-4 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="m6 9 6 6 6-6" />
+                                    </svg>
+                                </button>
 
-                            {isUserMenuOpen && (
-                                <div id="user-menu" role="menu" className="absolute right-0 top-full z-50 mt-2 flex w-60 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-[1.5rem] border border-ink-soft bg-ink p-3 text-white shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
-                                    {canAccessRole("ETUDIANT") && (
+                                {isUserMenuOpen && (
+                                    <div id="user-menu" role="menu" className="absolute right-0 top-full z-50 mt-2 flex w-60 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-[1.5rem] border border-ink-soft bg-ink p-3 text-white shadow-[0_18px_50px_rgba(48,35,55,0.08)]">
+                                        {canAccessRole("ETUDIANT") && (
+                                            <NavLink
+                                                to="/etudiant/profil"
+                                                role="menuitem"
+                                                onClick={closeMenus}
+                                                className="w-full rounded-xl border border-white/15 px-3 py-2 text-center text-sm font-bold text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-pink"
+                                            >
+                                                {t("navigation.profile")}
+                                            </NavLink>
+                                        )}
                                         <NavLink
-                                            to="/etudiant/profil"
+                                            to="/logout"
                                             role="menuitem"
                                             onClick={closeMenus}
-                                            className="w-full rounded-xl border border-white/15 px-3 py-2 text-center text-sm font-bold text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-pink"
+                                            className="w-full rounded-xl border border-peach bg-peach px-3 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-gold focus:outline-none focus:ring-2 focus:ring-peach"
                                         >
-                                            {t("navigation.profile")}
+                                            {t("navigation.logout")}
                                         </NavLink>
-                                    )}
-                                    <NavLink
-                                        to="/logout"
-                                        role="menuitem"
-                                        onClick={closeMenus}
-                                        className="w-full rounded-xl border border-peach bg-peach px-3 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-gold focus:outline-none focus:ring-2 focus:ring-peach"
-                                    >
-                                        {t("navigation.logout")}
-                                    </NavLink>
-                                </div>
-                            )}
-                        </div>
-                            <div className="flex flex-col gap-2 md:hidden">
-                            <div className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-center text-sm font-bold text-white">
-                                <span>{displayName || t("navigation.account")}</span>
+                                    </div>
+                                )}
                             </div>
+                            <div className="flex flex-col gap-2 md:hidden">
+                                <div className="inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-center text-sm font-bold text-white">
+                                    <span>{displayName || t("navigation.account")}</span>
+                                </div>
                                 {canAccessRole("ETUDIANT") && (
                                     <NavLink
                                         to="/etudiant/profil"
@@ -226,14 +202,14 @@ function Header({user}) {
                                         {t("navigation.profile")}
                                     </NavLink>
                                 )}
-                            <NavLink
-                                to="/logout"
-                                onClick={closeMenus}
-                                className="w-full justify-center rounded-full border border-peach bg-peach px-4 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-gold"
-                            >
-                                {t("navigation.logout")}
-                            </NavLink>
-                        </div>
+                                <NavLink
+                                    to="/logout"
+                                    onClick={closeMenus}
+                                    className="w-full justify-center rounded-full border border-peach bg-peach px-4 py-2 text-center text-sm font-bold text-ink transition-colors hover:bg-gold"
+                                >
+                                    {t("navigation.logout")}
+                                </NavLink>
+                            </div>
                         </>
                     ) : (
                         <div className="flex flex-col gap-2 md:flex-row md:items-center">
@@ -259,27 +235,13 @@ function Header({user}) {
                     )}
 
                 </nav>
-                {isLoggedIn && showHeaderBell && (
-                    <div className={`fixed bottom-20 right-4 z-[100] md:static md:z-auto md:ml-2 ${
-                        isHeaderInViewport
-                            ? "md:animate-[bell-slide-in_280ms_ease-out]"
-                            : "md:animate-[bell-slide-out_280ms_ease-in]"
-                    }`}>
-                        <NotificationBell user={user} isFloating={!isHeaderInViewport}/>
+                {isLoggedIn && (
+                    <div className="fixed bottom-20 right-4 z-[100] md:static md:z-auto md:-ml-3">
+                        <NotificationBell isLoggedIn={isLoggedIn}/>
                     </div>
                 )}
             </div>
         </header>
-        {isLoggedIn && showFloatingBell && (
-            <div className={`fixed bottom-20 right-4 z-[100] ${
-                isHeaderInViewport
-                    ? "md:animate-[bell-slide-out_280ms_ease-in]"
-                    : "md:animate-[bell-slide-in_280ms_ease-out]"
-            }`}>
-                <NotificationBell user={user} isFloating/>
-            </div>
-        )}
-        </>
     );
 }
 

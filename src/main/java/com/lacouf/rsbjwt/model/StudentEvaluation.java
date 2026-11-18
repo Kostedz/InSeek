@@ -1,5 +1,8 @@
 package com.lacouf.rsbjwt.model;
 
+import com.lacouf.rsbjwt.model.contract.Contract;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
 import lombok.AllArgsConstructor;

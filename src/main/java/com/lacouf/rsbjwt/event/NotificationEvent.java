@@ -88,7 +88,7 @@ public record NotificationEvent(
         return new NotificationEvent(
                 contrat.getEmployer(),
                 titre,
-                "/employeur/evaluations",
+                "/employeur/evaluations?contract=" + contrat.getId(),
                 false,
                 n -> texte);
     }
@@ -114,6 +114,26 @@ public record NotificationEvent(
                 n -> texteEn);
     }
 
+    public static NotificationEvent cvStatus(Utilisateur etudiant, boolean approuve, String commentaire) {
+        String titre = approuve ? "CV accepté" : "CV refusé";
+        String texteFr = approuve
+                ? "Votre CV a été accepté."
+                : "Votre CV a été refusé." + (commentaire == null || commentaire.isBlank()
+                        ? "" : " Motif : " + commentaire);
+        String texteEn = approuve
+                ? "Your résumé was accepted."
+                : "Your résumé was rejected." + (commentaire == null || commentaire.isBlank()
+                        ? "" : " Reason: " + commentaire);
+
+        return new NotificationEvent(
+                etudiant,
+                titre,
+                "/etudiant",
+                false,
+                n -> texteFr,
+                n -> texteEn);
+    }
+
     public static NotificationEvent nouvelleEvaluationStage(Contract contrat) {
         String studentName = (contrat.getStudent().getPrenom() + " " + contrat.getStudent().getNom()).trim();
         String poste = contrat.getInternshipOffer().getPosition();
@@ -123,7 +143,7 @@ public record NotificationEvent(
         return new NotificationEvent(
                 contrat.getTeacher(),
                 titre,
-                "/professeur/evaluations",
+                "/professeur/evaluations?contract=" + contrat.getId(),
                 false,
                 n -> texte);
     }

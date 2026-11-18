@@ -76,7 +76,7 @@ public class SseServiceTest {
         String recipientEmail = recipient.getCredentials().getEmail();
         clients.put(recipientEmail, emitter);
 
-        sseService.sendNotification(NotificationType.CV_TO_APPROVE, recipient);
+        sseService.sendNotification(NotificationType.CV_TO_APPROVE);
 
         verify(notificationRepository).save(any(Notification.class));
         verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
@@ -97,7 +97,7 @@ public class SseServiceTest {
         String recipientEmail = recipient.getCredentials().getEmail();
         clients.put(recipientEmail, emitter);
 
-        sseService.sendNotification(NotificationType.CV_TO_APPROVE, recipient);
+        sseService.sendNotification(NotificationType.CV_TO_APPROVE);
 
         assertTrue(clients.isEmpty());
         verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
@@ -115,7 +115,7 @@ public class SseServiceTest {
                 .email("offline@example.com")
                 .build();
 
-        sseService.sendNotification(NotificationType.CV_APPROVED, recipient);
+        sseService.sendNotification(NotificationType.CV_APPROVED);
 
         verify(notificationRepository).save(argThat(notification ->
                 notification.getMessage().equals(NotificationType.CV_APPROVED.getMessage())

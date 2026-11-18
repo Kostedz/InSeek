@@ -14,6 +14,18 @@ function translateNotification(data, t) {
     const title = String(data.titre ?? "");
     const message = String(data.message ?? data.me ?? data.titre ?? "");
 
+    if (title === "CV accepté") return t("notifications.cvApproved");
+    if (title === "CV refusé") {
+        const separator = " Motif : ";
+        const reasonIndex = message.indexOf(separator);
+        if (reasonIndex >= 0) {
+            return t("notifications.cvRejectedWithReason", {
+                reason: message.slice(reasonIndex + separator.length),
+            });
+        }
+        return t("notifications.cvRejected");
+    }
+
     if (title === "Nouvelle candidature !") {
         const match = message.match(/^(\d+) nouveaux? candidats? pour le poste de (.+)$/);
         if (match) {

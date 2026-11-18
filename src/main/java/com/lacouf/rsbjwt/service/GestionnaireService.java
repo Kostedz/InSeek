@@ -2,12 +2,13 @@
 
     import com.lacouf.rsbjwt.exception.BadRequestException;
     import com.lacouf.rsbjwt.exception.NotFoundException;
+    import com.lacouf.rsbjwt.event.NotificationEvent;
     import com.lacouf.rsbjwt.model.document.Document;
     import com.lacouf.rsbjwt.model.StatutValidation;
     import com.lacouf.rsbjwt.repository.DocumentRepository;
     import com.lacouf.rsbjwt.service.dto.DocumentValidationDTO;
-    import com.lacouf.rsbjwt.service.util.NotificationType;
     import lombok.RequiredArgsConstructor;
+    import org.springframework.context.ApplicationEventPublisher;
     import org.springframework.stereotype.Service;
     import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,7 @@
     @RequiredArgsConstructor
     public class GestionnaireService {
         private final DocumentRepository documentRepository;
-        private final SseService sseService;
+        private final ApplicationEventPublisher eventPublisher;
 
         @Transactional(readOnly = true)
         public List<DocumentValidationDTO> listPendingDocuments(String type) {
@@ -43,8 +44,7 @@
             document.setStatut(StatutValidation.VALIDE);
 
             documentRepository.save(document);
-
-            sseService.sendNotification(NotificationType.CV_APPROVED, document.getUtilisateur());
+            eventPublisher.publishEvent(NotificationEvent.cvStatus(document.getUtilisateur(), true, null));
 
             return DocumentValidationDTO.of(document);
         }
@@ -60,6 +60,7 @@
             document.setStatut(StatutValidation.REJETE);
             document.setCommentaireRejet(comment);
             documentRepository.save(document);
+            eventPublisher.publishEvent(NotificationEvent.cvStatus(document.getUtilisateur(), false, comment));
 
             return DocumentValidationDTO.of(document);
         }
