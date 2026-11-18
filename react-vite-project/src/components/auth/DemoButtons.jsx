@@ -181,16 +181,6 @@ function DemoButtons({setUser}) {
                 </button>
                 <button
                     type="button"
-                    onClick={activateDelayedNotificationsScenario}
-                    disabled={loadingRole !== null}
-                    className="whitespace-nowrap rounded-full border border-ink bg-gold px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-gold disabled:cursor-wait disabled:opacity-70"
-                >
-                    {loadingRole === "DELAYED_NOTIFICATIONS"
-                        ? t("demoButtons.loading")
-                        : t("demoButtons.delayedNotificationsScenario")}
-                </button>
-                <button
-                    type="button"
                     onClick={activateStudentContractScenario}
                     disabled={loadingRole !== null}
                     className="whitespace-nowrap rounded-full border border-ink bg-lavender px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-lavender disabled:cursor-wait disabled:opacity-70"

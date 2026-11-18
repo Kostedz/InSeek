@@ -4,8 +4,10 @@ import com.lacouf.rsbjwt.model.ApplicationStage;
 import com.lacouf.rsbjwt.model.contract.Contract;
 import com.lacouf.rsbjwt.model.entrevue.Entrevue;
 import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.function.IntFunction;
@@ -17,16 +19,26 @@ import java.util.function.IntFunction;
  * @param cumulatif true = une notification non lue existante pour le même lien incrémente son compteur
  *                  (ex. candidatures); false = elle est simplement mise à jour (ex. convocations).
  * @param message   construit le texte à partir du compteur courant.
+ * @param messageEn version anglaise du texte (par défaut identique à message).
  */
 public record NotificationEvent(
         Utilisateur destinataire,
         String titre,
         String lienDirect,
         boolean cumulatif,
-        IntFunction<String> message) {
+        IntFunction<String> message,
+        IntFunction<String> messageEn) {
 
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("d MMMM yyyy 'à' HH:mm", Locale.CANADA_FRENCH);
+
+    private static final DateTimeFormatter DATE_FORMAT_EN =
+            DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm a", Locale.CANADA);
+
+    public NotificationEvent(Utilisateur destinataire, String titre, String lienDirect,
+                             boolean cumulatif, IntFunction<String> message) {
+        this(destinataire, titre, lienDirect, cumulatif, message, message);
+    }
 
     public static NotificationEvent candidature(ApplicationStage app) {
         OffreDeStage offre = app.getOffreDeStage();
@@ -81,6 +93,27 @@ public record NotificationEvent(
                 n -> texte);
     }
 
+    public static NotificationEvent cv(Etudiant etudiant, boolean corrige, Utilisateur gestionnaire) {
+        String nom = (etudiant.getPrenom() + " " + etudiant.getNom()).trim();
+        String discipline = libelleDiscipline(etudiant);
+        String identite = discipline.isBlank() ? nom : nom + " (" + discipline + ")";
+        LocalDateTime depot = LocalDateTime.now();
+
+        String titre = corrige ? "CV corrigé à valider" : "Nouveau CV à valider";
+        String texteFr = (corrige ? "Version corrigée du CV de " : "Nouveau CV de ")
+                + identite + ", déposé le " + depot.format(DATE_FORMAT) + ".";
+        String texteEn = (corrige ? "Corrected résumé version from " : "New résumé from ")
+                + identite + ", submitted on " + depot.format(DATE_FORMAT_EN) + ".";
+
+        return new NotificationEvent(
+                gestionnaire,
+                titre,
+                "/gestionnaire/cv?etudiant=" + etudiant.getId(),
+                false,
+                n -> texteFr,
+                n -> texteEn);
+    }
+
     public static NotificationEvent nouvelleEvaluationStage(Contract contrat) {
         String studentName = (contrat.getStudent().getPrenom() + " " + contrat.getStudent().getNom()).trim();
         String poste = contrat.getInternshipOffer().getPosition();
@@ -93,5 +126,12 @@ public record NotificationEvent(
                 "/professeur/evaluations",
                 false,
                 n -> texte);
+    }
+}
+
+    private static String libelleDiscipline(Etudiant etudiant) {
+        if (etudiant.getDiscipline() == null) return "";
+        String brut = etudiant.getDiscipline().name().replace('_', ' ').toLowerCase();
+        return Character.toUpperCase(brut.charAt(0)) + brut.substring(1);
     }
 }

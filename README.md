@@ -13,6 +13,8 @@ Points d'actions:
 
 3. À partir du prochain sprint, tout code terminé sera revu de manière exhaustif dans un délai maximum de 24 heures ouvrables après que la tâche a été déclarée « prête pour review », et au moins 90 % des tâches respecteront ce délai d'ici la fin de ce sprint.
 
+Sprint4
+
 
 # Définition de Done:
 - Merged dans main.

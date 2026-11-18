@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.service;
 
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
@@ -9,14 +10,15 @@ import com.lacouf.rsbjwt.model.document.OffreDeStage;
 import com.lacouf.rsbjwt.model.utilisateur.*;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.*;
-import com.lacouf.rsbjwt.service.util.NotificationType;
 import com.lacouf.rsbjwt.service.util.OfferFields;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
@@ -34,10 +36,11 @@ import java.util.Locale;
 public class DocumentService {
     private final DocumentRepository documentRepository;
     private final ApplicationStageRepository applicationStageRepository;
+    private final UtilisateurRepository utilisateurRepository;
     private final UtilisateurService utilisateurService;
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final SseService sseService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public DocumentDTO saveDocument(MultipartFile file, String formContent, HttpServletRequest request) throws BadRequestException, IOException, NotFoundException {
@@ -47,29 +50,35 @@ public class DocumentService {
             return saveEmployerOffer(file, formContent, request, null);
         }
 
-        Utilisateur uploader = getAuthenticatedUser(request);
-
-        CV existingCV = documentRepository.findByUtilisateur(uploader);
-        if (existingCV != null) {
-            if (existingCV.getStatut().equals(StatutValidation.EN_ATTENTE)) {
-                throw new BadRequestException("Votre CV est déjà en attente de validation.");
-            }
-            documentRepository.delete(existingCV);
-        }
-
         if (!"CV".equals(type)) {
             throw new BadRequestException("Invalid document type");
         }
 
+        Utilisateur uploader = getAuthenticatedUser(request);
+
+        validateFile(file);
         Document document = createDocument(type, file, result, uploader);
 
-        if (documentRepository.findByUtilisateur(uploader) != null && documentRepository.findByUtilisateur(uploader).getStatut() == StatutValidation.EN_ATTENTE) {
-            throw new BadRequestException("Document with the same name and target discipline already exists");
+        CV existingCV = documentRepository.findByUtilisateur(uploader);
+        boolean corrige = existingCV != null && existingCV.getStatut() == StatutValidation.REJETE;
+        if (existingCV != null) {
+            documentRepository.delete(existingCV);
+            documentRepository.flush();
         }
 
         documentRepository.save(document);
-        sseService.sendNotification(NotificationType.CV_TO_APPROVE);
+
+        if (uploader instanceof Etudiant etudiant) {
+            notifierGestionnaires(etudiant, corrige);
+        }
         return toDTO(document);
+    }
+
+    private void notifierGestionnaires(Etudiant etudiant, boolean corrige) {
+        utilisateurRepository.findAll().stream()
+                .filter(Gestionnaire.class::isInstance)
+                .forEach(gestionnaire ->
+                        eventPublisher.publishEvent(NotificationEvent.cv(etudiant, corrige, gestionnaire)));
     }
 
     public DocumentDTO toDTO(Document document) {
@@ -153,9 +162,11 @@ public class DocumentService {
             case "CV" -> CV.create(file, targetDisciplineForCv(uploader, result), uploader);
 
             case "OffreDeStage" -> {
-                    OfferFields fields = OfferFields.from(result);
-                    yield OffreDeStage.create(file, fields, uploader);
-            }       default -> throw new BadRequestException("Invalid document type");
+                OfferFields fields = OfferFields.from(result);
+                yield OffreDeStage.create(file, fields, uploader);
+            }
+
+            default -> throw new BadRequestException("Invalid document type");
         };
     }
 
@@ -169,7 +180,7 @@ public class DocumentService {
     }
 
     public List<OffreDeStageDTO> findOffreDeStageByCompagnieName(String nomCompagnie){
-            return toOfferDTOs(documentRepository.findOffreStagedByNomCompagnie(nomCompagnie));
+        return toOfferDTOs(documentRepository.findOffreStagedByNomCompagnie(nomCompagnie));
 
     }
 
@@ -226,7 +237,7 @@ public class DocumentService {
                 Utilisateur user = getAuthenticatedUser(request);
                 offers = documentRepository.findOffersByEmployer(user);
             } catch (BadRequestException e) {
-               throw new BadRequestException("Invalid JWT token or user not found");
+                throw new BadRequestException("Invalid JWT token or user not found");
             } catch (NotFoundException e) {
                 throw new NotFoundException("Offre de stage n'existe pas");
             }
@@ -241,7 +252,6 @@ public class DocumentService {
                 .toList();
     }
 
-    // holy shit. this sucked ASS to refactor. fuck you oïc.
     @Transactional
     public OffreDeStageDTO saveEmployerOffer(MultipartFile file, String result,
                                              HttpServletRequest request, Long offerId)

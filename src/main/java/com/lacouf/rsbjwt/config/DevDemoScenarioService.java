@@ -168,9 +168,6 @@ public class DevDemoScenarioService {
     private final ContratRepository contratRepository;
     private final EntrevueRepository interviewRepository;
     private final UtilisateurRepository utilisateurRepository;
-    private final TaskScheduler taskScheduler;
-    private final TransactionTemplate transactionTemplate;
-    private final SseService sseService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -275,6 +272,16 @@ public class DevDemoScenarioService {
         contract.setManagerSignedAt(now.minusDays(2));
         Contract savedContract = contratRepository.save(contract);
         eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
+
+        // Préparer le 3e et 4e étudiant avec contrat signé
+        Utilisateur thirdUser = utilisateurRepository.findByEmail(DevDemoAccounts.thirdStudent().email());
+        Utilisateur fourthUser = utilisateurRepository.findByEmail(DevDemoAccounts.fourthStudent().email());
+        if (sourceUser instanceof Etudiant source2 && thirdUser instanceof Etudiant third) {
+            applySignedContractToTarget(source2, third, employer, manager, professor, acceptedOffer, now);
+        }
+        if (sourceUser instanceof Etudiant source3 && fourthUser instanceof Etudiant fourth) {
+            applySignedContractToTarget(source3, fourth, employer, manager, professor, acceptedOffer, now);
+        }
         eventPublisher.publishEvent(NotificationEvent.nouvelleEvaluationStage(savedContract));
     }
 
@@ -480,61 +487,72 @@ public class DevDemoScenarioService {
         utilisateurRepository.save(student);
     }
 
-    @Transactional
-    public void prepareDelayedNotificationsScenario() {
-        taskScheduler.schedule(() -> {
-            try {
-                transactionTemplate.executeWithoutResult(status -> {
-                    prepareSignedContractStudentScenario();
-                    preparePendingNotificationsData();
-                });
-                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
-                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
-            } catch (RuntimeException exception) {
-                log.error("Impossible de préparer le scénario de notifications différées.", exception);
+    private void applySignedContractToTarget(Etudiant source, Etudiant target, Employeur employer,
+                                             Gestionnaire manager, Professeur professor,
+                                             OffreDeStage acceptedOffer, LocalDateTime now) {
+        target.setDiscipline(source.getDiscipline());
+        target.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        target.setProfesseur(professor);
+        utilisateurRepository.save(target);
+
+        CV sourceCv = documentRepository.findByUtilisateur(source);
+        if (sourceCv != null) {
+            CV targetCv = documentRepository.findByUtilisateur(target);
+            if (targetCv == null) {
+                targetCv = CV.builder()
+                        .fileName(sourceCv.getFileName())
+                        .targetDiscipline(sourceCv.getTargetDiscipline())
+                        .data(sourceCv.getData())
+                        .contentType(sourceCv.getContentType())
+                        .size(sourceCv.getSize())
+                        .utilisateur(target)
+                        .build();
+            } else {
+                targetCv.setFileName(sourceCv.getFileName());
+                targetCv.setTargetDiscipline(sourceCv.getTargetDiscipline());
+                targetCv.setData(sourceCv.getData());
+                targetCv.setContentType(sourceCv.getContentType());
+                targetCv.setSize(sourceCv.getSize());
             }
-        }, Instant.now().plusSeconds(DELAYED_NOTIFICATIONS_DELAY_SECONDS));
-    }
-
-    private void preparePendingNotificationsData() {
-        Utilisateur employerUser = utilisateurRepository.findByEmail(
-                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.EMPLOYEUR).email());
-        Utilisateur studentUser = utilisateurRepository.findByEmail(
-                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.ETUDIANT).email());
-
-        if (!(employerUser instanceof Employeur employer) || !(studentUser instanceof Etudiant student)) {
-            throw new IllegalStateException("Les comptes de démonstration pour les notifications sont introuvables.");
+            targetCv.setStatut(sourceCv.getStatut());
+            targetCv.setCommentaireRejet(sourceCv.getCommentaireRejet());
+            documentRepository.save(targetCv);
         }
 
-        List<OffreDeStage> offers = documentRepository.findOffersByEmployer(employer);
-        int pendingOfferCount = (offers.size() + 1) / 2;
-        offers.stream()
-                .limit(pendingOfferCount)
-                .forEach(offer -> {
-                    offer.setStatut(StatutValidation.EN_ATTENTE);
-                    offer.setCommentaireRejet(null);
-                    documentRepository.save(offer);
-                });
+        List<ApplicationStage> sourceApplications = applicationStageRepository.findByEtudiantId(source.getId());
+        for (ApplicationStage sourceApplication : sourceApplications) {
+            ApplicationStage copy = applicationStageRepository
+                    .findByEtudiantIdAndOffreDeStageId(target.getId(), sourceApplication.getOffreDeStage().getId())
+                    .orElseGet(ApplicationStage::new);
+            copy.setEtudiant(target);
+            copy.setOffreDeStage(sourceApplication.getOffreDeStage());
+            copy.setStatutValidation(sourceApplication.getStatutValidation());
+            copy.setDateApplique(sourceApplication.getDateApplique());
+            copy.setDateDecision(sourceApplication.getDateDecision());
+            copy.setCommentaireRefus(sourceApplication.getCommentaireRefus());
+            applicationStageRepository.save(copy);
+        }
 
-        CV studentCv = documentRepository.findByUtilisateur(student);
-        if (studentCv == null) {
-            throw new IllegalStateException("Le CV de démonstration est introuvable.");
-        }
-        studentCv.setStatut(StatutValidation.EN_ATTENTE);
-        studentCv.setCommentaireRejet(null);
-        documentRepository.save(studentCv);
-
-        Utilisateur secondStudentUser = utilisateurRepository.findByEmail(DevDemoAccounts.secondStudent().email());
-        if (!(secondStudentUser instanceof Etudiant secondStudent)) {
-            throw new IllegalStateException("Le deuxième compte étudiant de démonstration est introuvable.");
-        }
-        prepareValidatedCv(secondStudent, SECOND_STUDENT_CV_RESOURCE, "Pascal_Carbonneau_CV_2026.pdf");
-        CV secondStudentCv = documentRepository.findByUtilisateur(secondStudent);
-        if (secondStudentCv == null) {
-            throw new IllegalStateException("Le CV du deuxième étudiant de démonstration est introuvable.");
-        }
-        secondStudentCv.setStatut(StatutValidation.EN_ATTENTE);
-        secondStudentCv.setCommentaireRejet(null);
-        documentRepository.save(secondStudentCv);
+        Contract contract = contratRepository.findByStudentIdAndInternshipOfferId(target.getId(), acceptedOffer.getId())
+                .orElseGet(Contract::new);
+        contract.setStudent(target);
+        contract.setEmployer(employer);
+        contract.setInternshipOffer(acceptedOffer);
+        contract.setAdmin(manager);
+        contract.setTeacher(professor);
+        contract.setSupervisorName(acceptedOffer.getContactName() == null ? "Julien Roy" : acceptedOffer.getContactName());
+        contract.setStartingDate(LocalDate.now().minusDays(7));
+        contract.setEndingDate(LocalDate.now().plusMonths(3));
+        contract.setSchedule("Du lundi au vendredi, de 9 h à 17 h");
+        contract.setWeeklyHours(35);
+        contract.setHourlySalary(acceptedOffer.getSalaire());
+        contract.setInternshipLocation(acceptedOffer.getAdresseEntreprise());
+        contract.setContractStatus(StatutContrat.EXECUTED);
+        contract.setDateCreation(now.minusDays(5));
+        contract.setStudentSignedAt(now.minusDays(4));
+        contract.setEmployerSignedAt(now.minusDays(3));
+        contract.setManagerSignedAt(now.minusDays(2));
+        Contract savedContract = contratRepository.save(contract);
+        eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
     }
 }
