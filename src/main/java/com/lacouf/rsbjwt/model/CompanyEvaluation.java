@@ -1,6 +1,8 @@
 package com.lacouf.rsbjwt.model;
 
+import com.lacouf.rsbjwt.model.contract.Contract;
 import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import com.lacouf.rsbjwt.model.utilisateur.Professeur;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
@@ -8,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.time.LocalDate;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,14 +21,18 @@ import lombok.Setter;
 public class CompanyEvaluation extends Evaluation {
 
     @ManyToOne
-    private Professeur professeur;
+    private Professeur teacher;
 
     @ManyToOne
     private Employeur employerCompany;
 
-    private static final double MAXIMUM_RATING = 5.0;
+    @ManyToOne
+    private Etudiant studentIntern;
 
-    private static double MINIMUM_RATING = 1.0;
+    @ManyToOne
+    private Contract contract;
+
+    private LocalDate visitDate;
 
     private double supervisionRating;
 

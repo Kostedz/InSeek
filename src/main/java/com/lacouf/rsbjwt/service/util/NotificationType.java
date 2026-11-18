@@ -5,8 +5,10 @@ import lombok.Getter;
 @Getter
 public enum NotificationType {
     // Gestionnaire
-    CV_TO_APPROVE("CV en attente de validation.");
+    CV_TO_APPROVE("CV en attente de validation."),
     // Etudiant
+    CV_APPROVED("CV validé."),
+    CV_REJECTED("CV rejeté.");
     // Employeur
     // Professeur
 

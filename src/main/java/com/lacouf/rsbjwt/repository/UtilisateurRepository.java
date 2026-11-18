@@ -28,4 +28,9 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     @Query("SELECT e FROM Etudiant e WHERE e.session = :session")
     List<Etudiant> findBySession(String session);
+
+    @Query("SELECT g FROM Gestionnaire g")
+    Gestionnaire findGestionnaire();
+
+    boolean existsByCredentials_Email(String credentialsEmail);
 }

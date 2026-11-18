@@ -17,6 +17,7 @@ import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.model.ApplicationStage;
 import com.lacouf.rsbjwt.event.NotificationEvent;
+import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;

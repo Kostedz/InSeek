@@ -27,4 +27,6 @@ public interface ContratRepository extends JpaRepository<Contract, Long> {
 
     List<Contract> findByContractStatusInAndEndingDateBetween(
             Collection<StatutContrat> statuses, LocalDate from, LocalDate to);
+
+    Optional<Contract> findByStudentId(Long studentId);
 }
