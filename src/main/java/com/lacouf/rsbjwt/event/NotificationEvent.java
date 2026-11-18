@@ -127,7 +127,6 @@ public record NotificationEvent(
                 false,
                 n -> texte);
     }
-}
 
     private static String libelleDiscipline(Etudiant etudiant) {
         if (etudiant.getDiscipline() == null) return "";
