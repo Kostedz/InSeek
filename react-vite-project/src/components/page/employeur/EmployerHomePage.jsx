@@ -86,7 +86,7 @@ export default function EmployerHomePage({
                 submitted = {};
             }
             setEvaluationsCount(contracts.filter((contract) =>
-                ["EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase())
+                ["SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase())
                 && !submitted[String(contract?.id ?? contract?.contractId)]
             ).length);
         } catch {

@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {useParams} from "react-router-dom";
 import DropdownSelect from "../../DropdownSelect.jsx";
 import {createTranslationMessage, translateMessage} from "../../../utils/i18nMessage.js";
 import api from "../../../utils/api.js";
@@ -532,6 +533,7 @@ export default function EmployeurOffres({
     const formRef = useRef(null);
     const editorScrollRef = useRef(null);
     const {t, i18n} = useTranslation();
+    const {offerId} = useParams();
     const employerCompanyName = String(
         user?.nomCompagnie
         || user?.nomEntreprise
@@ -686,6 +688,13 @@ export default function EmployeurOffres({
             setIsLoadingApplications(false);
         }
     };
+
+    useEffect(() => {
+        if (!offerId || isLoadingOffers || offerList.length === 0) return;
+
+        const offer = offerList.find((o) => String(o.id) === offerId && o.statut === "VALIDE");
+        if (offer) loadApplications(offer);
+    }, [offerId, offerList, isLoadingOffers]);
 
     useEffect(() => {
         if (!usesRemoteOffers) return undefined;
@@ -1260,8 +1269,8 @@ export default function EmployeurOffres({
                                                        required
                                                        error={fieldErrors.targetDiscipline}>
                                                     <DropdownSelect id="targetDiscipline" name="targetDiscipline"
-                                                            value={formValues.targetDiscipline} onChange={updateField}
-                                                            className={inputClass(fieldErrors.targetDiscipline)}>
+                                                                    value={formValues.targetDiscipline} onChange={updateField}
+                                                                    className={inputClass(fieldErrors.targetDiscipline)}>
                                                         <option
                                                             value="">{t("employerOffers.fields.selectDiscipline")}</option>
                                                         {DISCIPLINES.map(([value]) => <option key={value}

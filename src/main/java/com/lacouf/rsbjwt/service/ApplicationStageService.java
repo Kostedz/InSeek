@@ -1,8 +1,15 @@
 package com.lacouf.rsbjwt.service;
 
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.document.CV;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
@@ -12,10 +19,10 @@ import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import com.lacouf.rsbjwt.service.util.SessionUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,6 +34,7 @@ public class ApplicationStageService {
     private final DocumentRepository documentRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final EntrevueRepository entrevueRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Transactional
@@ -87,6 +95,8 @@ public class ApplicationStageService {
 
         ApplicationStage sauvegarde =
                 applicationStageRepository.save(applicationStage);
+
+        eventPublisher.publishEvent(NotificationEvent.candidature(sauvegarde));
 
         return toDto(sauvegarde);
     }

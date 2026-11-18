@@ -3,8 +3,9 @@ package com.lacouf.rsbjwt.presentation;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.StatutContrat;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.contract.StatutContrat;
+import com.lacouf.rsbjwt.presentation.document.ContratController;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.AuthService;
@@ -55,7 +56,7 @@ class ContratControllerTest {
     static class MethodSecurityTestConfig {
     }
     private static final String ELIGIBLE_URL = "/contracts/eligible-students";
-    private static final String PREFILLED_URL = "/contracts/prefilled/{studentId}";
+    private static final String PREFILLED_URL = "/contracts/prefilled/{studentId}/{offerId}";
     private static final String CONTRACTS_URL = "/contracts/contracts";
     private static final String CONTRACT_BY_ID_URL = "/contracts/contracts/{id}";
     private static final String SIGN_URL = "/contracts/sign/{contractId}";
@@ -176,7 +177,7 @@ class ContratControllerTest {
     }
 
     @Test
-    @DisplayName("GET /contracts/prefilled/{studentId}?offerId= retourne 200 et les données pré-remplies")
+    @DisplayName("GET /contracts/prefilled/{studentId}/{offerId} retourne 200 et les données pré-remplies")
     void preFilledContracts_succes_retourne200() throws Exception {
         PreRemplirContratDTO prefill = PreRemplirContratDTO.builder()
                 .studentName("Jean Tremblay")
@@ -192,7 +193,7 @@ class ContratControllerTest {
                 .build();
         when(contratService.getDonneesPreRemplies(1L, 10L)).thenReturn(prefill);
 
-        mockMvc.perform(get(PREFILLED_URL, 1L).param("offerId", "10"))
+        mockMvc.perform(get(PREFILLED_URL, 1L, 10L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.studentName").value("Jean Tremblay"))
                 .andExpect(jsonPath("$.companyName").value("Tech Corp"))
@@ -206,22 +207,22 @@ class ContratControllerTest {
     }
 
     @Test
-    @DisplayName("GET /contracts/contracts/prefilled/{studentId} avec une offre non acceptée retourne 404")
+    @DisplayName("GET /contracts/prefilled/{studentId}/{offerId} avec une offre non acceptée retourne 404")
     void preFilledContracts_offreNonAcceptee_retourne404() throws Exception {
         when(contratService.getDonneesPreRemplies(1L, 99L))
                 .thenThrow(new NotFoundException("Cette offre n'est pas une offre acceptée pour cet étudiant."));
 
-        mockMvc.perform(get(PREFILLED_URL, 1L).param("offerId", "99"))
+        mockMvc.perform(get(PREFILLED_URL, 1L, 99L))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("GET /contracts/contracts/prefilled/{studentId} avec un étudiant sans stage trouvé retourne 400")
+    @DisplayName("GET /contracts/prefilled/{studentId}/{offerId} avec un étudiant sans stage trouvé retourne 400")
     void preFilledContracts_etudiantPasStageTrouve_retourne400() throws Exception {
         when(contratService.getDonneesPreRemplies(1L, 10L))
                 .thenThrow(new BadRequestException("L'étudiant n'a pas le statut STAGE TROUVÉ."));
 
-        mockMvc.perform(get(PREFILLED_URL, 1L).param("offerId", "10"))
+        mockMvc.perform(get(PREFILLED_URL, 1L, 10L))
                 .andExpect(status().isBadRequest());
     }
 
@@ -578,7 +579,7 @@ class ContratControllerTest {
     @WithMockUser(authorities = "ETUDIANT")
     @DisplayName("GET /contracts/prefilled/{studentId} avec un rôle autre que GESTIONNAIRE retourne 403")
     void preFilledContracts_mauvaisRole_retourne403() throws Exception {
-        mockMvc.perform(get(PREFILLED_URL, 1L).param("offerId", "10"))
+        mockMvc.perform(get(PREFILLED_URL, 1L, 10L))
                 .andExpect(status().isForbidden());
 
         verify(contratService, never()).getDonneesPreRemplies(any(), any());

@@ -1,7 +1,7 @@
 package com.lacouf.rsbjwt.repository;
 
-import com.lacouf.rsbjwt.model.Entrevue;
-import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
+import com.lacouf.rsbjwt.model.entrevue.Entrevue;
+import com.lacouf.rsbjwt.model.entrevue.StatutConvocationEntrevue;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;

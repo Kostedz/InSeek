@@ -1,8 +1,8 @@
 package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.Entrevue;
-import com.lacouf.rsbjwt.model.ModeEntrevue;
-import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
+import com.lacouf.rsbjwt.model.entrevue.Entrevue;
+import com.lacouf.rsbjwt.model.entrevue.ModeEntrevue;
+import com.lacouf.rsbjwt.model.entrevue.StatutConvocationEntrevue;
 import lombok.Builder;
 
 import java.time.LocalDateTime;

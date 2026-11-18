@@ -236,7 +236,7 @@ function Header({user}) {
 
                 </nav>
                 {isLoggedIn && (
-                    <div className="fixed bottom-20 right-4 z-[100] md:static md:z-auto md:ml-2">
+                    <div className="fixed bottom-20 right-4 z-[100] md:static md:z-auto md:-ml-3">
                         <NotificationBell isLoggedIn={isLoggedIn}/>
                     </div>
                 )}

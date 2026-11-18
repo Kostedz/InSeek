@@ -5,6 +5,7 @@ import PdfPreview from "../../PdfPreview.jsx";
 import {notifyManagerContractsChanged} from "../../../utils/tabCounts.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import ContractSignaturePage from "../ContractSignaturePage.jsx";
+import ContractCreationModal from "../../gestionnaire/ContractCreationModal.jsx";
 
 const MANAGER_SIGNABLE_STATUS = "SIGNED_BY_EMPLOYER";
 const FINAL_CONTRACT_STATUSES = new Set(["SIGNED_BY_GESTIONNAIRE", "EXECUTED"]);
@@ -18,6 +19,10 @@ export default function GestionnaireContracts({embedded = false}) {
     const [contractView, setContractView] = useState("PENDING");
     const [selectedContract, setSelectedContract] = useState(null);
     const [signatureContract, setSignatureContract] = useState(null);
+    const [eligibleStudents, setEligibleStudents] = useState([]);
+    const [eligibleStudentsLoading, setEligibleStudentsLoading] = useState(true);
+    const [eligibleStudentsError, setEligibleStudentsError] = useState(false);
+    const [studentForNewContract, setStudentForNewContract] = useState(null);
     const statusLabel = (status) =>
         status ? t(`managerContracts.status.${status}`, {defaultValue: status}) : "—";
 
@@ -69,8 +74,25 @@ export default function GestionnaireContracts({embedded = false}) {
         }
     };
 
+    const loadEligibleStudents = async () => {
+        setEligibleStudentsLoading(true);
+        setEligibleStudentsError(false);
+        try {
+            const response = await api.gestionnaire.getEligibleStudents();
+            if (!response.ok) throw new Error("eligible_students_load_failed");
+            const data = await response.json();
+            const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+            setEligibleStudents(list);
+        } catch {
+            setEligibleStudentsError(true);
+        } finally {
+            setEligibleStudentsLoading(false);
+        }
+    };
+
     useEffect(() => {
         loadContracts();
+        loadEligibleStudents();
     }, []);
 
     const filteredContracts = useMemo(() => {
@@ -86,6 +108,13 @@ export default function GestionnaireContracts({embedded = false}) {
     const visibleContracts = filteredContracts.filter((contract) =>
         contractView === "PENDING" ? !isHistoryContract(contract) : isHistoryContract(contract)
     );
+    const studentsWithoutContract = eligibleStudents.filter((student) => !student.hasContract);
+
+    const handleContractCreated = () => {
+        notifyManagerContractsChanged();
+        loadContracts();
+        loadEligibleStudents();
+    };
 
     const formatDate = (val) => {
         if (!val) return "—";
@@ -113,6 +142,73 @@ export default function GestionnaireContracts({embedded = false}) {
                 </header>}
 
                 {!embedded && <GestionnaireTabs activeTab="contracts"/>}
+
+                <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-6"
+                         aria-labelledby="eligible-contract-students-title">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h2 id="eligible-contract-students-title" className="text-xl font-black text-ink">
+                                {t("managerContracts.eligibleStudentsTitle", "Étudiants prêts pour un contrat")}
+                            </h2>
+                            <p className="mt-1 text-sm leading-6 text-ink-soft">
+                                {t("managerContracts.eligibleStudentsDescription", "Créez un contrat pour un étudiant dont la candidature a été acceptée par l’employeur.")}
+                            </p>
+                        </div>
+                        {!eligibleStudentsLoading && !eligibleStudentsError && (
+                            <span className="w-fit rounded-full bg-lavender/50 px-3 py-1 text-xs font-bold text-ink">
+                                {t("managerContracts.eligibleStudentsCount", {
+                                    count: studentsWithoutContract.length,
+                                    defaultValue: "{{count}} étudiant(s)"
+                                })}
+                            </span>
+                        )}
+                    </div>
+
+                    {eligibleStudentsLoading ? (
+                        <p className="py-8 text-center text-sm font-medium text-ink-soft">
+                            {t("managerValidation.loading", "Chargement…")}
+                        </p>
+                    ) : eligibleStudentsError ? (
+                        <div
+                            className="mt-5 flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            role="alert">
+                            <p className="text-sm font-semibold text-rose-700">
+                                {t("managerContracts.eligibleStudentsLoadError", "Impossible de charger les étudiants admissibles.")}
+                            </p>
+                            <button type="button" onClick={loadEligibleStudents}
+                                    className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-bold text-rose-800 hover:bg-rose-100">
+                                {t("managerValidation.refresh", "Actualiser")}
+                            </button>
+                        </div>
+                    ) : studentsWithoutContract.length === 0 ? (
+                        <p className="mt-5 rounded-xl border border-dashed border-line bg-canvas px-5 py-8 text-center text-sm text-ink-soft">
+                            {t("managerContracts.noEligibleStudents", "Aucun étudiant sans contrat n’a de candidature acceptée pour le moment.")}
+                        </p>
+                    ) : (
+                        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                            {studentsWithoutContract.map((student) => (
+                                <article key={`${student.id}-${student.offerId}`}
+                                         className="flex flex-col gap-4 rounded-xl border border-line bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="min-w-0">
+                                        <h3 className="font-black text-ink">
+                                            {[student.firstName, student.lastName].filter(Boolean).join(" ") || t("managerStudents.unnamed", "Étudiant")}
+                                        </h3>
+                                        <p className="mt-1 text-sm font-semibold text-ink-soft">
+                                            {student.offerTitle || "—"}{student.companyName ? ` · ${student.companyName}` : ""}
+                                        </p>
+                                        <p className="mt-1 text-xs text-ink-soft">
+                                            {student.fieldOfStudy ? t(`employerOffers.disciplines.${String(student.fieldOfStudy).toUpperCase()}`, {defaultValue: student.fieldOfStudy}) : "—"}
+                                        </p>
+                                    </div>
+                                    <button type="button" onClick={() => setStudentForNewContract(student)}
+                                            className="shrink-0 rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft">
+                                        {t("managerStudents.createContractButton", "Créer le contrat")}
+                                    </button>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </section>
 
                 {error && (
                     <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
@@ -356,6 +452,14 @@ export default function GestionnaireContracts({embedded = false}) {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {studentForNewContract && (
+                    <ContractCreationModal
+                        student={studentForNewContract}
+                        onClose={() => setStudentForNewContract(null)}
+                        onSuccess={handleContractCreated}
+                    />
                 )}
 
                 {signatureContract && (

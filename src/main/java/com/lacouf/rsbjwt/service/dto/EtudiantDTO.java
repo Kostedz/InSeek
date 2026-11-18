@@ -1,10 +1,11 @@
 package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 
 public record EtudiantDTO(Long id, String nom, String prenom, String email, String role, Disciplines discipline, String session) implements UtilisateurDTO {
 
-    public static EtudiantDTO of(com.lacouf.rsbjwt.model.Etudiant etudiant) {
+    public static EtudiantDTO of(Etudiant etudiant) {
         return new EtudiantDTO(etudiant.getId(), etudiant.getNom(), etudiant.getPrenom(), etudiant.getEmail(), etudiant.getRole(), etudiant.getDiscipline(), etudiant.getSession());
     }
 }

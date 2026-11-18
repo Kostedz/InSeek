@@ -2,11 +2,13 @@ package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.*;
 import com.lacouf.rsbjwt.model.auth.Role;
+import com.lacouf.rsbjwt.model.utilisateur.*;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.*;
+import com.lacouf.rsbjwt.service.dto.auth.LoginDTO;
+import com.lacouf.rsbjwt.service.dto.auth.RegisterDTO;
 import com.lacouf.rsbjwt.service.util.SessionUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -133,7 +135,7 @@ public class UtilisateurService {
             case Etudiant etudiant -> EtudiantDTO.of(etudiant);
             case Employeur employeur -> EmployeurDTO.of(employeur);
             case Professeur professeur -> ProfesseurDTO.of(professeur);
-            case com.lacouf.rsbjwt.model.Gestionnaire gestionnaire -> GestionnaireDTO.of(gestionnaire);
+            case Gestionnaire gestionnaire -> GestionnaireDTO.of(gestionnaire);
             default -> throw new BadRequestException(
                     "Type d'entité non pris en charge pour la conversion en DTO."
             );

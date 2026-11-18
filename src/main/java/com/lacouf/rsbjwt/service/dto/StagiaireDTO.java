@@ -1,12 +1,12 @@
 package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
 import com.lacouf.rsbjwt.model.ApplicationStage;
-import com.lacouf.rsbjwt.model.Contract;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Professeur;
-import com.lacouf.rsbjwt.model.StatutContrat;
-import com.lacouf.rsbjwt.model.StatutRechercheEtudiant;
+import com.lacouf.rsbjwt.model.contract.Contract;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Professeur;
+import com.lacouf.rsbjwt.model.contract.StatutContrat;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.model.StatutValidation;
 
 import java.util.Comparator;

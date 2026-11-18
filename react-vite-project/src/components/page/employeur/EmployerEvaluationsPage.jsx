@@ -4,7 +4,7 @@ import api from "../../../utils/api.js";
 
 const listOf = (data) => Array.isArray(data) ? data : data?.items ?? data?.content ?? data?.contracts ?? [];
 const contractStatus = (contract) => String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase();
-const isEligible = (contract) => ["EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(contractStatus(contract));
+const isEligible = (contract) => ["SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(contractStatus(contract));
 const studentName = (contract) => contract?.studentFullName
     || [contract?.student?.prenom ?? contract?.student?.firstName, contract?.student?.nom ?? contract?.student?.lastName].filter(Boolean).join(" ")
     || contract?.studentName || "";

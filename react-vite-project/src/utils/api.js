@@ -34,7 +34,7 @@ export const api = {
             }),
 
         demoLogin: (role) =>
-            fetcher(`/user/demo/login?role=${encodeURIComponent(role)}`, {
+            fetcher(`/user/demo/login/${encodeURIComponent(role)}`, {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
@@ -49,13 +49,6 @@ export const api = {
 
         prepareStudentContractDemo: () =>
             fetcher("/user/demo/student-contract-demo", {
-                skipAuth: true,
-                method: "POST",
-                headers: {Accept: "application/json"},
-            }),
-
-        prepareDelayedNotificationsDemo: () =>
-            fetcher("/user/demo/delayed-notifications-demo", {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
@@ -287,7 +280,7 @@ export const api = {
             }),
 
         getContractData: (studentId, offerId) =>
-            fetcher(`/contracts/prefilled/${encodeURIComponent(studentId)}?offerId=${encodeURIComponent(offerId)}`, {
+            fetcher(`/contracts/prefilled/${encodeURIComponent(studentId)}/${encodeURIComponent(offerId)}`, {
                 headers: { Accept: "application/json" },
             }),
 
@@ -345,6 +338,11 @@ export const api = {
             fetcher(`/professeur/etudiants/${encodeURIComponent(studentId)}/demandes`, {
                 headers: {Accept: "application/json"},
             }),
+    },
+
+    notifications: {
+        mine: () => fetcher("/api/notifications/mine", {headers: {Accept: "application/json"}}),
+        markRead: (id) => fetcher(`/api/notifications/${encodeURIComponent(id)}/read`, {method: "PUT"}),
     },
 
 };

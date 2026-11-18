@@ -2,7 +2,7 @@
 
     import com.lacouf.rsbjwt.exception.BadRequestException;
     import com.lacouf.rsbjwt.exception.NotFoundException;
-    import com.lacouf.rsbjwt.model.Document;
+    import com.lacouf.rsbjwt.model.document.Document;
     import com.lacouf.rsbjwt.model.StatutValidation;
     import com.lacouf.rsbjwt.repository.DocumentRepository;
     import com.lacouf.rsbjwt.service.dto.DocumentValidationDTO;

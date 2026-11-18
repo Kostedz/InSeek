@@ -1,21 +1,22 @@
 package com.lacouf.rsbjwt.config;
 
-import com.lacouf.rsbjwt.model.CV;
-import com.lacouf.rsbjwt.model.Contract;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Entrevue;
-import com.lacouf.rsbjwt.model.Employeur;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Gestionnaire;
-import com.lacouf.rsbjwt.model.ModeEntrevue;
-import com.lacouf.rsbjwt.model.OffreDeStage;
-import com.lacouf.rsbjwt.model.Professeur;
-import com.lacouf.rsbjwt.model.StatutContrat;
-import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
+import com.lacouf.rsbjwt.model.document.CV;
+import com.lacouf.rsbjwt.model.contract.Contract;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.entrevue.Entrevue;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Gestionnaire;
+import com.lacouf.rsbjwt.model.entrevue.ModeEntrevue;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Professeur;
+import com.lacouf.rsbjwt.model.contract.StatutContrat;
+import com.lacouf.rsbjwt.model.entrevue.StatutConvocationEntrevue;
 import com.lacouf.rsbjwt.model.StatutValidation;
-import com.lacouf.rsbjwt.model.StatutRechercheEtudiant;
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.model.ApplicationStage;
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
@@ -28,6 +29,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -166,9 +168,7 @@ public class DevDemoScenarioService {
     private final ContratRepository contratRepository;
     private final EntrevueRepository interviewRepository;
     private final UtilisateurRepository utilisateurRepository;
-    private final TaskScheduler taskScheduler;
-    private final TransactionTemplate transactionTemplate;
-    private final SseService sseService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void prepareStudentScenario() {
@@ -270,7 +270,8 @@ public class DevDemoScenarioService {
         contract.setStudentSignedAt(now.minusDays(4));
         contract.setEmployerSignedAt(now.minusDays(3));
         contract.setManagerSignedAt(now.minusDays(2));
-        contratRepository.save(contract);
+        Contract savedContract = contratRepository.save(contract);
+        eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
     }
 
     private void prepareValidatedCv(Etudiant student) {
@@ -473,63 +474,5 @@ public class DevDemoScenarioService {
 
         student.setDateInterview(pendingInterview.getDateInterview());
         utilisateurRepository.save(student);
-    }
-
-    @Transactional
-    public void prepareDelayedNotificationsScenario() {
-        taskScheduler.schedule(() -> {
-            try {
-                transactionTemplate.executeWithoutResult(status -> {
-                    prepareSignedContractStudentScenario();
-                    preparePendingNotificationsData();
-                });
-                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
-                sseService.sendNotification(NotificationType.CV_TO_APPROVE);
-            } catch (RuntimeException exception) {
-                log.error("Impossible de préparer le scénario de notifications différées.", exception);
-            }
-        }, Instant.now().plusSeconds(DELAYED_NOTIFICATIONS_DELAY_SECONDS));
-    }
-
-    private void preparePendingNotificationsData() {
-        Utilisateur employerUser = utilisateurRepository.findByEmail(
-                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.EMPLOYEUR).email());
-        Utilisateur studentUser = utilisateurRepository.findByEmail(
-                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.ETUDIANT).email());
-
-        if (!(employerUser instanceof Employeur employer) || !(studentUser instanceof Etudiant student)) {
-            throw new IllegalStateException("Les comptes de démonstration pour les notifications sont introuvables.");
-        }
-
-        List<OffreDeStage> offers = documentRepository.findOffersByEmployer(employer);
-        int pendingOfferCount = (offers.size() + 1) / 2;
-        offers.stream()
-                .limit(pendingOfferCount)
-                .forEach(offer -> {
-                    offer.setStatut(StatutValidation.EN_ATTENTE);
-                    offer.setCommentaireRejet(null);
-                    documentRepository.save(offer);
-                });
-
-        CV studentCv = documentRepository.findByUtilisateur(student);
-        if (studentCv == null) {
-            throw new IllegalStateException("Le CV de démonstration est introuvable.");
-        }
-        studentCv.setStatut(StatutValidation.EN_ATTENTE);
-        studentCv.setCommentaireRejet(null);
-        documentRepository.save(studentCv);
-
-        Utilisateur secondStudentUser = utilisateurRepository.findByEmail(DevDemoAccounts.secondStudent().email());
-        if (!(secondStudentUser instanceof Etudiant secondStudent)) {
-            throw new IllegalStateException("Le deuxième compte étudiant de démonstration est introuvable.");
-        }
-        prepareValidatedCv(secondStudent, SECOND_STUDENT_CV_RESOURCE, "Pascal_Carbonneau_CV_2026.pdf");
-        CV secondStudentCv = documentRepository.findByUtilisateur(secondStudent);
-        if (secondStudentCv == null) {
-            throw new IllegalStateException("Le CV du deuxième étudiant de démonstration est introuvable.");
-        }
-        secondStudentCv.setStatut(StatutValidation.EN_ATTENTE);
-        secondStudentCv.setCommentaireRejet(null);
-        documentRepository.save(secondStudentCv);
     }
 }

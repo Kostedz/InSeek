@@ -1,9 +1,14 @@
 package com.lacouf.rsbjwt.service;
 
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.contract.Contract;
+import com.lacouf.rsbjwt.model.contract.StatutContrat;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.*;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
@@ -14,6 +19,7 @@ import com.lacouf.rsbjwt.service.dto.EtudiantEligibleContratDTO;
 import com.lacouf.rsbjwt.service.dto.PreRemplirContratDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,6 +42,7 @@ public class ContratService {
     private final JwtTokenProvider jwtTokenProvider;
     private final ContratStageGenerator contratStageGenerator;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<EtudiantEligibleContratDTO> getEtudiantsEligibles() {
@@ -84,7 +91,12 @@ public class ContratService {
         Professeur teacher = findAssignedTeacher(student.getDiscipline());
 
         Contract contract = buildContract(createContratDTO, student, internshipOffer, employer, teacher, admin);
-        return ContratDTO.of(contratRepository.save(contract));
+        Contract saved = contratRepository.save(contract);
+        eventPublisher.publishEvent(NotificationEvent.contrat(
+                saved, saved.getStudent(), "/etudiant/contrat", false));
+        eventPublisher.publishEvent(NotificationEvent.contrat(
+                saved, saved.getEmployer(), "/employeur/contrats", false));
+        return ContratDTO.of(saved);
     }
 
     @Transactional(readOnly = true)
@@ -196,6 +208,9 @@ public class ContratService {
         updateContractStatusBasedOnUser(user, contract);
 
         contratRepository.save(contract);
+        if (user instanceof Gestionnaire) {
+            eventPublisher.publishEvent(NotificationEvent.evaluationStage(contract));
+        }
         return ContratDTO.of(contract);
     }
 
