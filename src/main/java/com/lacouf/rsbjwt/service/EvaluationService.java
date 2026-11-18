@@ -131,7 +131,7 @@ public class EvaluationService {
         Contract contract = findContractForStudentAndEmployer(student.getId(), employer);
 
         // Prevent a second evaluation for the same contract
-        if (evaluationRepository.existsCompanyEvaluationByContractAndEvaluationState(contract.getId(),EvaluationState.SUBMITTED)) {
+        if (evaluationRepository.existsStudentEvaluationByContractAndEvaluationState(contract.getId(),EvaluationState.SUBMITTED)) {
             throw new ConflictException(
                     "Une évaluation de cet étudiant existe déjà pour ce contrat.");
         }
@@ -243,12 +243,13 @@ public class EvaluationService {
 
     private void validateStudentEvaluationSubmission(StudentEvaluationDTO studentEvaluationDTO, Contract contract)
             throws BadRequestException {
-        if (studentEvaluationDTO.evaluationSubmittedAt() == null) {
-            throw new BadRequestException("La date de soumission de l'évaluation est obligatoire.");
-        }
-        if (contract.getStartingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getStartingDate())) {
-            throw new BadRequestException("La date de soumission de l'évaluation ne peut pas être antérieure au début du stage.");
-        }/*
+//        if (studentEvaluationDTO.evaluationSubmittedAt() == null) {
+//            throw new BadRequestException("La date de soumission de l'évaluation est obligatoire.");
+//        }
+//        if (contract.getStartingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getStartingDate())) {
+//            throw new BadRequestException("La date de soumission de l'évaluation ne peut pas être antérieure au début du stage.");
+//        }
+        /*
         if (contract.getEndingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getEndingDate())) {
             throw new BadRequestException("La date de soumission de l'évaluation de l'étudiant doit être après la fin du stage.");
         }*/
