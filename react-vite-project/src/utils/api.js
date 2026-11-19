@@ -171,6 +171,20 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
+        getSubmittedEvaluation: (studentId) =>
+            fetcher(`/evaluations/etudiant/${encodeURIComponent(studentId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
+        submitEvaluation: (payload) => fetcher("/evaluations/etudiant", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify(payload),
+        }),
+
         notifyEvaluationSubmitted: (contractId) =>
             fetcher(`/contracts/employer/${encodeURIComponent(contractId)}/evaluation-submitted`, {
                 method: "POST",

@@ -79,9 +79,17 @@ export default function EmployerHomePage({
             setContractsCount(contracts.filter((contract) =>
                 String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "SIGNED_BY_STUDENT"
             ).length);
-            setEvaluationsCount(contracts.filter((contract) =>
-                ["EXECUTED", "FULLY_SIGNED", "COMPLETED"].includes(String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase())
-            ).length);
+            const eligibleContracts = contracts.filter((contract) =>
+                ["SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_SIGNED", "COMPLETED"]
+                    .includes(String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase())
+            );
+            const evaluationChecks = await Promise.all(eligibleContracts.map(async (contract) => {
+                const internId = contract?.studentId ?? contract?.internId ?? contract?.student?.id ?? contract?.intern?.id;
+                if (!internId) return true;
+                const response = await api.employer.getSubmittedEvaluation(internId);
+                return response.status === 404 || response.status === 400;
+            }));
+            setEvaluationsCount(evaluationChecks.filter(Boolean).length);
         } catch {
             setContractsCount(null);
         }

@@ -8,6 +8,7 @@ const isEligible = (contract) => ["SIGNED_BY_GESTIONNAIRE", "EXECUTED", "FULLY_S
 const studentName = (contract) => contract?.studentFullName
     || [contract?.student?.prenom ?? contract?.student?.firstName, contract?.student?.nom ?? contract?.student?.lastName].filter(Boolean).join(" ")
     || contract?.studentName || "";
+const studentId = (contract) => contract?.studentId ?? contract?.internId ?? contract?.student?.id ?? contract?.intern?.id;
 const contractTitle = (contract) => contract?.offerTitle ?? contract?.position ?? contract?.internshipOffer?.position ?? "";
 const draftStorageKey = "inseek.employer.internship-evaluation.drafts";
 export const EMPLOYER_EVALUATIONS_UPDATED_EVENT = "inseek:employer-evaluations-updated";
@@ -19,6 +20,14 @@ const readStorage = (key) => {
     }
 };
 const initialDraft = () => ({skills: "3", integration: "3", objectives: "3", overall: "3", comments: ""});
+const fromSubmitted = (evaluation) => ({
+    skills: String(evaluation.professionalismRating ?? 3),
+    integration: String(evaluation.teamworkRating ?? 3),
+    objectives: String(evaluation.objectiveReachedRating ?? 3),
+    overall: String(evaluation.workQualityRating ?? 3),
+    comments: evaluation.evaluationComment ?? "",
+    submittedAt: evaluation.evaluationSubmittedAt ?? "",
+});
 
 export default function EmployerEvaluationsPage() {
     const {t} = useTranslation();
@@ -28,7 +37,6 @@ export default function EmployerEvaluationsPage() {
     const [drafts, setDrafts] = useState(() => readStorage(draftStorageKey));
     const [submitted, setSubmitted] = useState({});
     const [selectedId, setSelectedId] = useState(null);
-    const [confirming, setConfirming] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -37,7 +45,18 @@ export default function EmployerEvaluationsPage() {
         api.employer.getContracts().then(async (response) => {
             if (!response.ok) throw new Error("load_failed");
             const values = listOf(await response.json());
-            if (active) setContracts(values);
+            const evaluationResults = await Promise.all(values.map(async (contract) => {
+                const internId = studentId(contract);
+                if (!internId) return null;
+                const evaluationResponse = await api.employer.getSubmittedEvaluation(internId);
+                if (evaluationResponse.status === 404 || evaluationResponse.status === 400) return null;
+                if (!evaluationResponse.ok) throw new Error("evaluation_load_failed");
+                return [String(contract.id), fromSubmitted(await evaluationResponse.json())];
+            }));
+            if (active) {
+                setContracts(values);
+                setSubmitted(Object.fromEntries(evaluationResults.filter(Boolean)));
+            }
         }).catch(() => {
             if (active) setError(t("employerEvaluation.errors.load", "Impossible de charger les stagiaires embauchés."));
         }).finally(() => {
@@ -49,18 +68,14 @@ export default function EmployerEvaluationsPage() {
     }, [t]);
 
     useEffect(() => localStorage.setItem(draftStorageKey, JSON.stringify(drafts)), [drafts]);
-    useEffect(() => localStorage.removeItem("inseek.employer.internship-evaluation.submitted"), []);
     useEffect(() => {
-        if (!selectedId && !confirming) return undefined;
+        if (!selectedId) return undefined;
         const closeOnEscape = (event) => {
-            if (event.key === "Escape") {
-                if (confirming) setConfirming(false);
-                else setSelectedId(null);
-            }
+            if (event.key === "Escape") setSelectedId(null);
         };
         document.addEventListener("keydown", closeOnEscape);
         return () => document.removeEventListener("keydown", closeOnEscape);
-    }, [selectedId, confirming]);
+    }, [selectedId]);
 
     const eligibleContracts = useMemo(() => contracts.filter((contract) => isEligible(contract) || submitted[contract.id]), [contracts, submitted]);
     const submittedCount = eligibleContracts.filter((contract) => submitted[String(contract.id)]).length;
@@ -83,44 +98,57 @@ export default function EmployerEvaluationsPage() {
     };
     const openForm = (contract) => {
         setSelectedId(String(contract.id));
-        setConfirming(false);
         if (!submitted[contract.id] && !drafts[contract.id]) {
             setDrafts((current) => ({...current, [contract.id]: initialDraft()}));
         }
-    };
-    const requestSubmit = () => {
-        setConfirming(true);
     };
     const confirmSubmit = async () => {
         if (!selected || submitting) return;
         setSubmitting(true);
         setSubmitError("");
         try {
-            const response = await api.employer.notifyEvaluationSubmitted(selected.id);
+            const internId = studentId(selected);
+            if (!internId) throw new Error("student_id_missing");
+            const response = await api.employer.submitEvaluation({
+                internId: Number(internId),
+                professionalismRating: Number(values.skills),
+                workQualityRating: Number(values.overall),
+                teamworkRating: Number(values.integration),
+                communicationRating: Number(values.integration),
+                objectiveReachedRating: Number(values.objectives),
+                evaluationComment: values.comments ?? "",
+            });
             if (!response.ok) throw new Error("submit_failed");
+            const savedEvaluation = await response.json();
+            const record = fromSubmitted(savedEvaluation);
+            try {
+                await api.employer.notifyEvaluationSubmitted(selected.id);
+            } catch {
+                // The evaluation is already persisted; notification delivery is best effort.
+            }
+            const nextSubmitted = {...submitted, [selectedKey]: record};
+            setSubmitted(nextSubmitted);
+            setDrafts((current) => {
+                const next = {...current};
+                delete next[selectedKey];
+                return next;
+            });
+            window.dispatchEvent(new CustomEvent(EMPLOYER_EVALUATIONS_UPDATED_EVENT, {
+                detail: {pendingCount: Math.max(0, pendingCount - 1)},
+            }));
+            setSelectedId(null);
+            setSubmitting(false);
+            return;
         } catch {
             setSubmitError(t("employerEvaluation.errors.submit", "Impossible d’envoyer l’évaluation. Veuillez réessayer."));
             setSubmitting(false);
             return;
         }
-        const record = {...values, submittedAt: new Date().toISOString()};
-        const nextSubmitted = {...submitted, [selectedKey]: record};
-        setSubmitted(nextSubmitted);
-        setDrafts((current) => {
-            const next = {...current};
-            delete next[selectedKey];
-            return next;
-        });
-        window.dispatchEvent(new CustomEvent(EMPLOYER_EVALUATIONS_UPDATED_EVENT, {
-            detail: {pendingCount: Math.max(0, pendingCount - 1)},
-        }));
-        setConfirming(false);
-        setSelectedId(null);
-        setSubmitting(false);
     };
 
     const slider = (field, label) => <label key={field} className="block py-3 text-sm font-bold text-ink">
-        <span className="flex items-center justify-between gap-3"><span>{label}</span><span
+        <span className="flex items-center justify-between gap-3"><span>{label} <span className="text-error"
+                                                                                      aria-hidden="true">*</span></span><span
             className="rounded-full bg-lavender/40 px-3 py-1 text-xs font-black">{values[field] ? `${values[field]} / 5` : t("employerEvaluation.chooseRating", "Choisir une note")}</span></span>
         <span
             className="professor-rating-slider relative mt-0.5 block h-6 w-full cursor-pointer has-[:focus-visible]:rounded-full has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink disabled:cursor-default">
@@ -202,6 +230,8 @@ export default function EmployerEvaluationsPage() {
                     </button>
                 </header>
                 <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-7">
+                    {submitError && <p role="alert"
+                                       className="mb-4 rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-700">{submitError}</p>}
                     <h3 className="mb-3 text-lg font-black text-ink">{t("employerEvaluation.internshipInfo", "Renseignements sur le stage")}</h3>
                     <dl className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-xl border border-line bg-surface p-4">
@@ -237,31 +267,11 @@ export default function EmployerEvaluationsPage() {
                 {!submitted[selectedKey] && <footer
                     className="flex shrink-0 flex-col gap-3 border-t border-line bg-surface px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                     <p className="text-xs font-bold text-ink-soft">{t("employerEvaluation.draftSaved", "Le brouillon est sauvegardé automatiquement sur cet appareil.")}</p>
-                    <button type="button" onClick={requestSubmit}
+                    <button type="button" onClick={confirmSubmit} disabled={submitting}
                             className="rounded-xl bg-ink px-6 py-3 text-sm font-bold text-white transition hover:bg-ink-soft">{t("employerEvaluation.submit", "Soumettre l’évaluation")}</button>
                 </footer>}
             </section>
         </div>}
-        {confirming && selected &&
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/70 p-4 backdrop-blur-sm"
-                 role="presentation"
-                 onMouseDown={(event) => event.target === event.currentTarget && setConfirming(false)}>
-                <section role="dialog" aria-modal="true" aria-labelledby="evaluation-confirm-title"
-                         className="w-full max-w-md rounded-[1.5rem] border border-line bg-surface p-6 shadow-[0_24px_80px_rgba(48,35,55,0.3)]">
-                    <p className="text-xs font-bold uppercase tracking-[0.15em] text-ink-soft">{t("employerEvaluation.confirmEyebrow", "Confirmation")}</p>
-                    <h2 id="evaluation-confirm-title"
-                        className="mt-2 text-xl font-black text-ink">{t("employerEvaluation.confirmTitle", "Envoyer cette évaluation ?")}</h2>
-                    <p className="mt-2 text-sm leading-6 text-ink-soft">{t("employerEvaluation.confirmDescription", "Vérifiez vos réponses avant de confirmer l’envoi.")}</p>
-                    {submitError && <p role="alert"
-                                       className="mt-3 rounded-lg bg-rose-50 p-3 text-sm font-semibold text-rose-700">{submitError}</p>}
-                    <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                        <button type="button" onClick={() => setConfirming(false)}
-                                className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink">{t("employerEvaluation.cancel", "Continuer à modifier")}</button>
-                        <button type="button" onClick={confirmSubmit} disabled={submitting}
-                                className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60">{submitting ? t("employerEvaluation.submitting", "Envoi…") : t("employerEvaluation.confirm", "Confirmer l’envoi")}</button>
-                    </div>
-                </section>
-            </div>}
         </div>
     </section>;
 }

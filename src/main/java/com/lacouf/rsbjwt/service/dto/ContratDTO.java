@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Builder
 public record ContratDTO(
         Long id,
+        Long studentId,
         String studentFullName,
         String studentEmail,
         String fieldOfStudy,
@@ -45,6 +46,7 @@ public record ContratDTO(
                 ? contract.getAdmin().getPrenom() + " " + contract.getAdmin().getNom() : null;
         return ContratDTO.builder()
                 .id(contract.getId())
+                .studentId(contract.getStudent() != null ? contract.getStudent().getId() : null)
                 .studentFullName(studentFullName)
                 .studentEmail(contract.getStudent().getEmail())
                 .fieldOfStudy(discipline)
