@@ -320,17 +320,17 @@ public class DevDemoScenarioService {
                 "Assistez l'équipe finance dans la préparation des états financiers et le suivi budgétaire.",
                 "Longueuil, Québec", 20.00, "demo-offre-stage-05.pdf");
 
-        createExtraOffer(employer, "H26", StatutValidation.EN_ATTENTE,
+        createExtraOffer(employer, "H26", StatutValidation.VALIDE,
                 Disciplines.INFORMATIQUE, "Stagiaire développeur mobile",
                 "Contribuez au développement d'une application mobile Android/iOS avec React Native.",
                 "Montréal, Québec", 22.50, "demo-offre-stage-06.pdf");
 
-        createExtraOffer(employer, "H26", StatutValidation.EN_ATTENTE,
+        createExtraOffer(employer, "H26", StatutValidation.VALIDE,
                 Disciplines.GENIE_CIVIL, "Stagiaire en génie civil",
                 "Assistez les ingénieurs dans le suivi de projets d'infrastructure et la rédaction de rapports.",
                 "Repentigny, Québec", 23.50, "demo-offre-stage-07.pdf");
 
-        createExtraOffer(employer, "H26", StatutValidation.EN_ATTENTE,
+        createExtraOffer(employer, "H26", StatutValidation.VALIDE,
                 Disciplines.EDUCATION, "Stagiaire en formation et développement",
                 "Concevez des modules de formation en ligne et animez des ateliers internes.",
                 "Terrebonne, Québec", 19.50, "demo-offre-stage-08.pdf");

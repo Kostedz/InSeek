@@ -318,8 +318,8 @@ export const api = {
             }),
 
         getAllOffers: () =>
-            fetcher("/documents/stage", {
-                headers: {Accept: "application/json"},
+            fetcher("/gestionnaire/sessions/ALL/offres", {
+                headers: { Accept: "application/json" },
             }),
 
         getOffersBySession: (sessionId, filters = {}) => {

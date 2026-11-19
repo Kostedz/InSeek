@@ -174,6 +174,11 @@ public class DocumentService {
         return documentRepository.findOffreStageSummariesByStatut(StatutValidation.VALIDE);
     }
 
+    @Transactional
+    public List<OffreDeStageDTO> findAllOffreStageSummaries() {
+        return documentRepository.findAllOffreStageSummaries();
+    }
+
     public OffreDeStageDTO findOffreDeStageById(Long id){
         return documentRepository.findOffreStageSummaryById(id).
                 orElseThrow(() -> new RuntimeException("Stage n'a pas été trouvé"));

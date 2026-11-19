@@ -12,11 +12,13 @@ import com.lacouf.rsbjwt.repository.*;
 import com.lacouf.rsbjwt.service.dto.*;
 import com.lacouf.rsbjwt.model.contract.StatutContrat;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EvaluationService {
@@ -106,6 +108,7 @@ public class EvaluationService {
         Etudiant student = findStudentAssignedToTeacher(companyEvaluationDTO.studentId(), teacher);
         Contract activeContract = findActiveContract(companyEvaluationDTO.studentId());
 
+        log.info("Attempting to submit company evaluation for student ID: {}", student.getId());
         if (evaluationRepository.existsCompanyEvaluationByContractAndEvaluationState(
                 activeContract.getId(), EvaluationState.SUBMITTED)) {
             throw new ConflictException("Une évaluation du milieu de stage a déjà été soumise pour ce contrat.");
@@ -130,6 +133,7 @@ public class EvaluationService {
 
         Contract contract = findContractForStudentAndEmployer(student.getId(), employer);
 
+        log.info("Attempting to submit student evaluation for student ID: {}", student.getId());
         // Prevent a second evaluation for the same contract
         if (evaluationRepository.existsStudentEvaluationByContractAndEvaluationState(contract.getId(),EvaluationState.SUBMITTED)) {
             throw new ConflictException(
@@ -243,16 +247,6 @@ public class EvaluationService {
 
     private void validateStudentEvaluationSubmission(StudentEvaluationDTO studentEvaluationDTO, Contract contract)
             throws BadRequestException {
-//        if (studentEvaluationDTO.evaluationSubmittedAt() == null) {
-//            throw new BadRequestException("La date de soumission de l'évaluation est obligatoire.");
-//        }
-//        if (contract.getStartingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getStartingDate())) {
-//            throw new BadRequestException("La date de soumission de l'évaluation ne peut pas être antérieure au début du stage.");
-//        }
-        /*
-        if (contract.getEndingDate() != null && studentEvaluationDTO.evaluationSubmittedAt().isBefore(contract.getEndingDate())) {
-            throw new BadRequestException("La date de soumission de l'évaluation de l'étudiant doit être après la fin du stage.");
-        }*/
         validateRating("professionalismRating", studentEvaluationDTO.professionalismRating());
         validateRating("workQualityRating", studentEvaluationDTO.workQualityRating());
         validateRating("teamworkRating", studentEvaluationDTO.teamworkRating());
