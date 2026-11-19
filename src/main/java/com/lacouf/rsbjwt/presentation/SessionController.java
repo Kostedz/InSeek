@@ -30,6 +30,9 @@ public class SessionController {
     @GetMapping("/{sessionId}/offres")
     @PreAuthorize("hasAuthority('GESTIONNAIRE')")
     public ResponseEntity<List<OffreDeStageDTO>> getOffersBySession(@PathVariable String sessionId) {
+        if ("ALL".equalsIgnoreCase(sessionId)) {
+            return ResponseEntity.ok(documentService.findAllOffreStageSummaries());
+        }
         return ResponseEntity.ok(documentService.findStagesBySession(sessionId));
     }
 }

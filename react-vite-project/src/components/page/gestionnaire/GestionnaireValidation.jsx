@@ -9,12 +9,28 @@ import PdfPreview from "../../PdfPreview.jsx";
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
 function normalizeOffer(offer, t) {
+    const rawStatus = String(offer.statut ?? offer.status ?? "EN_ATTENTE")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+    const statusAliases = {
+        "VALIDATED": "VALIDE",
+        "APPROVED": "VALIDE",
+        "VALIDE": "VALIDE",
+        "REJECTED": "REJETE",
+        "REJECT": "REJETE",
+        "REJETE": "REJETE",
+        "PENDING": "EN_ATTENTE",
+        "EN ATTENTE": "EN_ATTENTE",
+        "EN_ATTENTE": "EN_ATTENTE",
+    };
+
     return {
         ...offer,
         id: offer.id ?? offer.documentId,
         sessionId: offer.sessionId ?? offer.sessionCode ?? offer.session ?? "",
         fileName: offer.fileName ?? offer.filename ?? "",
-        statut: String(offer.statut ?? offer.status ?? "EN_ATTENTE").toUpperCase(),
+        statut: statusAliases[rawStatus] ?? rawStatus,
         nomEntreprise: offer.nomEntreprise ?? offer.companyName ?? offer.company ?? "",
         position: offer.position ?? offer.jobTitle ?? offer.title ?? "",
         email: offer.email ?? offer.contactEmail ?? "",
@@ -369,6 +385,13 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
     const currentSessionName = selectedSessionId === "ALL"
         ? t("managerValidation.allSessions")
         : sessions.find((s) => (s.id || s.code) === selectedSessionId)?.name || selectedSessionId;
+    const listHeading = statusFilter === "ALL"
+        ? t("managerOffersSession.filters.allStatuses", { defaultValue: "Toutes les offres" })
+        : statusFilter === "VALIDE"
+            ? t("managerValidation.status.approved", { defaultValue: "Approuvées" })
+            : statusFilter === "REJETE"
+                ? t("managerValidation.status.rejected", { defaultValue: "Refusées" })
+                : t("managerValidation.status.pending", { defaultValue: "En attente d’approbation" });
 
     return (
         <section className={embedded ? "mt-10" : "flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8"}>
@@ -470,7 +493,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
                 <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
                     <aside className="rounded-2xl border border-line bg-surface p-4 shadow-[0_12px_30px_rgba(48,35,55,0.06)]">
                         <div className="flex items-center justify-between">
-                            <h2 className="font-black text-ink">{t("managerValidation.pending", { defaultValue: "Offres affichées" })} ({filteredOffers.length})</h2>
+                            <h2 className="font-black text-ink">{listHeading} ({filteredOffers.length})</h2>
                         </div>
 
                         <div className="mt-4 space-y-2">
