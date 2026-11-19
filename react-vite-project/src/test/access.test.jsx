@@ -17,6 +17,9 @@ function mockAuthenticatedBackend(user) {
         if (path.includes("documents/student/cv")) {
             return new Response(null, {status: 204});
         }
+        if (path.includes("gestionnaire/sessions") || path.includes("gestionnaire/offres")) {
+            return new Response(JSON.stringify([]), {status: 200});
+        }
         if (path.includes("employeur/offres") || path.includes("gestionnaire/documents/pending")) {
             return new Response("[]", {status: 200});
         }
@@ -37,7 +40,7 @@ describe("application page access", () => {
     it.each([
         ["employer", "ROLE_EMPLOYEUR", "/employeur", "Publiez vos offres de stage"],
         ["student", "ROLE_ETUDIANT", "/etudiant", "Téléverser mon CV"],
-        ["manager", "ROLE_GESTIONNAIRE", "/gestionnaire", "Validation des offres"],
+        ["manager", "ROLE_GESTIONNAIRE", "/gestionnaire", "Approbation des offres"],
     ])("allows the %s role to access its workspace", async (_label, role, route, heading) => {
         mockAuthenticatedBackend({
             id: 7,
@@ -64,6 +67,6 @@ describe("application page access", () => {
         renderWithProviders(<App/>, {route: "/gestionnaire"});
 
         expect(await screen.findByRole("heading", {name: "Accès refusé"})).toBeInTheDocument();
-        expect(screen.queryByRole("heading", {name: "Validation des offres"})).not.toBeInTheDocument();
+        expect(screen.queryByRole("heading", {name: "Approbation des offres"})).not.toBeInTheDocument();
     });
 });

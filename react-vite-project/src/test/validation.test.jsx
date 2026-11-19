@@ -20,7 +20,10 @@ const pendingOffer = {
 
 describe("manager validation workflows", () => {
     it("approves a pending internship offer", async () => {
-        vi.spyOn(api.gestionnaire, "getPendingDocuments").mockResolvedValue(
+        vi.spyOn(api.gestionnaire, "getSessions").mockResolvedValue(
+            new Response(JSON.stringify([{id: "H26", name: "Hiver 2026"}]), {status: 200}),
+        );
+        vi.spyOn(api.gestionnaire, "getAllOffers").mockResolvedValue(
             new Response(JSON.stringify([pendingOffer]), {status: 200}),
         );
         const approveDocument = vi.spyOn(api.gestionnaire, "approveDocument").mockResolvedValue(
@@ -30,15 +33,18 @@ describe("manager validation workflows", () => {
         renderWithProviders(<GestionnaireValidation/>);
 
         expect((await screen.findAllByText("Stagiaire en développement web")).length).toBeGreaterThan(0);
-        await userEvent.setup().click(screen.getByRole("button", {name: "Valider"}));
+        await userEvent.setup().click(screen.getByRole("button", {name: "Approuver"}));
 
         await waitFor(() => expect(approveDocument).toHaveBeenCalledWith(12));
-        expect(await screen.findByRole("status")).toHaveTextContent("Offre validée");
-        expect(screen.getByText("Validé")).toBeInTheDocument();
+        expect(await screen.findByRole("status")).toHaveTextContent("Offre approuvée");
+        expect(screen.queryByText("Validé")).not.toBeInTheDocument();
     });
 
     it("requires a rejection comment and sends it when an offer is refused", async () => {
-        vi.spyOn(api.gestionnaire, "getPendingDocuments").mockResolvedValue(
+        vi.spyOn(api.gestionnaire, "getSessions").mockResolvedValue(
+            new Response(JSON.stringify([{id: "H26", name: "Hiver 2026"}]), {status: 200}),
+        );
+        vi.spyOn(api.gestionnaire, "getAllOffers").mockResolvedValue(
             new Response(JSON.stringify([pendingOffer]), {status: 200}),
         );
         const rejectDocument = vi.spyOn(api.gestionnaire, "rejectDocument").mockResolvedValue(
@@ -81,9 +87,9 @@ describe("manager validation workflows", () => {
         renderWithProviders(<GestionnaireCvValidation/>);
 
         expect(await screen.findByText("camille-martin-cv.pdf")).toBeInTheDocument();
-        await userEvent.setup().click(screen.getByRole("button", {name: "Valider"}));
+        await userEvent.setup().click(screen.getByRole("button", {name: "Approuver"}));
 
         await waitFor(() => expect(approveDocument).toHaveBeenCalledWith(24));
-        expect(await screen.findByRole("status")).toHaveTextContent("CV validé");
+        expect(await screen.findByRole("status")).toHaveTextContent("CV approuvé");
     });
 });

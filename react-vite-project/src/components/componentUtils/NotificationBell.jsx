@@ -192,9 +192,13 @@ function NotificationBell({isLoggedIn}) {
 
         const token = getAuthToken();
         const url = `${BASE_URL}notifications${token ? `?token=${encodeURIComponent(token)}` : ""}`;
-        const eventSource = new EventSource(url);
-
         loadStored();
+        if (typeof EventSource === "undefined") {
+            return () => {
+                isMounted = false;
+            };
+        }
+        const eventSource = new EventSource(url);
         eventSource.onopen = loadStored;
         eventSource.addEventListener("notification", handleNotification);
 

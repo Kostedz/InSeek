@@ -121,7 +121,10 @@ describe("role workspaces", () => {
     });
 
     it("loads an offer pending manager validation", async () => {
-        vi.spyOn(api.gestionnaire, "getPendingDocuments").mockResolvedValue(
+        vi.spyOn(api.gestionnaire, "getSessions").mockResolvedValue(
+            new Response(JSON.stringify([{id: "H26", name: "Hiver 2026"}]), {status: 200}),
+        );
+        vi.spyOn(api.gestionnaire, "getAllOffers").mockResolvedValue(
             new Response(JSON.stringify([{
                 id: 12,
                 statut: "EN_ATTENTE",
@@ -134,8 +137,8 @@ describe("role workspaces", () => {
 
         renderWithProviders(<GestionnaireValidation/>);
 
-        expect(await screen.findByRole("heading", {name: "Validation des offres"})).toBeInTheDocument();
+        expect(await screen.findByRole("heading", {name: "Approbation des offres"})).toBeInTheDocument();
         expect((await screen.findAllByText("Stagiaire en développement web")).length).toBeGreaterThan(0);
-        expect(screen.getAllByText("En attente de validation").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("En attente d’approbation").length).toBeGreaterThan(0);
     });
 });
