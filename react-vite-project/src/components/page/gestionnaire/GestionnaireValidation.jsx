@@ -7,6 +7,13 @@ import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
+const currentSessionId = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const term = month <= 4 ? "H" : month <= 8 ? "E" : month === 12 && date.getDate() >= 15 ? "H" : "A";
+    const sessionYear = term === "H" && month === 12 ? year + 1 : year;
+    return `${term}${String(sessionYear % 100).padStart(2, "0")}`;
+};
 
 function normalizeOffer(offer, t) {
     const rawStatus = String(offer.statut ?? offer.status ?? "EN_ATTENTE")
@@ -179,7 +186,7 @@ function GestionnaireValidation({ embedded = false, hideEmbeddedHeading = false 
 
                 if (isMounted && list.length > 0) {
                     setSessions(list);
-                    setSelectedSessionId("ALL");
+                    setSelectedSessionId(currentSessionId());
                 }
             } catch {
                 if (isMounted) {

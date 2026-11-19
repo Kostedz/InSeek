@@ -8,6 +8,13 @@ const fullName = (student) => [student?.prenom ?? student?.firstName, student?.n
 const valueOf = (object, ...keys) => keys.map((key) => object?.[key]).find((value) => value !== undefined && value !== null && value !== "");
 const sessionLabel = (session) => valueOf(session, "label", "nom", "name", "libelle") ?? "";
 const sessionId = (session) => valueOf(session, "id", "sessionId", "code") ?? sessionLabel(session);
+const currentSessionId = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const term = month <= 4 ? "H" : month <= 8 ? "E" : month === 12 && date.getDate() >= 15 ? "H" : "A";
+    const sessionYear = term === "H" && month === 12 ? year + 1 : year;
+    return `${term}${String(sessionYear % 100).padStart(2, "0")}`;
+};
 const statusOf = (student) => String(valueOf(student, "statutRecherche", "statutRechercheEtudiant", "researchStatus", "status", "statut") ?? "").toUpperCase();
 const FALLBACK_SESSIONS = (date) => {
     let currentYear = date.getFullYear();
@@ -39,7 +46,7 @@ const FALLBACK_SESSIONS = (date) => {
 export default function GestionnaireStudents({embedded = false}) {
     const {t} = useTranslation();
     const [sessions, setSessions] = useState([]);
-    const [selectedSessionId, setSelectedSessionId] = useState("ALL");
+    const [selectedSessionId, setSelectedSessionId] = useState("");
     const [students, setStudents] = useState([]);
     const [loadingSessions, setLoadingSessions] = useState(true);
     const [loadingStudents, setLoadingStudents] = useState(false);
@@ -61,13 +68,13 @@ export default function GestionnaireStudents({embedded = false}) {
                 if (!list.length) throw new Error("sessions_empty");
                 if (!mounted) return;
                 setSessions(list);
-                setSelectedSessionId("ALL");
+                setSelectedSessionId(currentSessionId());
             } catch {
                 if (!mounted) return;
                 const fallback = FALLBACK_SESSIONS(new Date());
                 setSessions(fallback);
                 setSessionsUnavailable(true);
-                setSelectedSessionId("ALL");
+                setSelectedSessionId(currentSessionId());
             } finally {
                 if (mounted) setLoadingSessions(false);
             }

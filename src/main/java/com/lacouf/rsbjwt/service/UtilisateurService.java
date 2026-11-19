@@ -18,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Service
 @RequiredArgsConstructor
 public class UtilisateurService {
@@ -153,7 +155,7 @@ public class UtilisateurService {
                     .prenom(registerDTO.prenom())
                     .email(registerDTO.email())
                     .discipline(Disciplines.valueOf(registerDTO.affiliation()))
-                    .session(SessionUtil.getCurrentSession())
+                    .session(SessionUtil.getNextSession(LocalDate.now()))
                     .password(passwordEncoder.encode(registerDTO.password()))
                     .build();
         }

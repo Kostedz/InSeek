@@ -8,6 +8,19 @@ public class SessionUtil {
         return getSession(LocalDate.now());
     }
 
+    public static String getNextSession(LocalDate today) {
+        String currentSession = getSession(today);
+        char season = currentSession.charAt(0);
+        int year = Integer.parseInt(currentSession.substring(1));
+
+        return switch (season) {
+            case 'H' -> "E" + String.format("%02d", year);
+            case 'E' -> "A" + String.format("%02d", year);
+            case 'A' -> "H" + String.format("%02d", (year + 1) % 100);
+            default -> throw new IllegalStateException("Session inconnue: " + currentSession);
+        };
+    }
+
     public static String getSession(LocalDate today) {
         int year = today.getYear();
 

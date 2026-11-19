@@ -3,6 +3,7 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.repository.EtudiantRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.StagiaireDTO;
@@ -23,6 +24,7 @@ public class SuiviEtudiantsService {
     public List<StagiaireDTO> listEtudiantsDuProfesseur(String professeurEmail) {
         return etudiantRepository.findByProfesseurEmail(professeurEmail)
                 .stream()
+                .filter(this::hasInternship)
                 .map(StagiaireDTO::of)
                 .toList();
     }
@@ -31,6 +33,7 @@ public class SuiviEtudiantsService {
     public List<StagiaireDTO> listEtudiantsDuProfesseur(String professeurEmail, String session) {
         return etudiantRepository.findByProfesseurEmailAndSession(professeurEmail, session)
                 .stream()
+                .filter(this::hasInternship)
                 .map(StagiaireDTO::of)
                 .toList();
     }
@@ -43,10 +46,15 @@ public class SuiviEtudiantsService {
 
         boolean estSuperviseur = etudiant.getProfesseur() != null
                 && etudiant.getProfesseur().getEmail().equalsIgnoreCase(professeurEmail);
-        if (!estSuperviseur) {
+        if (!estSuperviseur || !hasInternship(etudiant)) {
             throw new NotFoundException("Étudiant non trouvé");
         }
 
         return applicationStageService.findApplicationsForStudent(etudiant);
+    }
+
+    private boolean hasInternship(Etudiant etudiant) {
+        return etudiant.getStatutRecherche() == StatutRechercheEtudiant.INTERNSHIP_FOUND
+                || etudiant.getStatutRecherche() == StatutRechercheEtudiant.SIGNED_CONTRACT;
     }
 }

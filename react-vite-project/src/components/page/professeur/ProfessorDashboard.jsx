@@ -58,9 +58,9 @@ const fromSubmittedEvaluation = (evaluation, prefill) => ({
 });
 const defaultEvaluation = (student) => ({
     visitDate: "",
-    supervision: "3",
-    taskFit: "3",
-    workEnvironment: "3",
+    supervision: "",
+    taskFit: "",
+    workEnvironment: "",
     comments: "",
     student: personName(student),
     discipline: student?.discipline ?? "",
@@ -91,7 +91,7 @@ export default function ProfessorDashboard() {
     const activeTab = pathname.endsWith("/evaluations") ? "evaluations" : "students";
     const [students, setStudents] = useState([]);
     const [sessions] = useState(() => sessionOptions());
-    const [selectedSessionId, setSelectedSessionId] = useState("ALL");
+    const [selectedSessionId, setSelectedSessionId] = useState(() => sessionOptions()[0]?.id ?? "ALL");
     const [applications, setApplications] = useState({});
     const [evaluationPrefill, setEvaluationPrefill] = useState({});
     const [expandedId, setExpandedId] = useState(null);
@@ -104,7 +104,7 @@ export default function ProfessorDashboard() {
     const evaluationContentRef = useRef(null);
     const [drafts, setDrafts] = useState(() => {
         try {
-            return JSON.parse(localStorage.getItem("inseek.professor.environment-evaluation.drafts") || "{}");
+            return JSON.parse(localStorage.getItem("inseek.professor.environment-evaluation.drafts.v2") || "{}");
         } catch {
             return {};
         }
@@ -113,7 +113,7 @@ export default function ProfessorDashboard() {
     const [fieldErrors, setFieldErrors] = useState({});
     const [saved, setSaved] = useState(false);
 
-    useEffect(() => localStorage.setItem("inseek.professor.environment-evaluation.drafts", JSON.stringify(drafts)), [drafts]);
+    useEffect(() => localStorage.setItem("inseek.professor.environment-evaluation.drafts.v2", JSON.stringify(drafts)), [drafts]);
     useEffect(() => {
         if (selectedEvaluationId === null) return undefined;
         const closeOnEscape = (event) => {
@@ -226,9 +226,9 @@ export default function ProfessorDashboard() {
         const storedData = drafts[student.id] ?? defaultEvaluation(student);
         const data = {
             ...storedData,
-            supervision: storedData.supervision || "3",
-            taskFit: storedData.taskFit || "3",
-            workEnvironment: storedData.workEnvironment || "3",
+            supervision: storedData.supervision || "",
+            taskFit: storedData.taskFit || "",
+            workEnvironment: storedData.workEnvironment || "",
         };
         const nextErrors = {};
         ["visitDate", "supervision", "taskFit", "workEnvironment"].forEach((field) => {
@@ -324,9 +324,9 @@ export default function ProfessorDashboard() {
                                 const storedData = complete ?? drafts[student.id] ?? defaultEvaluation(student);
                                 const data = {
                                     ...storedData,
-                                    supervision: storedData.supervision || "3",
-                                    taskFit: storedData.taskFit || "3",
-                                    workEnvironment: storedData.workEnvironment || "3",
+                                    supervision: storedData.supervision || "",
+                                    taskFit: storedData.taskFit || "",
+                                    workEnvironment: storedData.workEnvironment || "",
                                 };
                                 const field = (name, label, type = "textarea", className = "") => {
                                     const required = ["visitDate", "supervision", "taskFit", "workEnvironment"].includes(name);
@@ -335,19 +335,19 @@ export default function ProfessorDashboard() {
                                     {type === "range" ? <><span
                                         className="flex items-center justify-between gap-3"><span>{label}{required && <>
                                         <span className="text-error" aria-hidden="true">*</span></>}</span><span
-                                        className="shrink-0 rounded-full bg-lavender/40 px-3 py-1 text-xs font-black text-ink">{Number(data[name] || 3)} / 5</span></span><span
+                                        className="shrink-0 rounded-full bg-lavender/40 px-3 py-1 text-xs font-black text-ink">{data[name] ? `${Number(data[name])} / 5` : t("professorDashboard.evaluation.ratingChoose", "À choisir")}</span></span><span
                                         className="professor-rating-slider relative mt-0.5 block h-6 w-full cursor-pointer has-[:focus-visible]:rounded-full has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink disabled:cursor-default">
                                             <span
                                                 className="absolute inset-x-2 top-1/2 h-1 -translate-y-1/2 rounded-full bg-lavender/60">
                                                 <span
                                                     className="absolute left-0 top-0 h-1 rounded-full bg-ink transition-[width] duration-150 ease-out motion-reduce:transition-none"
-                                                    style={{width: `${((Number(data[name] || 3) - 1) / 4) * 100}%`}}/>
+                                                    style={{width: `${((Number(data[name] || 1) - 1) / 4) * 100}%`}}/>
                                                 <span
                                                     className="absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-ink shadow-[0_1px_5px_rgba(48,35,55,0.3)] transition-[left,transform] duration-150 ease-out motion-reduce:transition-none"
-                                                    style={{left: `${((Number(data[name] || 3) - 1) / 4) * 100}%`}}/>
+                                                    style={{left: `${((Number(data[name] || 1) - 1) / 4) * 100}%`}}/>
                                             </span>
                                             <input type="range" min="1" max="5" step="0.5" disabled={Boolean(complete)}
-                                                   value={data[name] || "3"}
+                                                   value={data[name] || "1"}
                                                    onChange={e => setEvaluationField(student.id, name, e.target.value)}
                                                    aria-label={label}
                                                    className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"/>

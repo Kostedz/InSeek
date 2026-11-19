@@ -10,21 +10,26 @@ const studentName = (contract) => contract?.studentFullName
     || contract?.studentName || "";
 const studentId = (contract) => contract?.studentId ?? contract?.internId ?? contract?.student?.id ?? contract?.intern?.id;
 const contractTitle = (contract) => contract?.offerTitle ?? contract?.position ?? contract?.internshipOffer?.position ?? "";
-const draftStorageKey = "inseek.employer.internship-evaluation.drafts";
+const draftStorageKey = "inseek.employer.internship-evaluation.drafts.v2";
 export const EMPLOYER_EVALUATIONS_UPDATED_EVENT = "inseek:employer-evaluations-updated";
 const readStorage = (key) => {
     try {
-        return JSON.parse(localStorage.getItem(key) || "{}");
+        const saved = JSON.parse(localStorage.getItem(key) || "{}");
+        return Object.fromEntries(Object.entries(saved).map(([id, draft]) => {
+            const ratings = ["skills", "integration", "objectives", "overall"];
+            const wasDefaulted = ratings.every((field) => String(draft?.[field] ?? "") === "3") && !draft?.comments;
+            return [id, wasDefaulted ? {...draft, ...Object.fromEntries(ratings.map((field) => [field, ""]))} : draft];
+        }));
     } catch {
         return {};
     }
 };
-const initialDraft = () => ({skills: "3", integration: "3", objectives: "3", overall: "3", comments: ""});
+const initialDraft = () => ({skills: "", integration: "", objectives: "", overall: "", comments: ""});
 const fromSubmitted = (evaluation) => ({
-    skills: String(evaluation.professionalismRating ?? 3),
-    integration: String(evaluation.teamworkRating ?? 3),
-    objectives: String(evaluation.objectiveReachedRating ?? 3),
-    overall: String(evaluation.workQualityRating ?? 3),
+    skills: evaluation.professionalismRating == null ? "" : String(evaluation.professionalismRating),
+    integration: evaluation.teamworkRating == null ? "" : String(evaluation.teamworkRating),
+    objectives: evaluation.objectiveReachedRating == null ? "" : String(evaluation.objectiveReachedRating),
+    overall: evaluation.workQualityRating == null ? "" : String(evaluation.workQualityRating),
     comments: evaluation.evaluationComment ?? "",
     submittedAt: evaluation.evaluationSubmittedAt ?? "",
 });
@@ -85,10 +90,10 @@ export default function EmployerEvaluationsPage() {
     const storedValues = selected ? (submitted[selectedKey] ?? drafts[selectedKey] ?? initialDraft()) : initialDraft();
     const values = {
         ...storedValues,
-        skills: storedValues.skills || "3",
-        integration: storedValues.integration || "3",
-        objectives: storedValues.objectives || "3",
-        overall: storedValues.overall || "3",
+        skills: storedValues.skills || "",
+        integration: storedValues.integration || "",
+        objectives: storedValues.objectives || "",
+        overall: storedValues.overall || "",
     };
     const updateField = (field, value) => {
         setDrafts((current) => ({
@@ -104,8 +109,12 @@ export default function EmployerEvaluationsPage() {
     };
     const confirmSubmit = async () => {
         if (!selected || submitting) return;
-        setSubmitting(true);
         setSubmitError("");
+        if (["skills", "integration", "objectives", "overall"].some((field) => !values[field])) {
+            setSubmitError(t("employerEvaluation.errors.chooseRatings", "Choisissez une note pour chaque curseur avant de soumettre l’évaluation."));
+            return;
+        }
+        setSubmitting(true);
         try {
             const internId = studentId(selected);
             if (!internId) throw new Error("student_id_missing");
@@ -155,12 +164,12 @@ export default function EmployerEvaluationsPage() {
             <span className="absolute inset-x-2 top-1/2 h-1 -translate-y-1/2 rounded-full bg-lavender/60">
                 <span
                     className="absolute left-0 top-0 h-1 rounded-full bg-ink transition-[width] duration-150 ease-out motion-reduce:transition-none"
-                    style={{width: `${((Number(values[field] || 3) - 1) / 4) * 100}%`}}/>
+                    style={{width: `${((Number(values[field] || 1) - 1) / 4) * 100}%`}}/>
                 <span
                     className="absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-ink shadow-[0_1px_5px_rgba(48,35,55,0.3)] transition-[left,transform] duration-150 ease-out motion-reduce:transition-none"
-                    style={{left: `${((Number(values[field] || 3) - 1) / 4) * 100}%`}}/>
+                    style={{left: `${((Number(values[field] || 1) - 1) / 4) * 100}%`}}/>
             </span>
-            <input aria-label={label} type="range" min="1" max="5" step="0.5" value={values[field] || "3"}
+            <input aria-label={label} type="range" min="1" max="5" step="0.5" value={values[field] || "1"}
                    disabled={Boolean(submitted[selectedKey])}
                    onChange={(event) => updateField(field, event.target.value)}
                    className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"/>
@@ -199,12 +208,13 @@ export default function EmployerEvaluationsPage() {
                         const id = String(contract.id);
                         const done = submitted[id];
                         return <article key={id}
-                                        className="flex flex-col gap-3 rounded-xl border border-line bg-canvas/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                        className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between ${done ? "border-emerald-300 bg-emerald-50" : "border-line bg-canvas/50"}`}>
                             <div><h3
                                 className="font-black text-ink">{studentName(contract) || t("employerEvaluation.student", "Stagiaire")}</h3>
                                 <p className="mt-1 text-sm text-ink-soft">{contractTitle(contract) || t("employerEvaluation.positionUnknown", "Poste non précisé")}</p>
                                 {done && <span
-                                    className="mt-2 inline-flex rounded-full bg-lavender/40 px-3 py-1 text-xs font-black text-ink">{t("employerEvaluation.submitted", "Évaluation envoyée")}</span>}
+                                    className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-3 py-1.5 text-xs font-black text-emerald-800"><span
+                                    aria-hidden="true">✓</span>{t("employerEvaluation.submitted", "Stagiaire déjà évalué")}</span>}
                             </div>
                             <button type="button" onClick={() => openForm(contract)}
                                     className="rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition hover:bg-ink-soft">{done ? t("employerEvaluation.view", "Voir l’évaluation") : t("employerEvaluation.start", "Évaluer le stagiaire")}</button>
