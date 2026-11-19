@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -47,6 +48,9 @@ class ApplicationStageServiceTest {
 
     @InjectMocks
     private ApplicationStageService applicationStageService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private Etudiant etudiant;
     private Employeur employeur;

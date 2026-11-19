@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.time.LocalDate;
@@ -54,6 +55,9 @@ class ContratServiceTest {
 
     @InjectMocks
     private ContratService contratService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private Etudiant etudiant;
     private OffreDeStage offre;

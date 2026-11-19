@@ -1,6 +1,8 @@
 package com.lacouf.rsbjwt.presentation;
 
+import com.lacouf.rsbjwt.presentation.notification.SseController;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.SseService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
@@ -38,6 +40,8 @@ class SseControllerTest {
     @MockitoBean
     UtilisateurRepository utilisateurRepository;
 
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     @DisplayName("Connects to event stream")
