@@ -64,8 +64,14 @@ function translateNotification(data, t) {
     }
 
     if (title === "Nouvelle évaluation de stage") {
-        const match = message.match(/^L’employeur a soumis l’évaluation de stage de (.+) pour le poste de (.+)\.$/);
-        if (match) return t("notifications.newEvaluation", {student: match[1], position: match[2]});
+        const match = message.match(/^L’employeur (.+) a soumis l’évaluation de stage de (.+) pour le poste de (.+)\.$/);
+        if (match) return t("notifications.newEvaluation", {employer: match[1], student: match[2], position: match[3]});
+        const legacyMatch = message.match(/^L’employeur a soumis l’évaluation de stage de (.+) pour le poste de (.+)\.$/);
+        if (legacyMatch) return t("notifications.newEvaluation", {
+            employer: t("notifications.anEmployer"),
+            student: legacyMatch[1],
+            position: legacyMatch[2]
+        });
     }
 
     if (message === "CV en attente de validation.") return t("notifications.cvToApprove");
