@@ -4,6 +4,7 @@ import com.lacouf.rsbjwt.service.util.NotificationType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
@@ -62,8 +63,23 @@ public class SseService {
             }
             emitter.send(event);
         } catch (Exception e) {
-            log.warn("Échec d'envoi SSE, client retiré", e);
+            if (isClientDisconnect(e)) {
+                log.debug("Connexion SSE fermée par le client; client retiré");
+            } else {
+                log.warn("Échec d'envoi SSE, client retiré", e);
+            }
             clients.remove(emitter);
         }
+    }
+
+    private boolean isClientDisconnect(Throwable error) {
+        for (Throwable cause = error; cause != null; cause = cause.getCause()) {
+            if (cause instanceof AsyncRequestNotUsableException) return true;
+            String message = cause.getMessage();
+            if (message != null && (message.contains("Broken pipe")
+                    || message.contains("Connection reset")
+                    || cause.getClass().getSimpleName().equals("ClientAbortException"))) return true;
+        }
+        return false;
     }
 }

@@ -136,9 +136,11 @@ public record NotificationEvent(
 
     public static NotificationEvent nouvelleEvaluationStage(Contract contrat) {
         String studentName = (contrat.getStudent().getPrenom() + " " + contrat.getStudent().getNom()).trim();
+        String employerName = contrat.getEmployer() == null ? ""
+                : (contrat.getEmployer().getPrenom() + " " + contrat.getEmployer().getNom()).trim();
         String poste = contrat.getInternshipOffer().getPosition();
         String titre = "Nouvelle évaluation de stage";
-        String texte = "L’employeur a soumis l’évaluation de stage de " + studentName
+        String texte = "L’employeur " + employerName + " a soumis l’évaluation de stage de " + studentName
                 + " pour le poste de " + poste + ".";
         return new NotificationEvent(
                 contrat.getTeacher(),

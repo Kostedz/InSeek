@@ -29,7 +29,8 @@ const resources = {
                 newContract: "Nouveau contrat de stage pour le poste de {{position}} chez {{company}}.",
                 updatedContract: "Contrat de stage modifié pour le poste de {{position}} chez {{company}}.",
                 evaluationToComplete: "Veuillez remplir l’évaluation de stage de {{student}} pour le poste de {{position}}.",
-                newEvaluation: "L’employeur a soumis l’évaluation de stage de {{student}} pour le poste de {{position}}.",
+                newEvaluation: "{{employer}} a soumis l’évaluation de stage de {{student}} pour le poste de {{position}}.",
+                anEmployer: "Un employeur",
             },
             navigation: {
                 mainAriaLabel: "Navigation principale et actions utilisateur",
@@ -1346,7 +1347,8 @@ const resources = {
                 newContract: "New internship contract for the {{position}} position at {{company}}.",
                 updatedContract: "Internship contract updated for the {{position}} position at {{company}}.",
                 evaluationToComplete: "Please complete the internship evaluation for {{student}} in the {{position}} position.",
-                newEvaluation: "The employer submitted the internship evaluation for {{student}} in the {{position}} position.",
+                newEvaluation: "{{employer}} submitted the internship evaluation for {{student}} in the {{position}} position.",
+                anEmployer: "An employer",
             },
             navigation: {
                 mainAriaLabel: "Main navigation and user actions",

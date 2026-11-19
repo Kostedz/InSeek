@@ -58,9 +58,9 @@ const fromSubmittedEvaluation = (evaluation, prefill) => ({
 });
 const defaultEvaluation = (student) => ({
     visitDate: "",
-    supervision: "",
-    taskFit: "",
-    workEnvironment: "",
+    supervision: "3",
+    taskFit: "3",
+    workEnvironment: "3",
     comments: "",
     student: personName(student),
     discipline: student?.discipline ?? "",
@@ -223,7 +223,13 @@ export default function ProfessorDashboard() {
     };
     const submitEvaluation = async (student) => {
         setSubmissionError("");
-        const data = drafts[student.id] ?? defaultEvaluation(student);
+        const storedData = drafts[student.id] ?? defaultEvaluation(student);
+        const data = {
+            ...storedData,
+            supervision: storedData.supervision || "3",
+            taskFit: storedData.taskFit || "3",
+            workEnvironment: storedData.workEnvironment || "3",
+        };
         const nextErrors = {};
         ["visitDate", "supervision", "taskFit", "workEnvironment"].forEach((field) => {
             if (!data[field]) nextErrors[field] = t("professorDashboard.evaluation.required", "Ce champ est obligatoire.");
@@ -315,12 +321,21 @@ export default function ProfessorDashboard() {
                             {students.filter(s => hasActiveInternship(s) || submitted[s.id]).map((student) => {
                                 const complete = submitted[student.id];
                                 const open = selectedEvaluationId === student.id;
-                                const data = complete ?? drafts[student.id] ?? defaultEvaluation(student);
-                                const field = (name, label, type = "textarea", className = "") => <label
+                                const storedData = complete ?? drafts[student.id] ?? defaultEvaluation(student);
+                                const data = {
+                                    ...storedData,
+                                    supervision: storedData.supervision || "3",
+                                    taskFit: storedData.taskFit || "3",
+                                    workEnvironment: storedData.workEnvironment || "3",
+                                };
+                                const field = (name, label, type = "textarea", className = "") => {
+                                    const required = ["visitDate", "supervision", "taskFit", "workEnvironment"].includes(name);
+                                    return <label
                                     className={`block text-sm font-bold text-ink ${className}`} key={name}>
                                     {type === "range" ? <><span
-                                        className="flex items-center justify-between gap-3"><span>{label}</span><span
-                                        className="shrink-0 rounded-full bg-lavender/40 px-3 py-1 text-xs font-black text-ink">{data[name] ? `${data[name]} / 5` : t("professorDashboard.evaluation.ratingChoose", "Choisir une note")}</span></span><span
+                                        className="flex items-center justify-between gap-3"><span>{label}{required && <>
+                                        <span className="text-error" aria-hidden="true">*</span></>}</span><span
+                                        className="shrink-0 rounded-full bg-lavender/40 px-3 py-1 text-xs font-black text-ink">{Number(data[name] || 3)} / 5</span></span><span
                                         className="professor-rating-slider relative mt-0.5 block h-6 w-full cursor-pointer has-[:focus-visible]:rounded-full has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink disabled:cursor-default">
                                             <span
                                                 className="absolute inset-x-2 top-1/2 h-1 -translate-y-1/2 rounded-full bg-lavender/60">
@@ -340,16 +355,20 @@ export default function ProfessorDashboard() {
                                         className="flex items-center justify-between gap-2 text-[10px] font-bold text-ink-soft"><span
                                         className="rounded-full bg-canvas px-2.5 py-1">{t("professorDashboard.evaluation.ratingLow", "1 · À améliorer")}</span><span
                                         className="rounded-full bg-canvas px-2.5 py-1">{t("professorDashboard.evaluation.ratingHigh", "5 · Excellent")}</span></span></> : <>{label}{type === "date" ?
-                                        <input type="date" disabled={Boolean(complete)} value={data[name] || ""}
+                                        <>{required && <> <span className="text-error"
+                                                                aria-hidden="true">*</span></>}<input type="date"
+                                                                                                      disabled={Boolean(complete)}
+                                                                                                      value={data[name] || ""}
                                                min={data.startDate || undefined}
                                                max={[data.endDate, localDateString()].filter(Boolean).sort()[0]}
                                                onChange={e => setEvaluationField(student.id, name, e.target.value)}
-                                               className="mt-1.5 w-full rounded-xl border border-line bg-white px-3 py-3 font-normal"/> :
+                                                                                                      className="mt-1.5 w-full rounded-xl border border-line bg-white px-3 py-3 font-normal"/></> :
                                         <textarea rows="4" disabled={Boolean(complete)} value={data[name] || ""}
                                                   onChange={e => setEvaluationField(student.id, name, e.target.value)}
                                                   className="mt-1.5 w-full resize-y rounded-xl border border-line bg-white px-3 py-3 font-normal"/>}</>}
                                     {fieldErrors[name] && !complete && <span
                                         className="mt-1 block text-xs font-semibold text-error">{fieldErrors[name]}</span>}</label>;
+                                };
                                 return <article key={student.id}
                                                 className="overflow-hidden rounded-xl border border-line bg-canvas/50">
                                     <div
