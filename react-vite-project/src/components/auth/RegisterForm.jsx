@@ -5,6 +5,7 @@ import { api } from "../../utils/api.js";
 import { FormValidator } from "../../utils/formValidator.js";
 import { RoleEnum } from "../../constants/role.js";
 import { DisciplineEnum } from "../../constants/disciplines.js";
+import DropdownSelect from "../DropdownSelect.jsx";
 import Loading from "../Loading.jsx";
 import {translateMessage, createTranslationMessage} from "../../utils/i18nMessage.js";
 import PasswordInput from "./PasswordInput.jsx";
@@ -327,7 +328,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                             <label className="mb-1 block text-sm font-bold text-ink" htmlFor="programme">
                                 {t("auth.register.programme")}
                             </label>
-                            <select
+                            <DropdownSelect
                                 id="programme"
                                 name="programme"
                                 value={formData.programme}
@@ -339,7 +340,7 @@ export default function RegisterForm({ user, authChecked, setUser }) {
                                         {prog.label}
                                     </option>
                                 ))}
-                            </select>
+                            </DropdownSelect>
                         </div>
                     )}
 

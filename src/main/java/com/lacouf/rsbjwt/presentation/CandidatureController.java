@@ -23,8 +23,16 @@ public class CandidatureController {
 
     // P: ResponseEntity<?> pourquoi pas ResponseEntity<List<CandidatureDTO>> ?
     @GetMapping
-    public ResponseEntity<?> lister(@RequestParam(required = false) Long offreId,
-                                    HttpServletRequest request) {
+    public ResponseEntity<?> lister(HttpServletRequest request) {
+        return lister(null, request);
+    }
+
+    @GetMapping("/offre/{offreId}")
+    public ResponseEntity<?> listerParOffre(@PathVariable Long offreId, HttpServletRequest request) {
+        return lister(offreId, request);
+    }
+
+    private ResponseEntity<?> lister(Long offreId, HttpServletRequest request) {
         try {
             List<CandidatureDTO> result = candidatureService.listerCandidatures(offreId, request);
             return ResponseEntity.ok(result);

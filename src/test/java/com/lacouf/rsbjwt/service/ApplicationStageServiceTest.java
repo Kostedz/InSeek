@@ -3,6 +3,9 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
@@ -19,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -44,6 +48,9 @@ class ApplicationStageServiceTest {
 
     @InjectMocks
     private ApplicationStageService applicationStageService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private Etudiant etudiant;
     private Employeur employeur;

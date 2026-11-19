@@ -1,16 +1,21 @@
 package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.document.CV;
+import com.lacouf.rsbjwt.model.document.Document;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.service.dto.DocumentValidationDTO;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +29,9 @@ class GestionnaireServiceTest {
 
     @Mock
     private DocumentRepository documentRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private GestionnaireService gestionnaireService;

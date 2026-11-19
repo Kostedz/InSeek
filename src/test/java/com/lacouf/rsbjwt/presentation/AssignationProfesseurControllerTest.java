@@ -2,8 +2,8 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.StatutRechercheEtudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtAuthenticationEntryPoint;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
@@ -67,9 +67,10 @@ class AssignationProfesseurControllerTest {
     @Test
     @DisplayName("GET /gestionnaire/stagiaires retourne 200 et la liste des étudiants")
     void listStagiaires_retourne200() throws Exception {
-        when(assignationProfesseurService.listStagiaires()).thenReturn(List.of(stagiaire(7L)));
 
-        mockMvc.perform(get("/gestionnaire/stagiaires"))
+        when(assignationProfesseurService.listStagiaires("A26")).thenReturn(List.of(stagiaire(7L)));
+
+        mockMvc.perform(get("/gestionnaire/stagiaires/A26"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].email").value("bib@a.com"))
                 .andExpect(jsonPath("$[0].professeurId").value(7))

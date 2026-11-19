@@ -1,19 +1,14 @@
 package com.lacouf.rsbjwt;
 
-import com.lacouf.rsbjwt.model.*;
-import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.DocumentService;
 import com.lacouf.rsbjwt.service.UtilisateurService;
-import com.lacouf.rsbjwt.service.dto.RegisterDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.web.multipart.MultipartFile;
 
 @SpringBootApplication
 @EnableScheduling
@@ -41,22 +36,5 @@ public class InSeekApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        RegisterDTO registerDTO = new RegisterDTO("bib", "bib", "bib@a.com", Role.ETUDIANT, "123456Aa@", "INFORMATIQUE");
-        registerIfMissing(registerDTO);
-
-
-        RegisterDTO registerDTO1 = new RegisterDTO("Ubi", "Soft", "ubisoft@mail.com", Role.EMPLOYEUR, "123456Aa@", "UbiSoft");
-        registerIfMissing(registerDTO1);
-
-        RegisterDTO registerDTO2 = new RegisterDTO("Admin", "Jean", "gestionnaire@inseek.com", Role.GESTIONNAIRE, "123456Aa@", "");
-        registerIfMissing(registerDTO2);
-
-        MultipartFile file = new MockMultipartFile("cv.pdf", "cv.pdf", "application/pdf", "Dummy CV content".getBytes());
-    }
-
-    private void registerIfMissing(RegisterDTO registerDTO) throws Exception {
-        if (utilisateurRepository.findByEmail(registerDTO.email()) == null) {
-            utilisateurService.register(registerDTO);
-        }
     }
 }

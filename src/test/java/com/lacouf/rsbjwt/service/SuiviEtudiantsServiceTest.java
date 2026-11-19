@@ -1,9 +1,9 @@
 package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Professeur;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Professeur;
 import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.repository.EtudiantRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;

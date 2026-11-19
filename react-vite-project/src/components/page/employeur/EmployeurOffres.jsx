@@ -1,5 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {useParams} from "react-router-dom";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import {createTranslationMessage, translateMessage} from "../../../utils/i18nMessage.js";
 import api from "../../../utils/api.js";
 import Loading from "../../Loading.jsx";
@@ -531,6 +533,7 @@ export default function EmployeurOffres({
     const formRef = useRef(null);
     const editorScrollRef = useRef(null);
     const {t, i18n} = useTranslation();
+    const {offerId} = useParams();
     const employerCompanyName = String(
         user?.nomCompagnie
         || user?.nomEntreprise
@@ -685,6 +688,13 @@ export default function EmployeurOffres({
             setIsLoadingApplications(false);
         }
     };
+
+    useEffect(() => {
+        if (!offerId || isLoadingOffers || offerList.length === 0) return;
+
+        const offer = offerList.find((o) => String(o.id) === offerId && o.statut === "VALIDE");
+        if (offer) loadApplications(offer);
+    }, [offerId, offerList, isLoadingOffers]);
 
     useEffect(() => {
         if (!usesRemoteOffers) return undefined;
@@ -1012,17 +1022,17 @@ export default function EmployeurOffres({
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
                     <div
-                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.myOffers")}</p>
                         <p className="text-xl font-black text-ink">{offerList.length}</p>
                     </div>
                     <div
-                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.pending")}</p>
                         <p className="text-xl font-black text-ink">{pendingCount}</p>
                     </div>
                     <div
-                        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
+                        className="flex items-center justify-between gap-3 rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{t("employerOffers.stats.published")}</p>
                         <p className="text-xl font-black text-ink">{publishedCount}</p>
                     </div>
@@ -1258,14 +1268,14 @@ export default function EmployeurOffres({
                                                        label={t("employerOffers.fields.discipline")}
                                                        required
                                                        error={fieldErrors.targetDiscipline}>
-                                                    <select id="targetDiscipline" name="targetDiscipline"
-                                                            value={formValues.targetDiscipline} onChange={updateField}
-                                                            className={inputClass(fieldErrors.targetDiscipline)}>
+                                                    <DropdownSelect id="targetDiscipline" name="targetDiscipline"
+                                                                    value={formValues.targetDiscipline} onChange={updateField}
+                                                                    className={inputClass(fieldErrors.targetDiscipline)}>
                                                         <option
                                                             value="">{t("employerOffers.fields.selectDiscipline")}</option>
                                                         {DISCIPLINES.map(([value]) => <option key={value}
                                                                                               value={value}>{t(`employerOffers.disciplines.${value}`)}</option>)}
-                                                    </select>
+                                                    </DropdownSelect>
                                                 </Field>
                                                 <Field id="adresseEntreprise"
                                                        label={t("employerOffers.fields.companyAddress")}

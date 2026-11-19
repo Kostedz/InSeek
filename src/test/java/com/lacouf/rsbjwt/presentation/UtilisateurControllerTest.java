@@ -2,7 +2,7 @@ package com.lacouf.rsbjwt.presentation;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import com.lacouf.rsbjwt.service.AuthService;
@@ -294,7 +294,8 @@ class UtilisateurControllerTest {
                 "Alice",
                 "alice@mail.com",
                 "ROLE_ETUDIANT",
-                Disciplines.INFORMATIQUE
+                Disciplines.INFORMATIQUE,
+                "A26"
         );
 
         when(utilisateurService.getMe(any())).thenReturn(dto);

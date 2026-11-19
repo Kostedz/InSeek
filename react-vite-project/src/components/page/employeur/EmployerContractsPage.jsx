@@ -173,6 +173,7 @@ export default function EmployerContractsPage({
     const {i18n, t} = useTranslation();
     const language = i18n.resolvedLanguage === "en" ? "en" : "fr";
     const [selectedContractId, setSelectedContractId] = useState(null);
+    const [contractView, setContractView] = useState("PENDING");
     const [locallySignedContracts, setLocallySignedContracts] = useState({});
     const [demoContracts, setDemoContracts] = useState([]);
     const [employerContracts, setEmployerContracts] = useState([]);
@@ -238,6 +239,9 @@ export default function EmployerContractsPage({
     }), [allContracts, locallySignedContracts]);
 
     const selectedContract = contractList.find(({id}) => id === selectedContractId && id !== null);
+    const pendingContracts = contractList.filter(({state}) => state === "waiting" || state === "ready");
+    const historyContracts = contractList.filter(({state}) => state === "signed" || state === "declined");
+    const visibleContracts = contractView === "PENDING" ? pendingContracts : historyContracts;
     const signableContract = selectedContract?.studentSigned ? selectedContract : null;
     const totals = contractList.reduce((counts, {state}) => ({...counts, [state]: counts[state] + 1}), {
         waiting: 0,
@@ -310,13 +314,13 @@ export default function EmployerContractsPage({
 
                 <div className="mt-6 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                     {[
-                        [t("employerContracts.total"), contractList.length, "bg-surface"],
-                        [t("employerContracts.waiting"), totals.waiting, "bg-gold/15"],
-                        [t("employerContracts.ready"), totals.ready, "bg-pink/30"],
-                        [t("employerContracts.signed"), totals.signed, "bg-green-50"],
-                    ].map(([label, value, background]) => (
+                        [t("employerContracts.total"), contractList.length],
+                        [t("employerContracts.waiting"), totals.waiting],
+                        [t("employerContracts.ready"), totals.ready],
+                        [t("employerContracts.signed"), totals.signed],
+                    ].map(([label, value]) => (
                         <div key={label}
-                             className={`flex items-center justify-between rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)] ${background}`}>
+                             className="flex items-center justify-between rounded-xl border border-line p-3 shadow-[0_6px_18px_rgba(48,35,55,0.04)]">
                             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-soft">{label}</p>
                             <p className="text-xl font-black text-ink">{value}</p>
                         </div>
@@ -343,8 +347,33 @@ export default function EmployerContractsPage({
                             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">{t("employerContracts.emptyDescription")}</p>
                         </div>
                     ) : (
-                        <div className="mt-5 grid gap-3 lg:grid-cols-2">
-                            {contractList.map((entry) => {
+                        <div className="mt-5">
+                            <div className="inline-flex max-w-full gap-1 rounded-2xl border border-line bg-canvas p-1"
+                                 role="tablist" aria-label={t("employerContracts.views.label")}>
+                                {[{
+                                    id: "PENDING",
+                                    label: t("employerContracts.views.pending"),
+                                    count: pendingContracts.length
+                                }, {
+                                    id: "HISTORY",
+                                    label: t("employerContracts.views.history"),
+                                    count: historyContracts.length
+                                }].map((tab) => (
+                                    <button key={tab.id} type="button" role="tab"
+                                            aria-selected={contractView === tab.id}
+                                            onClick={() => setContractView(tab.id)}
+                                            className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${contractView === tab.id ? "bg-ink text-white shadow-sm" : "text-ink-soft hover:bg-surface hover:text-ink"}`}>
+                                        {tab.label}<span
+                                        className="ml-2 rounded-full bg-lavender/40 px-2 py-0.5 text-xs">{tab.count}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            {visibleContracts.length === 0 ?
+                                <div className="mt-4 rounded-2xl border border-line bg-canvas p-7 text-center"
+                                     role="status">
+                                    <h3 className="text-base font-black text-ink">{t(contractView === "PENDING" ? "employerContracts.views.emptyPending" : "employerContracts.views.emptyHistory")}</h3>
+                                </div> : <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                                    {visibleContracts.map((entry) => {
                                 const {contract, id, state} = entry;
                                 const student = studentName(contract) || t("employerContracts.notSpecified");
                                 const position = contractPosition(contract) || t("employerContracts.notSpecified");
@@ -395,6 +424,7 @@ export default function EmployerContractsPage({
                                     </article>
                                 );
                             })}
+                                </div>}
                         </div>
                     )}
                 </section>

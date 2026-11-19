@@ -1,41 +1,58 @@
 package com.lacouf.rsbjwt.config;
 
-import com.lacouf.rsbjwt.model.CV;
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.Entrevue;
-import com.lacouf.rsbjwt.model.Employeur;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.ModeEntrevue;
-import com.lacouf.rsbjwt.model.OffreDeStage;
-import com.lacouf.rsbjwt.model.StatutConvocationEntrevue;
+import com.lacouf.rsbjwt.model.document.CV;
+import com.lacouf.rsbjwt.model.contract.Contract;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.entrevue.Entrevue;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Gestionnaire;
+import com.lacouf.rsbjwt.model.entrevue.ModeEntrevue;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Professeur;
+import com.lacouf.rsbjwt.model.contract.StatutContrat;
+import com.lacouf.rsbjwt.model.entrevue.StatutConvocationEntrevue;
 import com.lacouf.rsbjwt.model.StatutValidation;
-import com.lacouf.rsbjwt.model.StatutRechercheEtudiant;
-import com.lacouf.rsbjwt.model.Utilisateur;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.model.ApplicationStage;
+import com.lacouf.rsbjwt.event.NotificationEvent;
+import com.lacouf.rsbjwt.model.auth.Role;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
+import com.lacouf.rsbjwt.service.SseService;
+import com.lacouf.rsbjwt.service.util.SessionUtil;
+import com.lacouf.rsbjwt.service.util.NotificationType;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @Profile("dev")
 @RequiredArgsConstructor
+@Slf4j
 public class DevDemoScenarioService {
     private static final String OFFER_FILE_PREFIX = "demo-offre-stage-";
     private static final String CV_RESOURCE = "demo/cv/camille-gagnon-cv.pdf";
+    private static final String SECOND_STUDENT_CV_RESOURCE = "demo/cv/Pascal_Carbonneau_CV_2026.pdf";
     private static final int DEMO_APPLICATION_COUNT = 3;
+    private static final long DELAYED_NOTIFICATIONS_DELAY_SECONDS = 5;
 
     private record DemoOffer(
             Disciplines discipline,
@@ -152,6 +169,7 @@ public class DevDemoScenarioService {
     private final ContratRepository contratRepository;
     private final EntrevueRepository interviewRepository;
     private final UtilisateurRepository utilisateurRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void prepareStudentScenario() {
@@ -172,12 +190,212 @@ public class DevDemoScenarioService {
         prepareDemoInterviews(etudiant, employeur, offers);
     }
 
+    @Transactional
+    public void prepareSignedContractStudentScenario() {
+        prepareStudentScenario();
+
+        Utilisateur sourceUser = utilisateurRepository.findByEmail(DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.ETUDIANT).email());
+        Utilisateur employerUser = utilisateurRepository.findByEmail(DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.EMPLOYEUR).email());
+        Utilisateur targetUser = utilisateurRepository.findByEmail(DevDemoAccounts.signedContractStudent().email());
+        if (!(sourceUser instanceof Etudiant source) || !(employerUser instanceof Employeur employer)
+                || !(targetUser instanceof Etudiant target)) {
+            throw new IllegalStateException("Les comptes de démonstration pour le contrat signé sont introuvables.");
+        }
+
+        List<ApplicationStage> sourceApplications = applicationStageRepository.findByEtudiantId(source.getId());
+        ApplicationStage accepted = sourceApplications.stream()
+                .filter(application -> application.getStatutValidation() == StatutValidation.ACCEPTE)
+                .findFirst().orElseThrow(() -> new IllegalStateException("La demande de stage acceptée de démonstration est introuvable."));
+        OffreDeStage acceptedOffer = accepted.getOffreDeStage();
+
+        Utilisateur professorUser = utilisateurRepository.findByEmail(DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.PROFESSEUR).email());
+        Utilisateur managerUser = utilisateurRepository.findByEmail(
+                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.GESTIONNAIRE).email());
+        if (!(professorUser instanceof Professeur professor) || !(managerUser instanceof Gestionnaire manager)) {
+            throw new IllegalStateException("Les comptes professeur ou gestionnaire nécessaires sont introuvables.");
+        }
+        target.setDiscipline(source.getDiscipline());
+        target.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        target.setProfesseur(professor);
+        utilisateurRepository.save(target);
+
+        CV sourceCv = documentRepository.findByUtilisateur(source);
+        if (sourceCv != null) {
+            CV targetCv = documentRepository.findByUtilisateur(target);
+            if (targetCv == null) {
+                targetCv = CV.builder().fileName(sourceCv.getFileName()).targetDiscipline(sourceCv.getTargetDiscipline())
+                        .data(sourceCv.getData()).contentType(sourceCv.getContentType()).size(sourceCv.getSize())
+                        .utilisateur(target).build();
+            } else {
+                targetCv.setFileName(sourceCv.getFileName());
+                targetCv.setTargetDiscipline(sourceCv.getTargetDiscipline());
+                targetCv.setData(sourceCv.getData());
+                targetCv.setContentType(sourceCv.getContentType());
+                targetCv.setSize(sourceCv.getSize());
+            }
+            targetCv.setStatut(sourceCv.getStatut());
+            targetCv.setCommentaireRejet(sourceCv.getCommentaireRejet());
+            documentRepository.save(targetCv);
+        }
+
+        for (ApplicationStage sourceApplication : sourceApplications) {
+            ApplicationStage copy = applicationStageRepository
+                    .findByEtudiantIdAndOffreDeStageId(target.getId(), sourceApplication.getOffreDeStage().getId())
+                    .orElseGet(ApplicationStage::new);
+            copy.setEtudiant(target);
+            copy.setOffreDeStage(sourceApplication.getOffreDeStage());
+            copy.setStatutValidation(sourceApplication.getStatutValidation());
+            copy.setDateApplique(sourceApplication.getDateApplique());
+            copy.setDateDecision(sourceApplication.getDateDecision());
+            copy.setCommentaireRefus(sourceApplication.getCommentaireRefus());
+            applicationStageRepository.save(copy);
+        }
+
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        Contract contract = contratRepository.findByStudentIdAndInternshipOfferId(target.getId(), acceptedOffer.getId())
+                .orElseGet(Contract::new);
+        contract.setStudent(target);
+        contract.setEmployer(employer);
+        contract.setInternshipOffer(acceptedOffer);
+        contract.setAdmin(manager);
+        contract.setTeacher(professor);
+        contract.setSupervisorName(acceptedOffer.getContactName() == null ? "Julien Roy" : acceptedOffer.getContactName());
+        contract.setStartingDate(LocalDate.now().minusDays(7));
+        contract.setEndingDate(LocalDate.now().plusMonths(3));
+        contract.setSchedule("Du lundi au vendredi, de 9 h à 17 h");
+        contract.setWeeklyHours(35);
+        contract.setHourlySalary(acceptedOffer.getSalaire());
+        contract.setInternshipLocation(acceptedOffer.getAdresseEntreprise());
+        contract.setContractStatus(StatutContrat.EXECUTED);
+        contract.setDateCreation(now.minusDays(5));
+        contract.setStudentSignedAt(now.minusDays(4));
+        contract.setEmployerSignedAt(now.minusDays(3));
+        contract.setManagerSignedAt(now.minusDays(2));
+        Contract savedContract = contratRepository.save(contract);
+        eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
+
+        // Préparer le 3e et 4e étudiant avec contrat signé
+        Utilisateur thirdUser = utilisateurRepository.findByEmail(DevDemoAccounts.thirdStudent().email());
+        Utilisateur fourthUser = utilisateurRepository.findByEmail(DevDemoAccounts.fourthStudent().email());
+        if (sourceUser instanceof Etudiant source2 && thirdUser instanceof Etudiant third) {
+            applySignedContractToTarget(source2, third, employer, manager, professor, acceptedOffer, now);
+        }
+        if (sourceUser instanceof Etudiant source3 && fourthUser instanceof Etudiant fourth) {
+            applySignedContractToTarget(source3, fourth, employer, manager, professor, acceptedOffer, now);
+        }
+        eventPublisher.publishEvent(NotificationEvent.nouvelleEvaluationStage(savedContract));
+    }
+
+    @Transactional
+    public void prepareExtraOffersScenario() {
+        Utilisateur employerUser = utilisateurRepository.findByEmail(
+                DevDemoAccounts.forRole(com.lacouf.rsbjwt.model.auth.Role.EMPLOYEUR).email());
+        if (!(employerUser instanceof Employeur employer)) {
+            throw new IllegalStateException("Le compte employeur de démonstration est introuvable.");
+        }
+
+        // Offres EN ATTENTE — Automne 2026
+        createExtraOffer(employer, "A26", StatutValidation.EN_ATTENTE,
+                Disciplines.INFORMATIQUE, "Stagiaire DevOps",
+                "Participez à la mise en place de pipelines CI/CD et à l'automatisation des déploiements.",
+                "Montréal, Québec", 23.00, "demo-offre-stage-01.pdf");
+
+        createExtraOffer(employer, "A26", StatutValidation.EN_ATTENTE,
+                Disciplines.MARKETING, "Stagiaire marketing de contenu",
+                "Rédigez des articles, gérez les réseaux sociaux et analysez les performances des campagnes.",
+                "Montréal, Québec", 20.50, "demo-offre-stage-02.pdf");
+
+        createExtraOffer(employer, "A26", StatutValidation.EN_ATTENTE,
+                Disciplines.DESIGN_GRAPHIQUE, "Stagiaire UX/UI design",
+                "Concevez des maquettes et participez aux tests utilisateurs pour améliorer l'expérience produit.",
+                "Montréal, Québec", 21.00, "demo-offre-stage-03.pdf");
+
+        createExtraOffer(employer, "A26", StatutValidation.VALIDE,
+                Disciplines.ADMINISTRATION, "Stagiaire en gestion de projets",
+                "Soutenez la coordination des projets internes et la préparation des livrables.",
+                "Laval, Québec", 19.75, "demo-offre-stage-04.pdf");
+
+        createExtraOffer(employer, "A26", StatutValidation.VALIDE,
+                Disciplines.COMPTABILITE, "Stagiaire en finances",
+                "Assistez l'équipe finance dans la préparation des états financiers et le suivi budgétaire.",
+                "Longueuil, Québec", 20.00, "demo-offre-stage-05.pdf");
+
+        createExtraOffer(employer, "H26", StatutValidation.EN_ATTENTE,
+                Disciplines.INFORMATIQUE, "Stagiaire développeur mobile",
+                "Contribuez au développement d'une application mobile Android/iOS avec React Native.",
+                "Montréal, Québec", 22.50, "demo-offre-stage-06.pdf");
+
+        createExtraOffer(employer, "H26", StatutValidation.EN_ATTENTE,
+                Disciplines.GENIE_CIVIL, "Stagiaire en génie civil",
+                "Assistez les ingénieurs dans le suivi de projets d'infrastructure et la rédaction de rapports.",
+                "Repentigny, Québec", 23.50, "demo-offre-stage-07.pdf");
+
+        createExtraOffer(employer, "H26", StatutValidation.EN_ATTENTE,
+                Disciplines.EDUCATION, "Stagiaire en formation et développement",
+                "Concevez des modules de formation en ligne et animez des ateliers internes.",
+                "Terrebonne, Québec", 19.50, "demo-offre-stage-08.pdf");
+
+        createExtraOffer(employer, "H26", StatutValidation.VALIDE,
+                Disciplines.INFORMATIQUE, "Stagiaire en intelligence artificielle",
+                "Explorez des jeux de données, entraînez des modèles et contribuez à des projets ML en production.",
+                "Montréal, Québec", 24.00, "demo-offre-stage-09.pdf");
+
+        createExtraOffer(employer, "H26", StatutValidation.VALIDE,
+                Disciplines.ARCHITECTURE, "Stagiaire en architecture durable",
+                "Participez à la conception de bâtiments écoresponsables et à la préparation de dossiers de soumission.",
+                "Montréal, Québec", 20.25, "demo-offre-stage-10.pdf");
+    }
+
+    private void createExtraOffer(Employeur employer, String session, StatutValidation statut,
+                                  Disciplines discipline, String position, String description,
+                                  String address, double salary, String pdfFileName) {
+        String uniqueFileName = session + "-extra-" + pdfFileName;
+
+        boolean alreadyExists = documentRepository.findOffersByEmployer(employer).stream()
+                .anyMatch(o -> uniqueFileName.equals(o.getFileName()));
+        if (alreadyExists) return;
+
+        byte[] pdfData = readDemoPdf("demo/offres/" + pdfFileName);
+        LocalDate startDate = LocalDate.now().plusDays(14);
+
+        OffreDeStage offer = OffreDeStage.builder()
+                .fileName(uniqueFileName)
+                .data(pdfData)
+                .contentType("application/pdf")
+                .size(pdfData.length)
+                .employeur(employer)
+                .session(session)
+                .build();
+
+        offer.setUtilisateur(employer);
+        offer.setEmployeur(employer);
+        offer.setTargetDiscipline(discipline);
+        offer.setNomEntreprise(employer.getNomCompagnie());
+        offer.setPosition(position);
+        offer.setDescriptionPosition(description);
+        offer.setDateDebutStage(startDate);
+        offer.setDateFinStage(startDate.plusMonths(4));
+        offer.setAdresseEntreprise(address);
+        offer.setSalaire(salary);
+        offer.setContactName("Julien Roy");
+        offer.setContactPhone("+1 514 555-0187");
+        offer.setStatut(statut);
+        offer.setCommentaireRejet(null);
+        offer.setUpdatedAt(LocalDateTime.now());
+
+        documentRepository.save(offer);
+    }
+
     private void prepareValidatedCv(Etudiant student) {
-        byte[] cvData = readDemoPdf(CV_RESOURCE);
+        prepareValidatedCv(student, CV_RESOURCE, "camille-gagnon-cv.pdf");
+    }
+
+    private void prepareValidatedCv(Etudiant student, String cvResource, String fileName) {
+        byte[] cvData = readDemoPdf(cvResource);
         CV cv = documentRepository.findByUtilisateur(student);
         if (cv == null) {
             cv = CV.builder()
-                    .fileName("camille-gagnon-cv.pdf")
+                    .fileName(fileName)
                     .targetDiscipline(student.getDiscipline())
                     .data(cvData)
                     .contentType("application/pdf")
@@ -185,7 +403,7 @@ public class DevDemoScenarioService {
                     .utilisateur(student)
                     .build();
         } else {
-            cv.setFileName("camille-gagnon-cv.pdf");
+            cv.setFileName(fileName);
             cv.setTargetDiscipline(student.getDiscipline());
             cv.setData(cvData);
             cv.setContentType("application/pdf");
@@ -217,6 +435,7 @@ public class DevDemoScenarioService {
                         .contentType("application/pdf")
                         .size(offerPdf.length)
                         .employeur(employer)
+                        .session(SessionUtil.getCurrentSession())
                         .build();
             }
             offer.setUtilisateur(employer);
@@ -367,5 +586,74 @@ public class DevDemoScenarioService {
 
         student.setDateInterview(pendingInterview.getDateInterview());
         utilisateurRepository.save(student);
+    }
+
+    private void applySignedContractToTarget(Etudiant source, Etudiant target, Employeur employer,
+                                             Gestionnaire manager, Professeur professor,
+                                             OffreDeStage acceptedOffer, LocalDateTime now) {
+        target.setDiscipline(source.getDiscipline());
+        target.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        target.setProfesseur(professor);
+        utilisateurRepository.save(target);
+
+        CV sourceCv = documentRepository.findByUtilisateur(source);
+        if (sourceCv != null) {
+            CV targetCv = documentRepository.findByUtilisateur(target);
+            if (targetCv == null) {
+                targetCv = CV.builder()
+                        .fileName(sourceCv.getFileName())
+                        .targetDiscipline(sourceCv.getTargetDiscipline())
+                        .data(sourceCv.getData())
+                        .contentType(sourceCv.getContentType())
+                        .size(sourceCv.getSize())
+                        .utilisateur(target)
+                        .build();
+            } else {
+                targetCv.setFileName(sourceCv.getFileName());
+                targetCv.setTargetDiscipline(sourceCv.getTargetDiscipline());
+                targetCv.setData(sourceCv.getData());
+                targetCv.setContentType(sourceCv.getContentType());
+                targetCv.setSize(sourceCv.getSize());
+            }
+            targetCv.setStatut(sourceCv.getStatut());
+            targetCv.setCommentaireRejet(sourceCv.getCommentaireRejet());
+            documentRepository.save(targetCv);
+        }
+
+        List<ApplicationStage> sourceApplications = applicationStageRepository.findByEtudiantId(source.getId());
+        for (ApplicationStage sourceApplication : sourceApplications) {
+            ApplicationStage copy = applicationStageRepository
+                    .findByEtudiantIdAndOffreDeStageId(target.getId(), sourceApplication.getOffreDeStage().getId())
+                    .orElseGet(ApplicationStage::new);
+            copy.setEtudiant(target);
+            copy.setOffreDeStage(sourceApplication.getOffreDeStage());
+            copy.setStatutValidation(sourceApplication.getStatutValidation());
+            copy.setDateApplique(sourceApplication.getDateApplique());
+            copy.setDateDecision(sourceApplication.getDateDecision());
+            copy.setCommentaireRefus(sourceApplication.getCommentaireRefus());
+            applicationStageRepository.save(copy);
+        }
+
+        Contract contract = contratRepository.findByStudentIdAndInternshipOfferId(target.getId(), acceptedOffer.getId())
+                .orElseGet(Contract::new);
+        contract.setStudent(target);
+        contract.setEmployer(employer);
+        contract.setInternshipOffer(acceptedOffer);
+        contract.setAdmin(manager);
+        contract.setTeacher(professor);
+        contract.setSupervisorName(acceptedOffer.getContactName() == null ? "Julien Roy" : acceptedOffer.getContactName());
+        contract.setStartingDate(LocalDate.now().minusDays(7));
+        contract.setEndingDate(LocalDate.now().plusMonths(3));
+        contract.setSchedule("Du lundi au vendredi, de 9 h à 17 h");
+        contract.setWeeklyHours(35);
+        contract.setHourlySalary(acceptedOffer.getSalaire());
+        contract.setInternshipLocation(acceptedOffer.getAdresseEntreprise());
+        contract.setContractStatus(StatutContrat.EXECUTED);
+        contract.setDateCreation(now.minusDays(5));
+        contract.setStudentSignedAt(now.minusDays(4));
+        contract.setEmployerSignedAt(now.minusDays(3));
+        contract.setManagerSignedAt(now.minusDays(2));
+        Contract savedContract = contratRepository.save(contract);
+        eventPublisher.publishEvent(NotificationEvent.evaluationStage(savedContract));
     }
 }

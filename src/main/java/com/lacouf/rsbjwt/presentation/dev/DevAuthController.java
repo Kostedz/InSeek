@@ -1,0 +1,91 @@
+package com.lacouf.rsbjwt.presentation.dev;
+
+import com.lacouf.rsbjwt.exception.BadRequestException;
+import com.lacouf.rsbjwt.exception.NotFoundException;
+import com.lacouf.rsbjwt.config.DevDemoAccounts;
+import com.lacouf.rsbjwt.config.DevDemoScenarioService;
+import com.lacouf.rsbjwt.model.auth.Role;
+import com.lacouf.rsbjwt.service.UtilisateurService;
+import com.lacouf.rsbjwt.service.dto.JWTAuthResponse;
+import com.lacouf.rsbjwt.service.dto.auth.LoginDTO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Profile("dev")
+@RestController
+@RequestMapping("/user/demo")
+@RequiredArgsConstructor
+public class DevAuthController {
+    private final UtilisateurService utilisateurService;
+    private final DevDemoScenarioService demoScenarioService;
+
+    @PostMapping("/login")
+    public ResponseEntity<JWTAuthResponse> defaultDemoLogin() {
+        return demoLogin(Role.ETUDIANT.name());
+    }
+
+    @PostMapping("/login/{role}")
+    public ResponseEntity<JWTAuthResponse> demoLogin(@PathVariable String role) {
+        try {
+            Role demoRole = Role.valueOf(role.replaceFirst("^ROLE_", "").toUpperCase());
+            DevDemoAccounts.Account demoAccount = DevDemoAccounts.forRole(demoRole);
+            if (demoAccount == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            return ResponseEntity.ok(new JWTAuthResponse(
+                    utilisateurService.login(new LoginDTO(demoAccount.email(), demoAccount.password()))
+            ));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (BadRequestException | NotFoundException | IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @PostMapping("/student-demo")
+    public ResponseEntity<JWTAuthResponse> prepareStudentDemo() {
+        try {
+            demoScenarioService.prepareStudentScenario();
+            DevDemoAccounts.Account student = DevDemoAccounts.forRole(Role.ETUDIANT);
+            return ResponseEntity.ok(new JWTAuthResponse(
+                    utilisateurService.login(new LoginDTO(student.email(), student.password()))
+            ));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (BadRequestException | NotFoundException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @PostMapping("/student-contract-demo")
+    public ResponseEntity<JWTAuthResponse> prepareSignedContractStudentDemo() {
+        try {
+            demoScenarioService.prepareSignedContractStudentScenario();
+            DevDemoAccounts.Account student = DevDemoAccounts.signedContractStudent();
+            return ResponseEntity.ok(new JWTAuthResponse(
+                    utilisateurService.login(new LoginDTO(student.email(), student.password()))
+            ));
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        } catch (BadRequestException | NotFoundException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    @PostMapping("/extra-offers-demo")
+    public ResponseEntity<Void> prepareExtraOffersDemo() {
+        try {
+            demoScenarioService.prepareExtraOffersScenario();
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+}

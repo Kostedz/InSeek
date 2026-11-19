@@ -29,7 +29,7 @@ function DemoButtons({setUser}) {
         navigate("/login", {replace: true});
 
         try {
-            const loginResponse = await api.auth.devLogin(demoRole.value);
+            const loginResponse = await api.auth.demoLogin(demoRole.value);
             if (!loginResponse.ok) {
                 throw new Error("demo_login_failed");
             }
@@ -41,7 +41,6 @@ function DemoButtons({setUser}) {
             }
 
             localStorage.setItem("token", token);
-            localStorage.removeItem("devAccess");
 
             const userResponse = await api.auth.getMe();
             if (!userResponse.ok) {
@@ -50,11 +49,10 @@ function DemoButtons({setUser}) {
 
             const userData = await userResponse.json();
             if (demoRole.value === "ETUDIANT") clearDemoContracts();
-            setUser({...userData, isLoggedIn: true, isDevAccess: false});
+            setUser({...userData, isLoggedIn: true});
             navigate(await getRedirectPathByRole(userData.role ?? demoRole.value), {replace: true});
         } catch {
             localStorage.removeItem("token");
-            localStorage.removeItem("devAccess");
             setError(true);
         } finally {
             setLoadingRole(null);
@@ -80,7 +78,6 @@ function DemoButtons({setUser}) {
             }
 
             localStorage.setItem("token", token);
-            localStorage.removeItem("devAccess");
 
             const userResponse = await api.auth.getMe();
             if (!userResponse.ok) {
@@ -89,11 +86,65 @@ function DemoButtons({setUser}) {
 
             const userData = await userResponse.json();
             clearDemoContracts();
-            setUser({...userData, isLoggedIn: true, isDevAccess: false});
+            setUser({...userData, isLoggedIn: true});
             navigate("/", {replace: true});
         } catch {
             localStorage.removeItem("token");
-            localStorage.removeItem("devAccess");
+            setError(true);
+        } finally {
+            setLoadingRole(null);
+        }
+    };
+
+    const activateStudentContractScenario = async () => {
+        setLoadingRole("STUDENT_CONTRACT_SCENARIO");
+        setError(false);
+        setUser(null);
+        navigate("/login", {replace: true});
+
+        try {
+            const loginResponse = await api.auth.prepareStudentContractDemo();
+            if (!loginResponse.ok) throw new Error("student_contract_demo_failed");
+            const loginData = await loginResponse.json();
+            const token = loginData.accessToken || loginData.token;
+            if (!token) throw new Error("student_contract_demo_token_missing");
+
+            localStorage.setItem("token", token);
+            const userResponse = await api.auth.getMe();
+            if (!userResponse.ok) throw new Error("student_contract_demo_user_missing");
+            const userData = await userResponse.json();
+            clearDemoContracts();
+            setUser({...userData, isLoggedIn: true});
+            navigate("/", {replace: true});
+        } catch {
+            localStorage.removeItem("token");
+            setError(true);
+        } finally {
+            setLoadingRole(null);
+        }
+    };
+
+    const activateDelayedNotificationsScenario = async () => {
+        setLoadingRole("DELAYED_NOTIFICATIONS");
+        setError(false);
+        setUser(null);
+        navigate("/login", {replace: true});
+
+        try {
+            const loginResponse = await api.auth.prepareDelayedNotificationsDemo();
+            if (!loginResponse.ok) throw new Error("delayed_notifications_demo_failed");
+            const loginData = await loginResponse.json();
+            const token = loginData.accessToken || loginData.token;
+            if (!token) throw new Error("delayed_notifications_demo_token_missing");
+
+            localStorage.setItem("token", token);
+            const userResponse = await api.auth.getMe();
+            if (!userResponse.ok) throw new Error("delayed_notifications_demo_user_missing");
+            const userData = await userResponse.json();
+            setUser({...userData, isLoggedIn: true});
+            navigate("/gestionnaire", {replace: true});
+        } catch {
+            localStorage.removeItem("token");
             setError(true);
         } finally {
             setLoadingRole(null);
@@ -108,7 +159,7 @@ function DemoButtons({setUser}) {
                     {t("demoButtons.error")}
                 </p>
             )}
-            <div className="flex flex-nowrap gap-1">
+            <div className="flex flex-wrap justify-end gap-1">
                 {demoRoles.map((demoRole) => (
                     <button
                         key={demoRole.value}
@@ -127,6 +178,14 @@ function DemoButtons({setUser}) {
                     className="whitespace-nowrap rounded-full border border-ink bg-lavender px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-lavender disabled:cursor-wait disabled:opacity-70"
                 >
                     {loadingRole === "STUDENT_SCENARIO" ? t("demoButtons.loading") : t("demoButtons.studentScenario")}
+                </button>
+                <button
+                    type="button"
+                    onClick={activateStudentContractScenario}
+                    disabled={loadingRole !== null}
+                    className="whitespace-nowrap rounded-full border border-ink bg-lavender px-2.5 py-1.5 text-[11px] font-bold text-ink shadow-lg transition-colors hover:bg-lavender disabled:cursor-wait disabled:opacity-70"
+                >
+                    {loadingRole === "STUDENT_CONTRACT_SCENARIO" ? t("demoButtons.loading") : t("demoButtons.studentContractScenario")}
                 </button>
             </div>
         </div>

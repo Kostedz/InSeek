@@ -5,6 +5,7 @@ import PdfPreview from "../../PdfPreview.jsx";
 import {notifyManagerContractsChanged} from "../../../utils/tabCounts.js";
 import GestionnaireTabs from "./GestionnaireTabs.jsx";
 import ContractSignaturePage from "../ContractSignaturePage.jsx";
+import ContractCreationModal from "../../gestionnaire/ContractCreationModal.jsx";
 
 const MANAGER_SIGNABLE_STATUS = "SIGNED_BY_EMPLOYER";
 const FINAL_CONTRACT_STATUSES = new Set(["SIGNED_BY_GESTIONNAIRE", "EXECUTED"]);
@@ -15,8 +16,13 @@ export default function GestionnaireContracts({embedded = false}) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [contractView, setContractView] = useState("PENDING");
     const [selectedContract, setSelectedContract] = useState(null);
     const [signatureContract, setSignatureContract] = useState(null);
+    const [eligibleStudents, setEligibleStudents] = useState([]);
+    const [eligibleStudentsLoading, setEligibleStudentsLoading] = useState(true);
+    const [eligibleStudentsError, setEligibleStudentsError] = useState(false);
+    const [studentForNewContract, setStudentForNewContract] = useState(null);
     const statusLabel = (status) =>
         status ? t(`managerContracts.status.${status}`, {defaultValue: status}) : "—";
 
@@ -68,8 +74,25 @@ export default function GestionnaireContracts({embedded = false}) {
         }
     };
 
+    const loadEligibleStudents = async () => {
+        setEligibleStudentsLoading(true);
+        setEligibleStudentsError(false);
+        try {
+            const response = await api.gestionnaire.getEligibleStudents();
+            if (!response.ok) throw new Error("eligible_students_load_failed");
+            const data = await response.json();
+            const list = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+            setEligibleStudents(list);
+        } catch {
+            setEligibleStudentsError(true);
+        } finally {
+            setEligibleStudentsLoading(false);
+        }
+    };
+
     useEffect(() => {
         loadContracts();
+        loadEligibleStudents();
     }, []);
 
     const filteredContracts = useMemo(() => {
@@ -79,6 +102,19 @@ export default function GestionnaireContracts({embedded = false}) {
             return student.includes(searchTerm.toLowerCase()) || company.includes(searchTerm.toLowerCase());
         });
     }, [contracts, searchTerm]);
+    const isHistoryContract = (contract) => FINAL_CONTRACT_STATUSES.has(contract.status) || contract.status === "REFUSED";
+    const pendingCount = contracts.filter((contract) => !isHistoryContract(contract)).length;
+    const historyCount = contracts.length - pendingCount;
+    const visibleContracts = filteredContracts.filter((contract) =>
+        contractView === "PENDING" ? !isHistoryContract(contract) : isHistoryContract(contract)
+    );
+    const studentsWithoutContract = eligibleStudents.filter((student) => !student.hasContract);
+
+    const handleContractCreated = () => {
+        notifyManagerContractsChanged();
+        loadContracts();
+        loadEligibleStudents();
+    };
 
     const formatDate = (val) => {
         if (!val) return "—";
@@ -107,6 +143,73 @@ export default function GestionnaireContracts({embedded = false}) {
 
                 {!embedded && <GestionnaireTabs activeTab="contracts"/>}
 
+                <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-6"
+                         aria-labelledby="eligible-contract-students-title">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h2 id="eligible-contract-students-title" className="text-xl font-black text-ink">
+                                {t("managerContracts.eligibleStudentsTitle", "Étudiants prêts pour un contrat")}
+                            </h2>
+                            <p className="mt-1 text-sm leading-6 text-ink-soft">
+                                {t("managerContracts.eligibleStudentsDescription", "Créez un contrat pour un étudiant dont la candidature a été acceptée par l’employeur.")}
+                            </p>
+                        </div>
+                        {!eligibleStudentsLoading && !eligibleStudentsError && (
+                            <span className="w-fit rounded-full bg-lavender/50 px-3 py-1 text-xs font-bold text-ink">
+                                {t("managerContracts.eligibleStudentsCount", {
+                                    count: studentsWithoutContract.length,
+                                    defaultValue: "{{count}} étudiant(s)"
+                                })}
+                            </span>
+                        )}
+                    </div>
+
+                    {eligibleStudentsLoading ? (
+                        <p className="py-8 text-center text-sm font-medium text-ink-soft">
+                            {t("managerValidation.loading", "Chargement…")}
+                        </p>
+                    ) : eligibleStudentsError ? (
+                        <div
+                            className="mt-5 flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            role="alert">
+                            <p className="text-sm font-semibold text-rose-700">
+                                {t("managerContracts.eligibleStudentsLoadError", "Impossible de charger les étudiants admissibles.")}
+                            </p>
+                            <button type="button" onClick={loadEligibleStudents}
+                                    className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-bold text-rose-800 hover:bg-rose-100">
+                                {t("managerValidation.refresh", "Actualiser")}
+                            </button>
+                        </div>
+                    ) : studentsWithoutContract.length === 0 ? (
+                        <p className="mt-5 rounded-xl border border-dashed border-line bg-canvas px-5 py-8 text-center text-sm text-ink-soft">
+                            {t("managerContracts.noEligibleStudents", "Aucun étudiant sans contrat n’a de candidature acceptée pour le moment.")}
+                        </p>
+                    ) : (
+                        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                            {studentsWithoutContract.map((student) => (
+                                <article key={`${student.id}-${student.offerId}`}
+                                         className="flex flex-col gap-4 rounded-xl border border-line bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="min-w-0">
+                                        <h3 className="font-black text-ink">
+                                            {[student.firstName, student.lastName].filter(Boolean).join(" ") || t("managerStudents.unnamed", "Étudiant")}
+                                        </h3>
+                                        <p className="mt-1 text-sm font-semibold text-ink-soft">
+                                            {student.offerTitle || "—"}{student.companyName ? ` · ${student.companyName}` : ""}
+                                        </p>
+                                        <p className="mt-1 text-xs text-ink-soft">
+                                            {student.fieldOfStudy ? t(`employerOffers.disciplines.${String(student.fieldOfStudy).toUpperCase()}`, {defaultValue: student.fieldOfStudy}) : "—"}
+                                        </p>
+                                    </div>
+                                    <button type="button" onClick={() => setStudentForNewContract(student)}
+                                            className="shrink-0 rounded-xl bg-ink px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-ink-soft">
+                                        {t("managerStudents.createContractButton", "Créer le contrat")}
+                                    </button>
+                                </article>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
                 {error && (
                     <p className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700"
                        role="alert">
@@ -124,32 +227,55 @@ export default function GestionnaireContracts({embedded = false}) {
                     />
                 </div>
 
+                <div
+                    className="mt-5 inline-flex max-w-full gap-1 rounded-2xl border border-line bg-surface p-1 shadow-[0_12px_30px_rgba(48,35,55,0.04)]"
+                    role="tablist" aria-label={t("managerContracts.views.label", "Filtrer les contrats")}>
+                    {[{
+                        id: "PENDING",
+                        label: t("managerContracts.views.pending", "En attente"),
+                        count: pendingCount
+                    }, {
+                        id: "HISTORY",
+                        label: t("managerContracts.views.history", "Historique"),
+                        count: historyCount
+                    }].map((tab) => (
+                        <button key={tab.id} type="button" role="tab" aria-selected={contractView === tab.id}
+                                onClick={() => setContractView(tab.id)}
+                                className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-bold transition-colors focus:outline-none focus:ring-4 focus:ring-pink/40 ${contractView === tab.id ? "bg-ink text-white shadow-sm" : "text-ink-soft hover:bg-canvas hover:text-ink"}`}>
+                            {tab.label}<span
+                            className="ml-2 rounded-full bg-lavender/40 px-2 py-0.5 text-xs">{tab.count}</span>
+                        </button>
+                    ))}
+                </div>
+
                 <div className="mt-6">
                     {loading ? (
                         <div className="py-12 text-center text-ink-soft font-medium">
                             {t("managerValidation.loading", "Chargement…")}
                         </div>
-                    ) : filteredContracts.length === 0 ? (
+                    ) : visibleContracts.length === 0 ? (
                         <div className="rounded-2xl border border-line bg-surface p-12 text-center text-ink-soft">
-                            {t("managerContracts.empty", "Aucun contrat enregistré.")}
+                            {contractView === "PENDING"
+                                ? t("managerContracts.views.emptyPending", "Aucun contrat en attente.")
+                                : t("managerContracts.views.emptyHistory", "Aucun contrat dans l’historique.")}
                         </div>
                     ) : (
                         <>
                             <div className="grid gap-4 sm:hidden">
-                                {filteredContracts.map((contract) => (
+                                {visibleContracts.map((contract) => (
                                     <div
                                         key={contract.id || contract.contractId}
                                         onClick={() => setSelectedContract(contract)}
                                         className="rounded-2xl border border-line bg-surface p-4 shadow-sm cursor-pointer hover:border-ink"
                                     >
                                         <div className="flex items-start justify-between gap-2">
-                                            <h3 className="font-black text-ink">{contract.studentName || contract.nomEtudiant || "Étudiant"}</h3>
+                                            <h3 className="font-black text-ink">{contract.studentName || contract.nomEtudiant || t("managerContracts.student")}</h3>
                                             <span
                                                 className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
                                                {statusLabel(contract.status)}
                                             </span>
                                         </div>
-                                        <p className="mt-1 text-xs font-semibold text-ink-soft">{contract.companyName || contract.nomEntreprise || "Entreprise"}</p>
+                                        <p className="mt-1 text-xs font-semibold text-ink-soft">{contract.companyName || contract.nomEntreprise || t("managerContracts.company")}</p>
                                         <p className="mt-3 text-xs text-ink-soft">
                                             {formatDate(contract.startDate || contract.dateDebut)} → {formatDate(contract.endDate || contract.dateFin)}
                                         </p>
@@ -170,7 +296,7 @@ export default function GestionnaireContracts({embedded = false}) {
                                     </tr>
                                     </thead>
                                     <tbody className="divide-y divide-line text-sm">
-                                    {filteredContracts.map((contract) => (
+                                    {visibleContracts.map((contract) => (
                                         <tr
                                             key={contract.id || contract.contractId}
                                             onClick={() => setSelectedContract(contract)}
@@ -269,22 +395,34 @@ export default function GestionnaireContracts({embedded = false}) {
                                 <div className="rounded-xl border border-line p-4 space-y-3">
                                     <h3 className="font-black text-ink text-xs uppercase tracking-wider text-ink-soft">{t("managerContracts.modalities", "Modalités")}</h3>
                                     <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div><span className="text-ink-soft">Début :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.start")} :</span>
+                                            <strong
                                             className="text-ink">{formatDate(selectedContract.startDate || selectedContract.dateDebut)}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Fin :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.end")} :</span>
+                                            <strong
                                             className="text-ink">{formatDate(selectedContract.endDate || selectedContract.dateFin)}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Horaire :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.schedule")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.schedule || selectedContract.horaire || "—"}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Heures/semaine :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.weeklyHours")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.weeklyHours || selectedContract.heuresParSemaine || "—"}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Lieu :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.location")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.location || selectedContract.lieu || "—"}</strong>
                                         </div>
-                                        <div><span className="text-ink-soft">Rémunération :</span> <strong
+                                        <div><span
+                                            className="text-ink-soft">{t("managerContracts.details.hourlyRate")} :</span>
+                                            <strong
                                             className="text-ink">{selectedContract.remuneration ?? selectedContract.salaire ?? 0} $/h</strong>
                                         </div>
                                     </div>
@@ -326,6 +464,14 @@ export default function GestionnaireContracts({embedded = false}) {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {studentForNewContract && (
+                    <ContractCreationModal
+                        student={studentForNewContract}
+                        onClose={() => setStudentForNewContract(null)}
+                        onSuccess={handleContractCreated}
+                    />
                 )}
 
                 {signatureContract && (

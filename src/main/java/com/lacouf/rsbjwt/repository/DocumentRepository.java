@@ -1,6 +1,11 @@
 package com.lacouf.rsbjwt.repository;
 
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.document.CV;
+import com.lacouf.rsbjwt.model.document.Document;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Utilisateur;
 import com.lacouf.rsbjwt.service.dto.OffreDeStageDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -110,7 +115,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             WHERE o.utilisateur = :employeur
             ORDER BY o.id DESC
             """)
-    List<OffreDeStage> findOffersByEmployer(@Param("employeur") com.lacouf.rsbjwt.model.Utilisateur employeur);
+    List<OffreDeStage> findOffersByEmployer(@Param("employeur") Utilisateur employeur);
 
     CV findByUtilisateur(Utilisateur utilisateur);
 
@@ -136,4 +141,23 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             WHERE o.statut = :statut
             """)
     List<Document> findOffreDeStageByStatut(StatutValidation statut);
+
+    @Query("""
+            SELECT new com.lacouf.rsbjwt.service.dto.OffreDeStageDTO(
+                o.id, o.fileName, o.utilisateur.credentials.email, o.nomEntreprise,
+                o.position, o.descriptionPosition, o.dateDebutStage, o.dateFinStage,
+                o.adresseEntreprise, o.statut, o.commentaireRejet, o.salaire,
+                o.targetDiscipline, o.contactName, o.contactPhone, o.version, o.updatedAt
+            )
+            FROM OffreDeStage o
+            ORDER BY o.updatedAt DESC, o.id DESC
+            """)
+    List<OffreDeStageDTO> findAllOffreStageSummaries();
+
+    @Query("""
+            SELECT o
+            FROM OffreDeStage o
+            WHERE o.session = :session
+            """)
+    List<OffreDeStage> findBySession(String session);
 }

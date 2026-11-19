@@ -16,7 +16,7 @@ export default function ProtectedRoute({user, authChecked, allowedRoles, childre
         return <Navigate to="/login" replace state={{from: location}}/>;
     }
 
-    const hasRole = user?.isDevAccess || allowedRoles.includes(normalizeRole(user.role));
+    const hasRole = allowedRoles.includes(normalizeRole(user.role));
     if (!hasRole) {
         return <Navigate to="/error" replace state={{error: {status: 403}}}/>;
     }

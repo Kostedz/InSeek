@@ -3,7 +3,13 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.entrevue.Entrevue;
+import com.lacouf.rsbjwt.model.entrevue.ModeEntrevue;
+import com.lacouf.rsbjwt.model.entrevue.StatutConvocationEntrevue;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
@@ -21,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +50,9 @@ public class EntrevueServiceTest {
     private JwtTokenProvider jwtTokenProvider;
     @Mock
     private HttpServletRequest request;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private EntrevueService entrevueService;

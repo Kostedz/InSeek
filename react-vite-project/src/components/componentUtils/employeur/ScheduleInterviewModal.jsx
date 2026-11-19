@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import { useTranslation } from "react-i18next";
 import {api} from "../../../utils/api.js";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import {translateMessage} from "../../../utils/i18nMessage.js";
 
 const DEFAULT_FORM_STATE = {date: "", heure: "", mode: "VIDEO_CALL", lieuOuLien: "", message: ""};
@@ -384,7 +385,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                                     </div>
                                     <div className="mt-5 space-y-5">
                                         <div><FieldLabel htmlFor="interview-mode"
-                                                         required>{t("employerOffers.interviews.mode", "Mode d'entrevue")}</FieldLabel><select
+                                                         required>{t("employerOffers.interviews.mode", "Mode d'entrevue")}</FieldLabel><DropdownSelect
                                             id="interview-mode" name="mode" value={formData.mode}
                                             onChange={handleChange} aria-invalid={Boolean(errors.mode)}
                                             aria-describedby={errors.mode ? "mode-error" : undefined}
@@ -393,7 +394,7 @@ export default function ScheduleInterviewModal({ offerId, candidat, initialData,
                                                 value="VIDEO_CALL">{t("employerOffers.interviews.modes.video", "Visioconférence")}</option>
                                             <option
                                                 value="IN_PERSON">{t("employerOffers.interviews.modes.inPerson", "En personne")}</option>
-                                        </select>{renderError("mode")}</div>
+                                        </DropdownSelect>{renderError("mode")}</div>
                                         <div>
                                             <div className="flex items-center justify-between gap-3"><FieldLabel
                                                 htmlFor="interview-location"

@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
 import {useTranslation} from "react-i18next";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import api from "../../../utils/api.js";
 import {notifyPendingDocumentProcessed} from "../../../utils/tabCounts.js";
 
@@ -138,7 +139,7 @@ export default function GestionnaireAssignments() {
                                                 <span
                                                     className="font-medium text-ink-soft">{t("professorAssignment.unassigned", "Non assigné")}</span>}</td>
                                             <td className="px-4 py-4">
-                                                <select aria-label={t("professorAssignment.selectAria", {
+                                                <DropdownSelect aria-label={t("professorAssignment.selectAria", {
                                                     student: fullName(student),
                                                     defaultValue: "Professeur pour {{student}}"
                                                 })}
@@ -157,7 +158,7 @@ export default function GestionnaireAssignments() {
                                                         value="">{t("professorAssignment.selectPlaceholder", "Sélectionner un professeur")}</option>
                                                     {professors.map((professor) => <option key={professor.id}
                                                                                            value={professor.id}>{fullName(professor)}{professor.email ? ` · ${professor.email}` : ""}</option>)}
-                                                </select>
+                                                </DropdownSelect>
                                             </td>
                                             <td className="px-4 py-4">
                                                 <button type="button" onClick={() => assign(student)}

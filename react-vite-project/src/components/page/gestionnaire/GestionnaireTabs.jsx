@@ -5,7 +5,6 @@ import api from "../../../utils/api.js";
 import {
     countPendingDocuments,
     MANAGER_CONTRACTS_CHANGED_EVENT,
-    MANAGER_STUDENTS_CHANGED_EVENT,
     PENDING_DOCUMENT_PROCESSED_EVENT
 } from "../../../utils/tabCounts.js";
 import useSlidingTabIndicator from "../../useSlidingTabIndicator.js";
@@ -20,29 +19,12 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
         let isMounted = true;
         const requests = [];
 
-        const refreshStudentsCount = async () => {
-            try {
-                const response = await api.gestionnaire.getEligibleStudents();
-                if (!response.ok) return;
-                const data = await response.json();
-                const students = Array.isArray(data) ? data : data.items ?? data.content ?? [];
-                const studentsWithoutContract = students.filter((student) => !student.hasContract && !student.contractExists).length;
-                if (isMounted) {
-                    setLoadedCounts((current) => ({...current, students: studentsWithoutContract}));
-                }
-            } catch {
-                // Keep the last known count when a refresh fails.
-            }
-        };
-
         if (offersCount === undefined) {
             requests.push(countPendingDocuments("OffreDeStage").then((count) => ["offers", count]));
         }
         if (cvsCount === undefined) {
             requests.push(countPendingDocuments("CV").then((count) => ["cvs", count]));
         }
-        refreshStudentsCount();
-        window.addEventListener(MANAGER_STUDENTS_CHANGED_EVENT, refreshStudentsCount);
         requests.push(api.gestionnaire.getInternshipStudents().then(async (response) => {
             if (!response.ok) return ["assignments", null];
             const data = await response.json();
@@ -62,7 +44,6 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
 
         return () => {
             isMounted = false;
-            window.removeEventListener(MANAGER_STUDENTS_CHANGED_EVENT, refreshStudentsCount);
         };
     }, [offersCount, cvsCount]);
 
@@ -70,14 +51,27 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
         let isMounted = true;
         const refreshContractsCount = async () => {
             try {
-                const response = await api.gestionnaire.getContracts();
-                if (!response.ok) throw new Error("manager_contracts_count_load_failed");
-                const data = await response.json();
-                const contracts = Array.isArray(data) ? data : data.items ?? data.content ?? [];
+                const [contractsResponse, eligibleResponse] = await Promise.all([
+                    api.gestionnaire.getContracts(),
+                    api.gestionnaire.getEligibleStudents(),
+                ]);
+                if (!contractsResponse.ok || !eligibleResponse.ok) {
+                    throw new Error("manager_contracts_count_load_failed");
+                }
+                const contractsData = await contractsResponse.json();
+                const eligibleData = await eligibleResponse.json();
+                const contracts = Array.isArray(contractsData)
+                    ? contractsData
+                    : contractsData.items ?? contractsData.content ?? [];
+                const eligibleStudents = Array.isArray(eligibleData)
+                    ? eligibleData
+                    : eligibleData.items ?? eligibleData.content ?? [];
+                const awaitingManagerSignature = contracts.filter((contract) =>
+                    String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "SIGNED_BY_EMPLOYER"
+                ).length;
+                const readyToCreate = eligibleStudents.filter((student) => !student.hasContract).length;
                 if (isMounted) {
-                    setContractsCount(contracts.filter((contract) =>
-                        String(contract?.contractStatus ?? contract?.status ?? "").toUpperCase() === "SIGNED_BY_EMPLOYER"
-                    ).length);
+                    setContractsCount(awaitingManagerSignature + readyToCreate);
                 }
             } catch {
                 if (isMounted) setContractsCount(null);
@@ -163,9 +157,9 @@ export default function GestionnaireTabs({activeTab, offersCount, cvsCount}) {
             label: t("managerContracts.tabLabel", "Suivi des contrats"),
             path: "/gestionnaire/contrats",
             count: contractsCount,
-            countLabel: t("managerContracts.awaitingManagerSignature", {
+            countLabel: t("managerContracts.actionRequiredNotification", {
                 count: contractsCount,
-                defaultValue: "{{count}} contract(s) awaiting your signature",
+                defaultValue: "{{count}} contract action(s) required",
             }),
         },
     ];

@@ -33,15 +33,22 @@ export const api = {
                 body: JSON.stringify(credentials),
             }),
 
-        devLogin: (role) =>
-            fetcher(role ? `/user/dev/login?role=${encodeURIComponent(role)}` : "/user/dev/login", {
+        demoLogin: (role) =>
+            fetcher(`/user/demo/login/${encodeURIComponent(role)}`, {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
             }),
 
         prepareStudentDemo: () =>
-            fetcher("/user/dev/student-demo", {
+            fetcher("/user/demo/student-demo", {
+                skipAuth: true,
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
+        prepareStudentContractDemo: () =>
+            fetcher("/user/demo/student-contract-demo", {
                 skipAuth: true,
                 method: "POST",
                 headers: {Accept: "application/json"},
@@ -164,6 +171,26 @@ export const api = {
                 headers: {Accept: "application/json"},
             }),
 
+        getSubmittedEvaluation: (studentId) =>
+            fetcher(`/evaluations/etudiant/${encodeURIComponent(studentId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
+        submitEvaluation: (payload) => fetcher("/evaluations/etudiant", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify(payload),
+        }),
+
+        notifyEvaluationSubmitted: (contractId) =>
+            fetcher(`/contracts/employer/${encodeURIComponent(contractId)}/evaluation-submitted`, {
+                method: "POST",
+                headers: {Accept: "application/json"},
+            }),
+
         signContract: (contractId, password) =>
             fetcher(`/contracts/sign/${encodeURIComponent(contractId)}`, {
                 method: "PATCH",
@@ -225,6 +252,14 @@ export const api = {
     },
 
     gestionnaire: {
+        getAcademicSessions: () =>
+            fetcher("/gestionnaire/sessions", {headers: {Accept: "application/json"}}),
+
+        getStudentsBySession: (sessionId) =>
+            fetcher(`/gestionnaire/stagiaires/${encodeURIComponent(sessionId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
         getInternshipStudents: () =>
             fetcher("/gestionnaire/stagiaires", {headers: {Accept: "application/json"}}),
 
@@ -265,7 +300,7 @@ export const api = {
             }),
 
         getContractData: (studentId, offerId) =>
-            fetcher(`/contracts/prefilled/${encodeURIComponent(studentId)}?offerId=${encodeURIComponent(offerId)}`, {
+            fetcher(`/contracts/prefilled/${encodeURIComponent(studentId)}/${encodeURIComponent(offerId)}`, {
                 headers: { Accept: "application/json" },
             }),
 
@@ -290,15 +325,63 @@ export const api = {
             headers: {Accept: "application/json", "Content-Type": "application/json;charset=UTF-8"},
             body: JSON.stringify({password}),
         }),
+
+        getSessions: () =>
+            fetcher("/gestionnaire/sessions", {
+                headers: { Accept: "application/json" },
+            }),
+
+        getAllOffers: () =>
+            fetcher("/documents/stage", {
+                headers: {Accept: "application/json"},
+            }),
+
+        getOffersBySession: (sessionId, filters = {}) => {
+            const queryParams = new URLSearchParams(filters).toString();
+            const query = queryParams ? `?${queryParams}` : "";
+            return fetcher(`/gestionnaire/sessions/${encodeURIComponent(sessionId)}/offres${query}`, {
+                headers: { Accept: "application/json" },
+            })
+        },
     },
 
     professor: {
-        getStudents: () => fetcher("/professeur/etudiants", {headers: {Accept: "application/json"}}),
+        getStudents: (sessionId) => {
+            const path = sessionId === "ALL"
+                ? "/professeur/etudiants"
+                : `/professeur/etudiants/${encodeURIComponent(sessionId)}`;
+            return fetcher(path,
+                {headers: {Accept: "application/json"}});
+        },
 
         getStudentApplications: (studentId) =>
             fetcher(`/professeur/etudiants/${encodeURIComponent(studentId)}/demandes`, {
                 headers: {Accept: "application/json"},
             }),
+
+        getEvaluationPrefill: (studentId) =>
+            fetcher(`/evaluations/milieu/prefill/${encodeURIComponent(studentId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
+        getSubmittedEvaluation: (studentId) =>
+            fetcher(`/evaluations/milieu/${encodeURIComponent(studentId)}`, {
+                headers: {Accept: "application/json"},
+            }),
+
+        submitEnvironmentEvaluation: (payload) => fetcher("/evaluations/milieu", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json;charset=UTF-8",
+            },
+            body: JSON.stringify(payload),
+        }),
+    },
+
+    notifications: {
+        mine: () => fetcher("/api/notifications/mine", {headers: {Accept: "application/json"}}),
+        markRead: (id) => fetcher(`/api/notifications/${encodeURIComponent(id)}/read`, {method: "PUT"}),
     },
 
 };

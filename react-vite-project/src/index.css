@@ -15,6 +15,30 @@
     --color-error: #a43d5d;
     --font-sans: "Plus Jakarta Sans", "Avenir Next", Avenir, "Segoe UI", sans-serif;
 }
+
+@keyframes bell-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.75rem) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes bell-slide-out {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(0.75rem) scale(0.9);
+    }
+}
+
+
 @layer base {
     * {
         box-sizing: border-box;

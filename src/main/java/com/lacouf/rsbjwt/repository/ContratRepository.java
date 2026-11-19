@@ -1,13 +1,14 @@
 package com.lacouf.rsbjwt.repository;
 
-import com.lacouf.rsbjwt.model.Contract;
-import com.lacouf.rsbjwt.model.StatutContrat;
+import com.lacouf.rsbjwt.model.contract.Contract;
+import com.lacouf.rsbjwt.model.contract.StatutContrat;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Collection;
 
 @Repository
 public interface ContratRepository extends JpaRepository<Contract, Long> {
@@ -24,5 +25,8 @@ public interface ContratRepository extends JpaRepository<Contract, Long> {
 
     List<Contract> findByEmployer_IdOrderByDateCreationDesc(Long employerId);
 
+    List<Contract> findByContractStatusInAndEndingDateBetween(
+            Collection<StatutContrat> statuses, LocalDate from, LocalDate to);
 
+    Optional<Contract> findByStudentId(Long studentId);
 }

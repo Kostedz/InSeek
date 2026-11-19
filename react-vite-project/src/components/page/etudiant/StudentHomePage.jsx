@@ -10,7 +10,7 @@ import StudentSessionBadge from "./StudentSessionBadge.jsx";
 
 function getActiveTab(pathname) {
     if (pathname === "/etudiant/candidatures") return "applications";
-    if (pathname === "/etudiant/convocations") return "interviews";
+    if (pathname === "/etudiant/convocations" || pathname.startsWith("/etudiant/convocations/")) return "interviews";
     if (pathname === "/etudiant/contrat") return "contract";
     return "offers";
 }

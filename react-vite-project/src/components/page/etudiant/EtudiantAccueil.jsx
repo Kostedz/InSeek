@@ -6,6 +6,7 @@ import Loading from "../../Loading.jsx";
 import PdfPreview from "../../PdfPreview.jsx";
 import {StudentCvRequiredMessage} from "./StudentCvAccess.jsx";
 import {notifyStudentTabCountsChanged} from "../../../utils/tabCounts.js";
+import DropdownSelect from "../../DropdownSelect.jsx";
 import {
     formatDate,
     formatDateRange,
@@ -468,17 +469,17 @@ export default function EtudiantAccueil({user, cvData}) {
                     />
                     <label className="sr-only"
                            htmlFor="student-offer-salary">{t("studentOffers.filters.salaryLabel")}</label>
-                    <select
+                    <DropdownSelect
                         id="student-offer-salary"
                         value={minimumSalary}
                         onChange={(event) => setMinimumSalary(event.target.value)}
-                        className="rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm text-ink outline-none focus:border-ink focus:ring-4 focus:ring-pink/40"
+                        className="w-full rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm text-ink outline-none focus:border-ink focus:ring-4 focus:ring-pink/40"
                     >
                         <option value="">{t("studentOffers.filters.allSalaries")}</option>
                         <option value="15">{t("studentOffers.filters.salary15")}</option>
                         <option value="20">{t("studentOffers.filters.salary20")}</option>
                         <option value="25">{t("studentOffers.filters.salary25")}</option>
-                    </select>
+                    </DropdownSelect>
                 </div>
             )}
 

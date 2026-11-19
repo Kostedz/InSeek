@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import {useTranslation} from "react-i18next";
+import {useSearchParams} from "react-router-dom";
 import {api} from "../../../utils/api.js";
 import {notifyPendingDocumentProcessed} from "../../../utils/tabCounts.js";
 import StatusBadge from "../../componentUtils/gestionnaire/cvValidation/CvStatusBadge.jsx";
@@ -45,6 +46,7 @@ const EXAMPLE_CVS = [
 
 export default function GestionnaireCvValidation({embedded = false}) {
     const {t, i18n} = useTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [cvs, setCvs] = useState(EXAMPLE_CVS.map(normalizeCv));
     const [selectedId, setSelectedId] = useState(EXAMPLE_CVS[0].id);
     const [comment, setComment] = useState("");
@@ -88,6 +90,26 @@ export default function GestionnaireCvValidation({embedded = false}) {
 
         return () => window.clearInterval(intervalId);
     }, []);
+
+    useEffect(() => {
+        const cvParam = searchParams.get("cv");
+        const studentParam = searchParams.get("etudiant");
+        if ((!cvParam && !studentParam) || loading) return;
+
+        const studentIdOf = (cv) => [cv.studentId, cv.etudiantId, cv.utilisateurId, cv.userId, cv.etudiant?.id]
+            .find((value) => value !== undefined && value !== null);
+
+        const target = cvParam
+            ? cvs.find((cv) => String(cv.id) === cvParam)
+            : cvs.filter(isPending).find((cv) => String(studentIdOf(cv)) === studentParam);
+        if (target) setSelectedId(target.id);
+
+        setSearchParams((params) => {
+            params.delete("cv");
+            params.delete("etudiant");
+            return params;
+        }, {replace: true});
+    }, [searchParams, cvs, loading]);
 
     const pendingCvs = cvs.filter(isPending);
     const selectedCv = cvs.find((cv) => cv.id === selectedId) ?? pendingCvs[0];

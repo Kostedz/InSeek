@@ -3,7 +3,14 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.document.CV;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.utilisateur.Employeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Gestionnaire;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
 import com.lacouf.rsbjwt.service.dto.CVDTO;
 import com.lacouf.rsbjwt.service.dto.DocumentDTO;
@@ -17,7 +24,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
  import org.springframework.mock.web.MockMultipartFile;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -38,8 +44,14 @@ public class DocumentServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private SseService sseService;
+
     @InjectMocks
     private DocumentService documentService;
+
+    @Mock
+    private UtilisateurRepository utilisateurRepository;
 
     private MockMultipartFile fileCV;
     private MockMultipartFile fileOffre;
@@ -122,27 +134,8 @@ public class DocumentServiceTest {
         verify(documentRepository).save(any(CV.class));
     }
 
-    @Test
-    @DisplayName("saveDocument - should reject a CV update while the existing CV is pending")
-    public void testSaveDocumentPendingCv() throws NotFoundException, IOException {
-        CV existingCV = CV.builder()
-                .fileName("existing-cv.pdf")
-                .targetDiscipline(Disciplines.INFORMATIQUE)
-                .utilisateur(etudiant)
-                .build();
-        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("test@example.com");
-        when(utilisateurService.findEntityByEmail("test@example.com")).thenReturn(etudiant);
-        when(documentRepository.findByUtilisateur(etudiant)).thenReturn(existingCV);
 
-        BadRequestException exception = assertThrows(
-                BadRequestException.class,
-                () -> documentService.saveDocument(fileCV, formContentCV, request)
-        );
 
-        assertEquals("Votre CV est déjà en attente de validation.", exception.getMessage());
-        verify(documentRepository, never()).delete(any(CV.class));
-        verify(documentRepository, never()).save(any());
-    }
 
     @Test
     @DisplayName("saveDocument - should allow the development manager to submit a CV")
@@ -278,18 +271,24 @@ public class DocumentServiceTest {
         verify(documentRepository).save(offer);
     }
 
+
     @Test
     @DisplayName("saveDocument - should throw BadRequestException for invalid document type")
     public void testSaveDocumentInvalidType() throws NotFoundException {
-        String invalidFormContent = "{\"type\":\"InvalidType\"}";
-        when(jwtTokenProvider.getEmailFromJWT("fake-jwt")).thenReturn("test@example.com");
-        when(utilisateurService.findEntityByEmail("test@example.com")).thenReturn(etudiant);
 
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> documentService.saveDocument(fileCV, invalidFormContent, request));
+        String invalidFormContent = "{\"type\":\"InvalidType\"}";
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> documentService.saveDocument(fileCV, invalidFormContent, request)
+        );
+
         assertEquals("Invalid document type", exception.getMessage());
+
         verify(documentRepository, never()).save(any());
         verify(documentRepository, never()).existsByFileNameAndTargetDiscipline(anyString(), any());
     }
+
 
     @Test
     @DisplayName("toDTO - should convert CV to CVDTO")

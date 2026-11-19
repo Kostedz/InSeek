@@ -2,10 +2,11 @@ package com.lacouf.rsbjwt.service;
 
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
-import com.lacouf.rsbjwt.model.Etudiant;
-import com.lacouf.rsbjwt.model.Professeur;
+import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.Professeur;
 import com.lacouf.rsbjwt.repository.EtudiantRepository;
 import com.lacouf.rsbjwt.repository.ProfesseurRepository;
+import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.service.dto.ProfesseurDTO;
 import com.lacouf.rsbjwt.service.dto.StagiaireDTO;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +21,19 @@ public class AssignationProfesseurService {
 
     private final EtudiantRepository etudiantRepository;
     private final ProfesseurRepository professeurRepository;
+    private final UtilisateurRepository utilisateurRepository;
 
     @Transactional(readOnly = true)
-    public List<StagiaireDTO> listStagiaires() {
-        return etudiantRepository.findAll()
-                .stream()
+    public List<StagiaireDTO> listTousLesStagiaires() {
+        return etudiantRepository.findAll().stream()
+                .map(StagiaireDTO::of)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StagiaireDTO> listStagiaires(String session) {
+        List<Etudiant> stagiaires = utilisateurRepository.findBySession(session);
+        return stagiaires.stream()
                 .map(StagiaireDTO::of)
                 .toList();
     }

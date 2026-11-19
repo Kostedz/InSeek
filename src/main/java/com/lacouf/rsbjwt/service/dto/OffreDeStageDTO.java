@@ -1,7 +1,7 @@
 package com.lacouf.rsbjwt.service.dto;
 
-import com.lacouf.rsbjwt.model.Disciplines;
-import com.lacouf.rsbjwt.model.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
+import com.lacouf.rsbjwt.model.document.OffreDeStage;
 import com.lacouf.rsbjwt.model.StatutValidation;
 
 import java.time.LocalDate;
