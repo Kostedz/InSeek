@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class EvaluationServiceTest {
+public class CompanyEvaluationServiceTest {
 
     @Mock
     private EvaluationRepository evaluationRepository;
@@ -255,5 +255,186 @@ public class EvaluationServiceTest {
                 .thenReturn(Optional.empty());
         assertThrows(NotFoundException.class,
                 () -> evaluationService.getSubmittedCompanyEvaluation(TEACHER_EMAIL, STUDENT_ID));
+    }
+
+
+    private CompanyEvaluationDTO dtoAvec(double supervision, double tache, double milieu, LocalDate visite) {
+        return new CompanyEvaluationDTO(null, STUDENT_ID, CONTRACT_ID, OFFER_ID,
+                supervision, tache, milieu, visite, Disciplines.INFORMATIQUE, "Commentaire", null, null);
+    }
+
+    private Contract contratSansDetails() {
+        Contract c = Contract.builder()
+                .student(student)
+                .contractStatus(StatutContrat.EXECUTED)
+                .build();
+        c.setId(CONTRACT_ID);
+        return c;
+    }
+
+
+    @Test
+    @DisplayName("submitEvaluation sans date de visite - BadRequestException")
+    void submitEvaluationDateVisiteNull() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> evaluationService.submitEvaluation(dtoAvec(4.0, 4.0, 4.0, null), TEACHER_EMAIL));
+
+        assertEquals("La date de visite est obligatoire.", ex.getMessage());
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submitEvaluation date de visite avant le début du stage - BadRequestException")
+    void submitEvaluationVisiteAvantDebut() {
+        LocalDate avantDebut = activeContract.getStartingDate().minusDays(1);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> evaluationService.submitEvaluation(dtoAvec(4.0, 4.0, 4.0, avantDebut), TEACHER_EMAIL));
+
+        assertEquals("La date de visite ne peut pas être antérieure au début du stage.", ex.getMessage());
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submitEvaluation date de visite après la fin du stage - BadRequestException")
+    void submitEvaluationVisiteApresFin() {
+        activeContract.setEndingDate(LocalDate.now().minusDays(10));
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> evaluationService.submitEvaluation(
+                        dtoAvec(4.0, 4.0, 4.0, LocalDate.now().minusDays(1)), TEACHER_EMAIL));
+
+        assertEquals("La date de visite ne peut pas être postérieure à la fin du stage.", ex.getMessage());
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submitEvaluation supervisionRating > 5.0 - BadRequestException")
+    void submitEvaluationSupervisionAuDessusDeCinq() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> evaluationService.submitEvaluation(
+                        dtoAvec(5.5, 4.0, 4.0, LocalDate.now().minusDays(1)), TEACHER_EMAIL));
+
+        assertTrue(ex.getMessage().contains("supervisionRating"));
+    }
+
+    @Test
+    @DisplayName("submitEvaluation taskComplianceRating hors limites - BadRequestException")
+    void submitEvaluationTaskComplianceInvalide() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> evaluationService.submitEvaluation(
+                        dtoAvec(4.0, 6.0, 4.0, LocalDate.now().minusDays(1)), TEACHER_EMAIL));
+
+        assertTrue(ex.getMessage().contains("taskComplianceRating"));
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submitEvaluation workEnvironmentRating hors limites - BadRequestException")
+    void submitEvaluationWorkEnvironmentInvalide() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> evaluationService.submitEvaluation(
+                        dtoAvec(4.0, 4.0, 0.0, LocalDate.now().minusDays(1)), TEACHER_EMAIL));
+
+        assertTrue(ex.getMessage().contains("workEnvironmentRating"));
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submitEvaluation avec étudiant assigné à un autre professeur - NotFoundException")
+    void submitEvaluationEtudiantAutreProfesseur() {
+        Professeur autre = Professeur.builder()
+                .id(99L).prenom("Autre").nom("Prof").email("autre@college.ca")
+                .discipline(Disciplines.INFORMATIQUE).build();
+        student.setProfesseur(autre);
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> evaluationService.submitEvaluation(companyEvaluationDTO, TEACHER_EMAIL));
+
+        assertEquals("Cet étudiant ne vous est pas assigné.", ex.getMessage());
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submitEvaluation avec étudiant introuvable - NotFoundException")
+    void submitEvaluationEtudiantIntrouvable() {
+        when(studentRepository.findById(STUDENT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> evaluationService.submitEvaluation(companyEvaluationDTO, TEACHER_EMAIL));
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("submitEvaluation avec un contrat sans dates accepte n'importe quelle date de visite passée")
+    void submitEvaluationContratSansDates() throws Exception {
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(STUDENT_ID))
+                .thenReturn(List.of(contratSansDetails()));
+
+        EvaluationDTO result = evaluationService.submitEvaluation(
+                dtoAvec(4.0, 4.0, 4.0, LocalDate.now().minusYears(1)), TEACHER_EMAIL);
+
+        assertNotNull(result);
+        verify(evaluationRepository).save(any(CompanyEvaluation.class));
+    }
+
+    @Test
+    @DisplayName("submitEvaluation ignore les contrats qui ne sont pas EXECUTED")
+    void submitEvaluationContratNonExecute() {
+        activeContract.setContractStatus(StatutContrat.PENDING_SIGNATURE);
+
+        assertThrows(BadRequestException.class,
+                () -> evaluationService.submitEvaluation(companyEvaluationDTO, TEACHER_EMAIL));
+        verify(evaluationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getPreFillCompanyEvaluation avec un contrat sans employeur, offre ni superviseur - valeurs vides")
+    void getPreFillCompanyEvaluationContratSansDetails() throws Exception {
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(STUDENT_ID))
+                .thenReturn(List.of(contratSansDetails()));
+
+        PrefillCompanyEvaluationDTO dto = evaluationService.getPreFillCompanyEvaluation(TEACHER_EMAIL, STUDENT_ID);
+
+        assertNotNull(dto);
+        assertEquals("", dto.companyName());
+        assertEquals(CONTRACT_ID, dto.contractId());
+    }
+
+    @Test
+    @DisplayName("getPreFillCompanyEvaluation avec un professeur introuvable - NotFoundException")
+    void getPreFillCompanyEvaluationProfesseurIntrouvable() {
+        when(teacherRepository.findByEmail(TEACHER_EMAIL)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> evaluationService.getPreFillCompanyEvaluation(TEACHER_EMAIL, STUDENT_ID));
+    }
+
+    @Test
+    @DisplayName("getPreFillCompanyEvaluation avec un étudiant non assigné - NotFoundException")
+    void getPreFillCompanyEvaluationEtudiantNonAssigne() {
+        student.setProfesseur(null);
+
+        assertThrows(NotFoundException.class,
+                () -> evaluationService.getPreFillCompanyEvaluation(TEACHER_EMAIL, STUDENT_ID));
+    }
+
+    @Test
+    @DisplayName("getPreFillCompanyEvaluation sans contrat actif - BadRequestException")
+    void getPreFillCompanyEvaluationSansContratActif() {
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(STUDENT_ID)).thenReturn(List.of());
+
+        assertThrows(BadRequestException.class,
+                () -> evaluationService.getPreFillCompanyEvaluation(TEACHER_EMAIL, STUDENT_ID));
+    }
+
+    @Test
+    @DisplayName("getSubmittedCompanyEvaluation sans contrat actif - BadRequestException")
+    void getSubmittedCompanyEvaluationSansContratActif() {
+        when(contractRepository.findByStudentIdOrderByDateCreationDesc(STUDENT_ID)).thenReturn(List.of());
+
+        assertThrows(BadRequestException.class,
+                () -> evaluationService.getSubmittedCompanyEvaluation(TEACHER_EMAIL, STUDENT_ID));
+        verify(evaluationRepository, never()).findCompanyEvaluation(any(), any(), any());
     }
 }

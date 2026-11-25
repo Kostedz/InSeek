@@ -3,9 +3,12 @@ package com.lacouf.rsbjwt.service;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.*;
+import com.lacouf.rsbjwt.model.document.CV;
 import com.lacouf.rsbjwt.model.document.OffreDeStage;
+import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
 import com.lacouf.rsbjwt.model.utilisateur.Employeur;
 import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.DocumentRepository;
 import com.lacouf.rsbjwt.repository.EntrevueRepository;
@@ -25,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,10 +66,6 @@ class ApplicationStageServiceTest {
         employeur = mock(Employeur.class);
         offre = mock(OffreDeStage.class);
     }
-
-    // --------------------------------------------------
-    // CREATE APPLICATION
-    // --------------------------------------------------
 
     @Test
     @DisplayName("Un étudiant peut postuler à une offre")
@@ -236,10 +236,6 @@ class ApplicationStageServiceTest {
                 .save(any(ApplicationStage.class));
     }
 
-    // --------------------------------------------------
-    // FIND APPLIED OFFER IDS
-    // --------------------------------------------------
-
     @Test
     @DisplayName("Un étudiant peut consulter les identifiants des offres postulées")
     void findAppliedOfferIds_succes() throws Exception {
@@ -265,10 +261,6 @@ class ApplicationStageServiceTest {
 
         verifyNoInteractions(applicationStageRepository);
     }
-
-    // --------------------------------------------------
-    // FIND APPLICATIONS FOR STUDENT
-    // --------------------------------------------------
 
     @Test
     @DisplayName("Un étudiant peut consulter ses candidatures")
@@ -324,10 +316,6 @@ class ApplicationStageServiceTest {
 
         verifyNoInteractions(applicationStageRepository);
     }
-
-    // --------------------------------------------------
-    // FIND APPLICATIONS FOR EMPLOYER
-    // --------------------------------------------------
 
     @Test
     @DisplayName("Un employeur peut consulter les candidatures de sa propre offre")
@@ -423,10 +411,6 @@ class ApplicationStageServiceTest {
                 .findByOffreDeStageId(anyLong());
     }
 
-    // --------------------------------------------------
-    // FIND STUDENTS BY OFFER
-    // --------------------------------------------------
-
     @Test
     @DisplayName("Le service retourne les étudiants ayant postulé à une offre")
     void findEtudiantsByOffreDeStage_succes() {
@@ -448,10 +432,6 @@ class ApplicationStageServiceTest {
             assertSame(etudiantDTO, resultat.getFirst());
         }
     }
-
-    // --------------------------------------------------
-    // DTO CONVERSION
-    // --------------------------------------------------
 
     @Test
     @DisplayName("toDto convertit correctement une candidature")
@@ -493,5 +473,250 @@ class ApplicationStageServiceTest {
             assertEquals(StatutValidation.EN_ATTENTE,
                     resultat.statutValidation());
         }
+    }
+
+    @Test
+    @DisplayName("createApplicationStage - lève BadRequestException si la discipline ne correspond pas")
+    void createApplicationStage_disciplineDifferente() {
+        when(utilisateurRepository.findUtilisateurById(1L)).thenReturn(etudiant);
+        when(documentRepository.findOffreById(5L)).thenReturn(offre);
+
+        when(etudiant.getDiscipline()).thenReturn(Disciplines.INFORMATIQUE);
+        when(offre.getTargetDiscipline()).thenReturn(Disciplines.DESIGN_GRAPHIQUE);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> applicationStageService.createApplicationStage1(1L, 5L));
+
+        assertEquals("Cette offre de stage ne correspond pas à votre discipline.", ex.getMessage());
+        verify(applicationStageRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("accepter - succès : valide la candidature et met à jour le statut de l'étudiant")
+    void accepter_succes() throws Exception {
+        when(employeur.getId()).thenReturn(2L);
+        when(offre.getUtilisateur()).thenReturn(employeur);
+        when(offre.getId()).thenReturn(5L);
+
+        ApplicationStage application = new ApplicationStage();
+        application.setId(10L);
+        application.setEtudiant(etudiant);
+        application.setOffreDeStage(offre);
+        application.setStatutValidation(StatutValidation.EN_ATTENTE);
+
+        when(applicationStageRepository.findById(10L)).thenReturn(Optional.of(application));
+        when(applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(5L, StatutValidation.ACCEPTE)).thenReturn(false);
+        when(applicationStageRepository.save(any(ApplicationStage.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EtudiantDTO etudiantDTO = mock(EtudiantDTO.class);
+        OffreDeStageDTO offreDTO = mock(OffreDeStageDTO.class);
+
+        try (MockedStatic<EtudiantDTO> etudiantConversion = mockStatic(EtudiantDTO.class);
+             MockedStatic<OffreDeStageDTO> offreConversion = mockStatic(OffreDeStageDTO.class)) {
+
+            etudiantConversion.when(() -> EtudiantDTO.of(etudiant)).thenReturn(etudiantDTO);
+            offreConversion.when(() -> OffreDeStageDTO.of(offre)).thenReturn(offreDTO);
+
+            ApplicationStageDTO resultat = applicationStageService.accepter(employeur, 10L);
+
+            assertNotNull(resultat);
+            assertEquals(StatutValidation.ACCEPTE, application.getStatutValidation());
+            assertNull(application.getCommentaireRefus());
+            assertNotNull(application.getDateDecision());
+
+            verify(etudiant).setStatutRecherche(StatutRechercheEtudiant.INTERNSHIP_FOUND);
+            verify(utilisateurRepository).save(etudiant);
+            verify(applicationStageRepository).save(application);
+        }
+    }
+
+    @Test
+    @DisplayName("accepter - lève BadRequestException si l'utilisateur n'est pas un employeur")
+    void accepter_nonEmployeur() {
+        assertThrows(BadRequestException.class, () -> applicationStageService.accepter(etudiant, 10L));
+    }
+
+    @Test
+    @DisplayName("accepter - lève NotFoundException si la candidature n'existe pas")
+    void accepter_candidatureIntrouvable() {
+        when(applicationStageRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> applicationStageService.accepter(employeur, 99L));
+    }
+
+    @Test
+    @DisplayName("accepter - lève NotFoundException si l'offre appartient à un autre employeur")
+    void accepter_autreEmployeur() {
+        Employeur autreEmployeur = mock(Employeur.class);
+        when(employeur.getId()).thenReturn(2L);
+        when(autreEmployeur.getId()).thenReturn(3L);
+        when(offre.getUtilisateur()).thenReturn(autreEmployeur);
+
+        ApplicationStage application = new ApplicationStage();
+        application.setOffreDeStage(offre);
+
+        when(applicationStageRepository.findById(10L)).thenReturn(Optional.of(application));
+
+        assertThrows(NotFoundException.class, () -> applicationStageService.accepter(employeur, 10L));
+    }
+
+    @Test
+    @DisplayName("accepter - lève BadRequestException si la candidature n'est plus EN_ATTENTE")
+    void accepter_dejaTraitee() {
+        when(employeur.getId()).thenReturn(2L);
+        when(offre.getUtilisateur()).thenReturn(employeur);
+
+        ApplicationStage application = new ApplicationStage();
+        application.setOffreDeStage(offre);
+        application.setStatutValidation(StatutValidation.REJETE);
+
+        when(applicationStageRepository.findById(10L)).thenReturn(Optional.of(application));
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> applicationStageService.accepter(employeur, 10L));
+        assertEquals("Cette candidature a déjà été traitée.", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("accepter - lève BadRequestException si l'offre a déjà été attribuée à un autre étudiant")
+    void accepter_offreDejaAttribuee() {
+        when(employeur.getId()).thenReturn(2L);
+        when(offre.getUtilisateur()).thenReturn(employeur);
+        when(offre.getId()).thenReturn(5L);
+
+        ApplicationStage application = new ApplicationStage();
+        application.setOffreDeStage(offre);
+        application.setStatutValidation(StatutValidation.EN_ATTENTE);
+
+        when(applicationStageRepository.findById(10L)).thenReturn(Optional.of(application));
+        when(applicationStageRepository.existsByOffreDeStageIdAndStatutValidation(5L, StatutValidation.ACCEPTE)).thenReturn(true);
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> applicationStageService.accepter(employeur, 10L));
+        assertEquals("Cette offre de stage a déjà été attribuée à un autre étudiant.", ex.getMessage());
+    }
+
+
+    @Test
+    @DisplayName("refuser - succès : rejette la candidature avec un commentaire")
+    void refuser_succes() throws Exception {
+        when(employeur.getId()).thenReturn(2L);
+        when(offre.getUtilisateur()).thenReturn(employeur);
+
+        ApplicationStage application = new ApplicationStage();
+        application.setId(10L);
+        application.setEtudiant(etudiant);
+        application.setOffreDeStage(offre);
+        application.setStatutValidation(StatutValidation.EN_ATTENTE);
+
+        when(applicationStageRepository.findById(10L)).thenReturn(Optional.of(application));
+        when(applicationStageRepository.save(any(ApplicationStage.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EtudiantDTO etudiantDTO = mock(EtudiantDTO.class);
+        OffreDeStageDTO offreDTO = mock(OffreDeStageDTO.class);
+
+        try (MockedStatic<EtudiantDTO> etudiantConversion = mockStatic(EtudiantDTO.class);
+             MockedStatic<OffreDeStageDTO> offreConversion = mockStatic(OffreDeStageDTO.class)) {
+
+            etudiantConversion.when(() -> EtudiantDTO.of(etudiant)).thenReturn(etudiantDTO);
+            offreConversion.when(() -> OffreDeStageDTO.of(offre)).thenReturn(offreDTO);
+
+            ApplicationStageDTO resultat = applicationStageService.refuser(employeur, 10L, " Profil insuffisant ");
+
+            assertNotNull(resultat);
+            assertEquals(StatutValidation.REJETE, application.getStatutValidation());
+            assertEquals("Profil insuffisant", application.getCommentaireRefus());
+            assertNotNull(application.getDateDecision());
+            verify(applicationStageRepository).save(application);
+        }
+    }
+
+    @Test
+    @DisplayName("refuser - lève BadRequestException si le commentaire est vide ou null")
+    void refuser_commentaireInvalide() {
+        assertThrows(BadRequestException.class, () -> applicationStageService.refuser(employeur, 10L, null));
+        assertThrows(BadRequestException.class, () -> applicationStageService.refuser(employeur, 10L, "   "));
+    }
+
+    @Test
+    @DisplayName("findApplicationsForStudent - lève IllegalStateException si l'offre liée est introuvable")
+    void findApplicationsForStudent_offreIntrouvable() {
+        when(etudiant.getId()).thenReturn(1L);
+        ApplicationStage app = mock(ApplicationStage.class);
+        when(app.getOffreDeStage()).thenReturn(offre);
+        when(offre.getId()).thenReturn(99L);
+        when(applicationStageRepository.findByEtudiantId(1L)).thenReturn(List.of(app));
+        when(documentRepository.findOffreStageSummaryById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> applicationStageService.findApplicationsForStudent(etudiant));
+    }
+
+    @Test
+    @DisplayName("toDto - inclut les infos du CV et le statut hasInterview si présents")
+    void toDto_avecCvEtEntrevue() {
+        when(etudiant.getId()).thenReturn(1L);
+        when(offre.getId()).thenReturn(5L);
+
+        ApplicationStage app = mock(ApplicationStage.class);
+        when(app.getId()).thenReturn(10L);
+        when(app.getDateApplique()).thenReturn(LocalDate.of(2026, 10, 16));
+        when(app.getEtudiant()).thenReturn(etudiant);
+        when(app.getOffreDeStage()).thenReturn(offre);
+        when(app.getStatutValidation()).thenReturn(StatutValidation.EN_ATTENTE);
+        when(app.getCommentaireRefus()).thenReturn(null);
+
+        CV cv = mock(CV.class);
+        when(cv.getId()).thenReturn(100L);
+        when(cv.getFileName()).thenReturn("mon_cv.pdf");
+        when(documentRepository.findByUtilisateur(etudiant)).thenReturn(cv);
+        when(entrevueRepository.existsByStudentIdAndInternshipOfferId(1L, 5L)).thenReturn(true);
+
+        EtudiantDTO etudiantDTO = mock(EtudiantDTO.class);
+        OffreDeStageDTO offreDTO = mock(OffreDeStageDTO.class);
+
+        try (MockedStatic<EtudiantDTO> etudiantConversion = mockStatic(EtudiantDTO.class);
+             MockedStatic<OffreDeStageDTO> offreConversion = mockStatic(OffreDeStageDTO.class)) {
+
+            etudiantConversion.when(() -> EtudiantDTO.of(etudiant)).thenReturn(etudiantDTO);
+            offreConversion.when(() -> OffreDeStageDTO.of(offre)).thenReturn(offreDTO);
+
+            ApplicationStageDTO resultat = applicationStageService.toDto(app);
+
+            assertEquals(100L, resultat.cvDocumentId());
+            assertEquals("mon_cv.pdf", resultat.cvFileName());
+            assertTrue(resultat.interviewScheduled());
+        }
+    }
+
+    @Test
+    @DisplayName("listerOffresParSession - filtre correctement les offres selon la session")
+    void listerOffresParSession_filtre() {
+        LocalDateTime dateAutomne = LocalDateTime.of(2026, 10, 1, 10, 0);
+        LocalDateTime dateHiver = LocalDateTime.of(2026, 2, 1, 10, 0);
+
+        OffreDeStageDTO offreAutomne = new OffreDeStageDTO(
+                1L, "o1.pdf", "a@mail.com", "Ent1", "Dev", "Desc",
+                null, null, "Mtl", StatutValidation.VALIDE, null, 25.0,
+                Disciplines.INFORMATIQUE, null, null, 1, dateAutomne
+        );
+
+        OffreDeStageDTO offreHiver = new OffreDeStageDTO(
+                2L, "o2.pdf", "b@mail.com", "Ent2", "Dev", "Desc",
+                null, null, "Mtl", StatutValidation.VALIDE, null, 25.0,
+                Disciplines.INFORMATIQUE, null, null, 1, dateHiver
+        );
+
+        OffreDeStageDTO offreSansDate = new OffreDeStageDTO(
+                3L, "o3.pdf", "c@mail.com", "Ent3", "Dev", "Desc",
+                null, null, "Mtl", StatutValidation.VALIDE, null, 25.0,
+                Disciplines.INFORMATIQUE, null, null, 1, null
+        );
+
+        when(documentRepository.findAllOffreStageSummaries()).thenReturn(List.of(offreAutomne, offreHiver, offreSansDate));
+
+        List<OffreDeStageDTO> resultat = applicationStageService.listerOffresParSession("A26");
+
+        assertEquals(1, resultat.size());
+        assertEquals(1L, resultat.getFirst().id());
     }
 }

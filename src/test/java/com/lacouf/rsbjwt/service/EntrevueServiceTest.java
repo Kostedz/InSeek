@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.service;
 
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
@@ -416,6 +417,289 @@ public class EntrevueServiceTest {
         assertThrows(ConflictException.class,
                 () -> entrevueService.respondToInterviewInvitation(INTERVIEW_ID, acceptDto, request));
         verify(interviewRepository, never()).save(any());
+    }
+
+
+    private Employeur stubScheduleContext(Etudiant student, OffreDeStage offer, Long employerId) {
+        Employeur employer = mock(Employeur.class);
+        lenient().when(employer.getId()).thenReturn(employerId);
+        lenient().when(student.getId()).thenReturn(STUDENT_ID);
+        lenient().when(offer.getId()).thenReturn(OFFER_ID);
+        when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(employer);
+        when(userRepository.findById(STUDENT_ID)).thenReturn(Optional.of(student));
+        when(documentRepository.findOffreStageById(OFFER_ID)).thenReturn(Optional.of(offer));
+        return employer;
+    }
+
+    @Test
+    void scheduleInterview_existingAcceptedInterview_throwsBadRequest() {
+        Etudiant student = mock(Etudiant.class);
+        OffreDeStage offer = mock(OffreDeStage.class);
+        stubScheduleContext(student, offer, EMPLOYER_ID);
+        Entrevue existing = createMockInterview(INTERVIEW_ID, student);
+        when(existing.getInterviewInvitationStatus()).thenReturn(StatutConvocationEntrevue.ACCEPTED);
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.of(existing));
+
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.scheduleInterview(request, validDto));
+
+        verify(interviewRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void scheduleInterview_existingPendingFutureInterview_throwsBadRequest() {
+        Etudiant student = mock(Etudiant.class);
+        OffreDeStage offer = mock(OffreDeStage.class);
+        stubScheduleContext(student, offer, EMPLOYER_ID);
+        Entrevue existing = createMockInterview(INTERVIEW_ID, student);
+        when(existing.getInterviewInvitationStatus()).thenReturn(StatutConvocationEntrevue.PENDING);
+        when(existing.getDateInterview()).thenReturn(LocalDateTime.now().plusDays(3));
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.of(existing));
+
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.scheduleInterview(request, validDto));
+
+        verify(interviewRepository, never()).save(any());
+    }
+
+    @Test
+    void scheduleInterview_existingExpiredInterview_sameEmployer_replacesInterview() throws Exception {
+        Etudiant student = mock(Etudiant.class);
+        OffreDeStage offer = mock(OffreDeStage.class);
+        stubScheduleContext(student, offer, EMPLOYER_ID);
+        Entrevue existing = createMockInterview(INTERVIEW_ID, student);
+        when(existing.getInterviewInvitationStatus()).thenReturn(StatutConvocationEntrevue.EXPIRED);
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.of(existing));
+        when(interviewRepository.save(any(Entrevue.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        entrevueService.scheduleInterview(request, validDto);
+
+        verify(existing).setDateInterview(validDto.DateAndTime());
+        verify(existing).setModeInterview(validDto.mode());
+        verify(existing).setLocationOrLink(validDto.locationOrLink());
+        verify(existing).setMessage(validDto.message());
+        verify(existing).setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
+        verify(existing).setInvitationResponseDate(null);
+        verify(existing).setMessageWhenRejected(null);
+        verify(interviewRepository).save(existing);
+        verify(student).setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
+        verify(eventPublisher).publishEvent(any(NotificationEvent.class));
+    }
+
+    @Test
+    void scheduleInterview_existingPendingPastInterview_replacesInterview() throws Exception {
+        Etudiant student = mock(Etudiant.class);
+        OffreDeStage offer = mock(OffreDeStage.class);
+        stubScheduleContext(student, offer, EMPLOYER_ID);
+        Entrevue existing = createMockInterview(INTERVIEW_ID, student);
+        when(existing.getInterviewInvitationStatus()).thenReturn(StatutConvocationEntrevue.PENDING);
+        when(existing.getDateInterview()).thenReturn(LocalDateTime.now().minusDays(1));
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.of(existing));
+        when(interviewRepository.save(any(Entrevue.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        entrevueService.scheduleInterview(request, validDto);
+
+        verify(existing).setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
+        verify(interviewRepository).save(existing);
+    }
+
+    @Test
+    void scheduleInterview_existingInterview_otherEmployer_throwsBadRequest() {
+        Etudiant student = mock(Etudiant.class);
+        OffreDeStage offer = mock(OffreDeStage.class);
+        stubScheduleContext(student, offer, 999L);
+        Entrevue existing = createMockInterview(INTERVIEW_ID, student);
+        when(existing.getInterviewInvitationStatus()).thenReturn(StatutConvocationEntrevue.EXPIRED);
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.of(existing));
+
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.scheduleInterview(request, validDto));
+
+        verify(interviewRepository, never()).save(any());
+    }
+
+    @Test
+    void scheduleInterview_studentIdIsNotAStudent_throwsNotFound() {
+        when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(mock(Employeur.class));
+        when(userRepository.findById(STUDENT_ID)).thenReturn(Optional.of(mock(Employeur.class)));
+
+        assertThrows(NotFoundException.class,
+                () -> entrevueService.scheduleInterview(request, validDto));
+
+        verify(interviewRepository, never()).save(any());
+    }
+
+
+    @Test
+    void updateInterview_validData_updatesInterviewAndPublishesEvent() throws Exception {
+        Employeur employer = mock(Employeur.class);
+        when(employer.getId()).thenReturn(EMPLOYER_ID);
+        when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(employer);
+        Etudiant student = mock(Etudiant.class);
+        Entrevue interview = createMockInterview(INTERVIEW_ID, student);
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.of(interview));
+        when(interviewRepository.save(any(Entrevue.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EntrevueDTO result = entrevueService.updateInterview(request, validDto);
+
+        assertNotNull(result);
+        verify(interview).setDateInterview(validDto.DateAndTime());
+        verify(interview).setModeInterview(validDto.mode());
+        verify(interview).setLocationOrLink(validDto.locationOrLink());
+        verify(interview).setMessage(validDto.message());
+        verify(interview).setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
+        verify(interview).setInvitationResponseDate(null);
+        verify(interview).setMessageWhenRejected(null);
+        verify(student).setDateInterview(validDto.DateAndTime());
+        verify(student).setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
+        verify(interviewRepository).save(interview);
+        verify(eventPublisher).publishEvent(any(NotificationEvent.class));
+    }
+
+    @Test
+    void updateInterview_interviewNotFound_throwsNotFound() {
+        when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(mock(Employeur.class));
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> entrevueService.updateInterview(request, validDto));
+
+        verify(interviewRepository, never()).save(any());
+    }
+
+    @Test
+    void updateInterview_otherEmployer_throwsBadRequest() {
+        Employeur employer = mock(Employeur.class);
+        when(employer.getId()).thenReturn(999L);
+        when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(employer);
+        Entrevue interview = createMockInterview(INTERVIEW_ID, mock(Etudiant.class));
+        when(interviewRepository.findByStudentIdAndInternshipOfferId(STUDENT_ID, OFFER_ID))
+                .thenReturn(Optional.of(interview));
+
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.updateInterview(request, validDto));
+
+        verify(interviewRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void updateInterview_employerNotFound_throwsNotFound() {
+        when(userRepository.findByEmail(EMPLOYER_EMAIL)).thenReturn(null);
+
+        assertThrows(NotFoundException.class,
+                () -> entrevueService.updateInterview(request, validDto));
+
+        verifyNoInteractions(interviewRepository);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidDtos")
+    void updateInterview_missingField_throwsBadRequest(CreateEntrevueDTO invalid) {
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.updateInterview(request, invalid));
+
+        verifyNoInteractions(interviewRepository, userRepository, documentRepository, jwtTokenProvider);
+    }
+
+    @Test
+    void updateInterview_dateInThePast_throwsBadRequest() {
+        CreateEntrevueDTO past = new CreateEntrevueDTO(STUDENT_ID, OFFER_ID, LocalDateTime.now().minusHours(1),
+                ModeEntrevue.VIDEO_CALL, "https://meet.example.com/abc", "msg");
+
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.updateInterview(request, past));
+
+        verifyNoInteractions(interviewRepository, userRepository, documentRepository);
+    }
+
+
+    @Test
+    void checkPastInterviews_pendingInterview_isMarkedExpiredAndSaved() {
+        Entrevue pending = mock(Entrevue.class);
+        when(pending.getStudent()).thenReturn(mock(Etudiant.class));
+        when(pending.getInterviewInvitationStatus()).thenReturn(StatutConvocationEntrevue.PENDING);
+        when(interviewRepository.findByDateInterviewBefore(any(LocalDateTime.class)))
+                .thenReturn(List.of(pending));
+
+        entrevueService.checkPastInterviews();
+
+        verify(pending).setInterviewInvitationStatus(StatutConvocationEntrevue.EXPIRED);
+        verify(interviewRepository).save(pending);
+    }
+
+    @Test
+    void checkPastInterviews_acceptedInterview_studentNotInvited_doesNotUpdateStudent() {
+        Etudiant student = mock(Etudiant.class);
+        Entrevue interview = mock(Entrevue.class);
+        when(interview.getStudent()).thenReturn(student);
+        when(interview.getInterviewInvitationStatus()).thenReturn(StatutConvocationEntrevue.ACCEPTED);
+        when(student.getStatutRecherche()).thenReturn(StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP);
+        when(interviewRepository.findByDateInterviewBefore(any(LocalDateTime.class)))
+                .thenReturn(List.of(interview));
+
+        entrevueService.checkPastInterviews();
+
+        verify(student, never()).setStatutRecherche(any());
+        verify(userRepository, never()).save(any());
+    }
+
+
+    @Test
+    void getInterviewDetails_userIsNotStudent_throwsNotFound() {
+        when(jwtTokenProvider.getEmailFromJWT(TOKEN)).thenReturn(STUDENT_EMAIL);
+        when(userRepository.findByEmail(STUDENT_EMAIL)).thenReturn(mock(Employeur.class));
+
+        assertThrows(NotFoundException.class,
+                () -> entrevueService.getInterviewDetails(INTERVIEW_ID, request));
+
+        verifyNoInteractions(interviewRepository);
+    }
+
+    @Test
+    void respondToInterview_nullStatus_throwsBadRequest() {
+        RepondreConvocationDTO nullDto = new RepondreConvocationDTO(null, null);
+
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.respondToInterviewInvitation(INTERVIEW_ID, nullDto, request));
+
+        verifyNoInteractions(interviewRepository, userRepository);
+    }
+
+    @Test
+    void respondToInterview_expiredInterview_marksInterviewAsExpired() {
+        when(jwtTokenProvider.getEmailFromJWT(TOKEN)).thenReturn(STUDENT_EMAIL);
+        Etudiant student = mock(Etudiant.class);
+        when(student.getId()).thenReturn(STUDENT_ID);
+        when(userRepository.findByEmail(STUDENT_EMAIL)).thenReturn(student);
+        Entrevue interview = createMockInterview(INTERVIEW_ID, student);
+        when(interview.getDateInterview()).thenReturn(LocalDateTime.now().minusHours(2));
+        when(interviewRepository.findById(INTERVIEW_ID)).thenReturn(Optional.of(interview));
+
+        RepondreConvocationDTO dto = new RepondreConvocationDTO(StatutConvocationEntrevue.ACCEPTED, null);
+        assertThrows(BadRequestException.class,
+                () -> entrevueService.respondToInterviewInvitation(INTERVIEW_ID, dto, request));
+
+        verify(interview).setInterviewInvitationStatus(StatutConvocationEntrevue.EXPIRED);
+    }
+
+    @Test
+    void respondToInterview_interviewNotFound_throwsNotFound() {
+        when(jwtTokenProvider.getEmailFromJWT(TOKEN)).thenReturn(STUDENT_EMAIL);
+        when(userRepository.findByEmail(STUDENT_EMAIL)).thenReturn(mock(Etudiant.class));
+        when(interviewRepository.findById(INTERVIEW_ID)).thenReturn(Optional.empty());
+
+        RepondreConvocationDTO dto = new RepondreConvocationDTO(StatutConvocationEntrevue.ACCEPTED, null);
+        assertThrows(NotFoundException.class,
+                () -> entrevueService.respondToInterviewInvitation(INTERVIEW_ID, dto, request));
     }
 
     private Entrevue createMockInterview(Long interviewId, Etudiant student) {

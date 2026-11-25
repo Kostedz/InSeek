@@ -56,7 +56,6 @@ class GestionnaireServiceTest {
         offre.setFileName("offre_stage.pdf");
     }
 
-    // TESTS POUR listPendingDocuments
     @Test
     void listPendingDocuments_quandTypeEstCV_retourneListeCV() {
         when(documentRepository.findCVByStatut(StatutValidation.EN_ATTENTE)).thenReturn(List.of(cv));
@@ -82,7 +81,6 @@ class GestionnaireServiceTest {
         });
     }
 
-    // TESTS POUR approveDocument
     @Test
     void approveDocument_succes() throws Exception {
         when(documentRepository.findById(1L)).thenReturn(Optional.of(cv));
@@ -100,14 +98,13 @@ class GestionnaireServiceTest {
     }
     @Test
     void approveDocument_quandDocumentDejaTraite_lanceBadRequestException() {
-        cv.setStatut(StatutValidation.VALIDE); // Le document n'est plus EN_ATTENTE
+        cv.setStatut(StatutValidation.VALIDE);
         when(documentRepository.findById(1L)).thenReturn(Optional.of(cv));
         assertThrows(BadRequestException.class, () -> {
             gestionnaireService.approveDocument(1L);
         });
     }
 
-    // TESTS POUR rejectDocument
     @Test
     void rejectDocument_succes() throws Exception {
         when(documentRepository.findById(1L)).thenReturn(Optional.of(cv));

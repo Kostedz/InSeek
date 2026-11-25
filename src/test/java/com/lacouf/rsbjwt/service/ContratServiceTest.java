@@ -1,5 +1,6 @@
 package com.lacouf.rsbjwt.service;
 
+import com.lacouf.rsbjwt.event.NotificationEvent;
 import com.lacouf.rsbjwt.exception.BadRequestException;
 import com.lacouf.rsbjwt.exception.ConflictException;
 import com.lacouf.rsbjwt.exception.NotFoundException;
@@ -12,6 +13,7 @@ import com.lacouf.rsbjwt.repository.ApplicationStageRepository;
 import com.lacouf.rsbjwt.repository.ContratRepository;
 import com.lacouf.rsbjwt.repository.UtilisateurRepository;
 import com.lacouf.rsbjwt.security.JwtTokenProvider;
+import com.lacouf.rsbjwt.security.exception.AuthenticationException;
 import com.lacouf.rsbjwt.service.dto.ContratDTO;
 import com.lacouf.rsbjwt.service.dto.CreateContratDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantEligibleContratDTO;
@@ -28,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -58,6 +61,12 @@ class ContratServiceTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private ContratStageGenerator contratStageGenerator;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     private Etudiant etudiant;
     private OffreDeStage offre;
@@ -1086,5 +1095,346 @@ class ContratServiceTest {
                 () -> contratService.listerContratsEtudiant(new MockHttpServletRequest()));
 
         assertEquals("Jeton d'authentification manquant.", badRequestException.getMessage());
+    }
+
+    @Test
+    @DisplayName("creerContrat() sans horaire lève une BadRequestException")
+    void creerContrat_horaireNull_leveBadRequest() {
+        CreateContratDTO dto = new CreateContratDTO(1L, 10L, LocalDate.now().plusDays(10),
+                LocalDate.now().plusMonths(3), null, 35, 25.0, "Montréal");
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.creerContrat(dto, requeteAvecToken()));
+
+        assertEquals("L'horaire de travail est requis.", ex.getMessage());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("creerContrat() avec un horaire vide lève une BadRequestException")
+    void creerContrat_horaireVide_leveBadRequest() {
+        CreateContratDTO dto = new CreateContratDTO(1L, 10L, LocalDate.now().plusDays(10),
+                LocalDate.now().plusMonths(3), "   ", 35, 25.0, "Montréal");
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.creerContrat(dto, requeteAvecToken()));
+
+        assertEquals("L'horaire de travail est requis.", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("creerContrat() retire les espaces autour de l'horaire")
+    void creerContrat_horaireAvecEspaces_trim() throws Exception {
+        CreateContratDTO dto = new CreateContratDTO(1L, 10L, LocalDate.now().plusDays(10),
+                LocalDate.now().plusMonths(3), "  9 h - 17 h  ", 35, 25.0, "Montréal");
+
+        contratService.creerContrat(dto, requeteAvecToken());
+
+        ArgumentCaptor<Contract> captor = ArgumentCaptor.forClass(Contract.class);
+        verify(contratRepository).save(captor.capture());
+        assertEquals("9 h - 17 h", captor.getValue().getSchedule());
+    }
+
+    @Test
+    @DisplayName("creerContrat() publie une notification pour l'étudiant et une pour l'employeur")
+    void creerContrat_succes_publieDeuxEvenements() throws Exception {
+        contratService.creerContrat(dtoValide(), requeteAvecToken());
+
+        verify(eventPublisher, times(2)).publishEvent(any(NotificationEvent.class));
+    }
+
+    @Test
+    @DisplayName("creerContrat() avec une offre sans propriétaire lève une NotFoundException")
+    void creerContrat_offreSansProprietaire_leveNotFound() {
+        when(offre.getUtilisateur()).thenReturn(null);
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> contratService.creerContrat(dtoValide(), requeteAvecToken()));
+
+        assertEquals("Employeur lié à l'offre introuvable.", ex.getMessage());
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getDonneesPreRemplies() sans employeur sur l'offre retourne des noms vides")
+    void getDonneesPreRemplies_sansEmployeur_nomsVides() throws Exception {
+        when(offre.getUtilisateur()).thenReturn(null);
+        when(offre.getNomEntreprise()).thenReturn(null);
+        when(offre.getContactName()).thenReturn(null);
+
+        PreRemplirContratDTO result = contratService.getDonneesPreRemplies(1L, 10L);
+
+        assertEquals("", result.companyName());
+        assertEquals("", result.employerName());
+        assertEquals("", result.supervisorName());
+    }
+
+    @Test
+    @DisplayName("signContract(mot de passe) valide signe le contrat")
+    void signContractAvecMotDePasse_valide_signeContrat() throws Exception {
+        Contract contract = contrat(StatutContrat.PENDING_SIGNATURE);
+        contratExiste(contract);
+        when(utilisateurRepository.lockEtudiantById(1L)).thenReturn(Optional.of(etudiant));
+        when(etudiant.getPassword()).thenReturn("hash");
+        when(passwordEncoder.matches("secret", "hash")).thenReturn(true);
+
+        ContratDTO result = contratService.signContract(100L, requeteAuthentifieePour(etudiant), "secret");
+
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, result.contractStatus());
+        verify(contratRepository).save(contract);
+    }
+
+    @Test
+    @DisplayName("signContract(mot de passe) incorrect lève une AuthenticationException")
+    void signContractAvecMotDePasse_incorrect_leveAuthenticationException() {
+        contratExiste(contrat(StatutContrat.PENDING_SIGNATURE));
+        when(etudiant.getPassword()).thenReturn("hash");
+        when(passwordEncoder.matches("mauvais", "hash")).thenReturn(false);
+
+        assertThrows(AuthenticationException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(etudiant), "mauvais"));
+
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract(mot de passe) null lève une AuthenticationException")
+    void signContractAvecMotDePasse_null_leveAuthenticationException() {
+        assertThrows(AuthenticationException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(etudiant), null));
+
+        verifyNoInteractions(passwordEncoder);
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract(mot de passe) vide lève une AuthenticationException")
+    void signContractAvecMotDePasse_vide_leveAuthenticationException() {
+        assertThrows(AuthenticationException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(etudiant), "   "));
+
+        verifyNoInteractions(passwordEncoder);
+    }
+
+    @Test
+    @DisplayName("signContract(mot de passe) avec un utilisateur inexistant lève une AuthenticationException")
+    void signContractAvecMotDePasse_utilisateurNull_leveAuthenticationException() {
+        assertThrows(AuthenticationException.class,
+                () -> contratService.signContract(100L, requeteAuthentifieePour(null), "secret"));
+
+        verify(contratRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("signContract() par le gestionnaire publie l'événement d'évaluation de stage")
+    void signContract_gestionnaire_publieEvenement() throws Exception {
+        contratExiste(contrat(StatutContrat.SIGNED_BY_EMPLOYER));
+
+        contratService.signContract(100L, requeteAuthentifieePour(gestionnaire));
+
+        verify(eventPublisher).publishEvent(any(NotificationEvent.class));
+    }
+
+    @Test
+    @DisplayName("signContract() par l'employeur ne publie aucun événement")
+    void signContract_employeur_nePublieAucunEvenement() throws Exception {
+        contratExiste(contrat(StatutContrat.SIGNED_BY_STUDENT));
+
+        contratService.signContract(100L, requeteAuthentifieePour(employeur));
+
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("listerContratsEmployeur() retourne les contrats de l'employeur connecté")
+    void listerContratsEmployeur_retourneSesContrats() throws Exception {
+        when(contratRepository.findByEmployer_IdOrderByDateCreationDesc(2L))
+                .thenReturn(List.of(contrat(StatutContrat.PENDING_SIGNATURE)));
+
+        List<ContratDTO> result = contratService.listerContratsEmployeur(requeteAuthentifieePour(employeur));
+
+        assertEquals(1, result.size());
+        verify(contratRepository).findByEmployer_IdOrderByDateCreationDesc(2L);
+    }
+
+    @Test
+    @DisplayName("listerContratsEmployeur() par un étudiant lève une BadRequestException")
+    void listerContratsEmployeur_etudiant_leveBadRequest() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.listerContratsEmployeur(requeteAuthentifieePour(etudiant)));
+
+        assertEquals("Cette liste est réservée aux employeurs.", ex.getMessage());
+        verify(contratRepository, never()).findByEmployer_IdOrderByDateCreationDesc(any());
+    }
+
+    @Test
+    @DisplayName("listerContratsEmployeur() sans en-tête Authorization lève une BadRequestException")
+    void listerContratsEmployeur_sansHeader_leveBadRequest() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.listerContratsEmployeur(new MockHttpServletRequest()));
+
+        assertEquals("Jeton d'authentification manquant.", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("getContratEtudiant() retourne le contrat le plus récent de l'étudiant")
+    void getContratEtudiant_succes_retournePremierContrat() throws Exception {
+        Contract recent = contrat(StatutContrat.SIGNED_BY_STUDENT);
+        Contract ancien = contrat(StatutContrat.PENDING_SIGNATURE);
+        when(contratRepository.findByStudentIdOrderByDateCreationDesc(1L)).thenReturn(List.of(recent, ancien));
+
+        ContratDTO result = contratService.getContratEtudiant(requeteAuthentifieePour(etudiant));
+
+        assertEquals(StatutContrat.SIGNED_BY_STUDENT, result.contractStatus());
+    }
+
+    @Test
+    @DisplayName("getContratEtudiant() sans contrat lève une NotFoundException")
+    void getContratEtudiant_aucunContrat_leveNotFound() {
+        when(contratRepository.findByStudentIdOrderByDateCreationDesc(1L)).thenReturn(List.of());
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> contratService.getContratEtudiant(requeteAuthentifieePour(etudiant)));
+
+        assertEquals("Aucun contrat trouvé pour cet étudiant.", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("getContratEtudiant() par un employeur lève une BadRequestException")
+    void getContratEtudiant_employeur_leveBadRequest() {
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.getContratEtudiant(requeteAuthentifieePour(employeur)));
+
+        assertEquals("Seul l'étudiant associé peut consulter son contrat.", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("notifierNouvelleEvaluationStage() avec un contrat inexistant lève une NotFoundException")
+    void notifierEvaluation_contratInexistant_leveNotFound() {
+        when(contratRepository.findById(404L)).thenReturn(Optional.empty());
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> contratService.notifierNouvelleEvaluationStage(404L, requeteAuthentifieePour(employeur)));
+
+        assertEquals("Contrat non trouvé.", ex.getMessage());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("notifierNouvelleEvaluationStage() par un non-employeur lève une BadRequestException")
+    void notifierEvaluation_pasEmployeur_leveBadRequest() {
+        contratExiste(contrat(StatutContrat.SIGNED_BY_GESTIONNAIRE));
+
+        BadRequestException ex = assertThrows(BadRequestException.class,
+                () -> contratService.notifierNouvelleEvaluationStage(100L, requeteAuthentifieePour(etudiant)));
+
+        assertEquals("L'utilisateur connecté n'est pas l'employeur associé à ce contrat.", ex.getMessage());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("notifierNouvelleEvaluationStage() par un autre employeur lève une BadRequestException")
+    void notifierEvaluation_autreEmployeur_leveBadRequest() {
+        contratExiste(contrat(StatutContrat.SIGNED_BY_GESTIONNAIRE));
+
+        assertThrows(BadRequestException.class,
+                () -> contratService.notifierNouvelleEvaluationStage(100L, requeteAuthentifieePour(autreEmployeur())));
+
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("notifierNouvelleEvaluationStage() sur un contrat sans employeur lève une BadRequestException")
+    void notifierEvaluation_contratSansEmployeur_leveBadRequest() {
+        Contract sansEmployeur = contractWithId(100L, Contract.builder()
+                .student(etudiant)
+                .admin(gestionnaire)
+                .internshipOffer(offre)
+                .contractStatus(StatutContrat.SIGNED_BY_GESTIONNAIRE));
+        contratExiste(sansEmployeur);
+
+        assertThrows(BadRequestException.class,
+                () -> contratService.notifierNouvelleEvaluationStage(100L, requeteAuthentifieePour(employeur)));
+
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("notifierNouvelleEvaluationStage() sans professeur ne publie aucun événement")
+    void notifierEvaluation_sansProfesseur_aucunEvenement() throws Exception {
+        contratExiste(contrat(StatutContrat.SIGNED_BY_GESTIONNAIRE));
+
+        contratService.notifierNouvelleEvaluationStage(100L, requeteAuthentifieePour(employeur));
+
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    @DisplayName("notifierNouvelleEvaluationStage() avec un professeur publie l'événement")
+    void notifierEvaluation_avecProfesseur_publieEvenement() throws Exception {
+        Contract avecProf = contractWithId(100L, Contract.builder()
+                .student(etudiant)
+                .employer(employeur)
+                .admin(gestionnaire)
+                .teacher(professeur)
+                .internshipOffer(offre)
+                .contractStatus(StatutContrat.SIGNED_BY_GESTIONNAIRE));
+        contratExiste(avecProf);
+
+        contratService.notifierNouvelleEvaluationStage(100L, requeteAuthentifieePour(employeur));
+
+        verify(eventPublisher).publishEvent(any(NotificationEvent.class));
+    }
+
+    @Test
+    @DisplayName("genererPdfContrat() avec un contrat inexistant lève une NotFoundException")
+    void genererPdf_contratInexistant_leveNotFound() {
+        when(contratRepository.findById(404L)).thenReturn(Optional.empty());
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> contratService.genererPdfContrat(404L, requeteAuthentifieePour(etudiant)));
+
+        assertEquals("Contrat non trouvé.", ex.getMessage());
+        verifyNoInteractions(contratStageGenerator);
+    }
+
+    @Test
+    @DisplayName("genererPdfContrat() par un utilisateur non associé lève une BadRequestException")
+    void genererPdf_utilisateurNonAssocie_leveBadRequest() {
+        contratExiste(contrat(StatutContrat.PENDING_SIGNATURE));
+
+        assertThrows(BadRequestException.class,
+                () -> contratService.genererPdfContrat(100L, requeteAuthentifieePour(autreEtudiant())));
+
+        verifyNoInteractions(contratStageGenerator);
+    }
+
+    @Test
+    @DisplayName("genererPdfContrat() avec des champs optionnels absents utilise des valeurs vides")
+    void genererPdf_champsAbsents_valeursVides() throws Exception {
+        Contract contract = contractWithId(100L, Contract.builder()
+                .student(etudiant)
+                .employer(employeur)
+                .admin(gestionnaire)
+                .contractStatus(StatutContrat.PENDING_SIGNATURE)
+                .weeklyHours(35)
+                .internshipLocation("Laval"));
+        contratExiste(contract);
+        when(contratStageGenerator.generate(any(ContratStageGenerator.ContratData.class)))
+                .thenReturn(new byte[0]);
+
+        contratService.genererPdfContrat(100L, requeteAuthentifieePour(etudiant));
+
+        ArgumentCaptor<ContratStageGenerator.ContratData> captor =
+                ArgumentCaptor.forClass(ContratStageGenerator.ContratData.class);
+        verify(contratStageGenerator).generate(captor.capture());
+        ContratStageGenerator.ContratData data = captor.getValue();
+        assertEquals("", data.dateDebut);
+        assertEquals("", data.dateFin);
+        assertEquals("", data.tauxHoraire);
+        assertEquals("", data.offreDescription);
+        assertEquals("", data.dateSignatureEtudiant);
+        assertEquals("", data.dateSignatureEmployeur);
+        assertEquals("", data.dateSignatureGestionnaire);
     }
 }

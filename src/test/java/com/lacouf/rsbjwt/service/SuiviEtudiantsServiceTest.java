@@ -5,6 +5,7 @@ import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
 import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import com.lacouf.rsbjwt.model.utilisateur.Professeur;
 import com.lacouf.rsbjwt.model.StatutValidation;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.repository.EtudiantRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
 import com.lacouf.rsbjwt.service.dto.EtudiantDTO;
@@ -51,9 +52,9 @@ class SuiviEtudiantsServiceTest {
                 .id(1L).nom("bib").prenom("bib").email("bib@a.com")
                 .password("hashed").discipline(Disciplines.INFORMATIQUE).build();
         etudiant.setProfesseur(professeur);
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.INTERNSHIP_FOUND);
     }
 
-    // TESTER listEtudiantsDuProfesseur()
 
     @Test
     @DisplayName("listEtudiantsDuProfesseur() retourne les étudiants assignés au professeur")
@@ -75,7 +76,6 @@ class SuiviEtudiantsServiceTest {
         assertTrue(suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR).isEmpty());
     }
 
-    // TESTER listDemandesDeStage()
 
     @Test
     @DisplayName("listDemandesDeStage() retourne les demandes de l'étudiant du professeur")
@@ -119,5 +119,106 @@ class SuiviEtudiantsServiceTest {
 
         assertThrows(NotFoundException.class, () -> suiviEtudiantsService.listDemandesDeStage("autre@mail.com", 1L));
         verifyNoInteractions(applicationStageService);
+    }
+
+
+    @Test
+    @DisplayName("listEtudiantsDuProfesseur() inclut les étudiants avec SIGNED_CONTRACT")
+    void listEtudiantsDuProfesseur_signedContract() {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        when(etudiantRepository.findByProfesseurEmail(EMAIL_PROFESSEUR)).thenReturn(List.of(etudiant));
+
+        List<StagiaireDTO> result = suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    @DisplayName("listEtudiantsDuProfesseur() exclut les étudiants sans stage")
+    void listEtudiantsDuProfesseur_exclutEtudiantsSansStage() {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP);
+        when(etudiantRepository.findByProfesseurEmail(EMAIL_PROFESSEUR)).thenReturn(List.of(etudiant));
+
+        assertTrue(suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR).isEmpty());
+    }
+
+
+    @Test
+    @DisplayName("listEtudiantsDuProfesseur(session) retourne les étudiants de la session")
+    void listEtudiantsDuProfesseurSession_retourneEtudiants() {
+        when(etudiantRepository.findByProfesseurEmailAndSession(EMAIL_PROFESSEUR, "A2026"))
+                .thenReturn(List.of(etudiant));
+
+        List<StagiaireDTO> result = suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR, "A2026");
+
+        assertEquals(1, result.size());
+        assertEquals("bib@a.com", result.get(0).email());
+        assertEquals(7L, result.get(0).professeurId());
+    }
+
+    @Test
+    @DisplayName("listEtudiantsDuProfesseur(session) retourne une liste vide si aucun étudiant")
+    void listEtudiantsDuProfesseurSession_aucunEtudiant() {
+        when(etudiantRepository.findByProfesseurEmailAndSession(EMAIL_PROFESSEUR, "A2026"))
+                .thenReturn(List.of());
+
+        assertTrue(suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR, "A2026").isEmpty());
+    }
+
+    @Test
+    @DisplayName("listEtudiantsDuProfesseur(session) exclut les étudiants sans stage")
+    void listEtudiantsDuProfesseurSession_exclutEtudiantsSansStage() {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP);
+        when(etudiantRepository.findByProfesseurEmailAndSession(EMAIL_PROFESSEUR, "A2026"))
+                .thenReturn(List.of(etudiant));
+
+        assertTrue(suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR, "A2026").isEmpty());
+    }
+
+    @Test
+    @DisplayName("listEtudiantsDuProfesseur(session) inclut SIGNED_CONTRACT")
+    void listEtudiantsDuProfesseurSession_signedContract() {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        when(etudiantRepository.findByProfesseurEmailAndSession(EMAIL_PROFESSEUR, "A2026"))
+                .thenReturn(List.of(etudiant));
+
+        assertEquals(1, suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR, "A2026").size());
+    }
+
+
+    @Test
+    @DisplayName("listDemandesDeStage() d'un étudiant sans stage lève NotFoundException")
+    void listDemandesDeStage_etudiantSansStage() {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.LOOKING_FOR_INTERNSHIP);
+        when(etudiantRepository.findById(1L)).thenReturn(Optional.of(etudiant));
+
+        assertThrows(NotFoundException.class, () -> suiviEtudiantsService.listDemandesDeStage(EMAIL_PROFESSEUR, 1L));
+        verifyNoInteractions(applicationStageService);
+    }
+
+    @Test
+    @DisplayName("listDemandesDeStage() accepte un étudiant avec SIGNED_CONTRACT")
+    void listDemandesDeStage_signedContract() throws Exception {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.SIGNED_CONTRACT);
+        when(etudiantRepository.findById(1L)).thenReturn(Optional.of(etudiant));
+        when(applicationStageService.findApplicationsForStudent(etudiant)).thenReturn(List.of());
+
+        List<ApplicationStageDTO> result = suiviEtudiantsService.listDemandesDeStage(EMAIL_PROFESSEUR, 1L);
+
+        assertTrue(result.isEmpty());
+        verify(applicationStageService).findApplicationsForStudent(etudiant);
+    }
+
+    @Test
+    @DisplayName("listDemandesDeStage() compare l'email du professeur sans tenir compte de la casse")
+    void listDemandesDeStage_emailInsensibleALaCasse() throws Exception {
+        when(etudiantRepository.findById(1L)).thenReturn(Optional.of(etudiant));
+        when(applicationStageService.findApplicationsForStudent(etudiant)).thenReturn(List.of());
+
+        List<ApplicationStageDTO> result =
+                suiviEtudiantsService.listDemandesDeStage("BOB@MAIL.COM", 1L);
+
+        assertNotNull(result);
+        verify(applicationStageService).findApplicationsForStudent(etudiant);
     }
 }

@@ -61,8 +61,6 @@ class AssignationProfesseurServiceTest {
                 .password("hashed").discipline(Disciplines.INFORMATIQUE).build();
     }
 
-    // TESTER listStagiaires()
-
     @Test
     @DisplayName("listStagiaires() retourne les étudiants avec leur professeur assigné")
     void listStagiaires_retourneEtudiantsAvecProfesseur() {
@@ -88,8 +86,6 @@ class AssignationProfesseurServiceTest {
         assertNull(result.get(0).professeurNom());
     }
 
-    // TESTER listProfesseurs()
-
     @Test
     @DisplayName("listProfesseurs() retourne tous les professeurs")
     void listProfesseurs_retourneTous() {
@@ -100,8 +96,6 @@ class AssignationProfesseurServiceTest {
         assertEquals(2, result.size());
         assertEquals("Gagnon", result.get(0).nom());
     }
-
-    // TESTER assignerProfesseur()
 
     @Test
     @DisplayName("assignerProfesseur() lie le professeur à l'étudiant et sauvegarde")
@@ -155,5 +149,33 @@ class AssignationProfesseurServiceTest {
     void assignerProfesseur_professeurIdNull() {
         assertThrows(BadRequestException.class, () -> assignationProfesseurService.assignerProfesseur(1L, null));
         verifyNoInteractions(etudiantRepository, professeurRepository);
+    }
+
+    @Test
+    @DisplayName("listTousLesStagiaires() retourne tous les étudiants")
+    void listTousLesStagiaires_retourneTous() {
+        etudiant.setProfesseur(professeur);
+        Etudiant autreEtudiant = Etudiant.builder()
+                .id(2L).nom("Doe").prenom("John").email("john@a.com")
+                .password("hashed").discipline(Disciplines.INFORMATIQUE)
+                .session("H27")
+                .build();
+        when(etudiantRepository.findAll()).thenReturn(List.of(etudiant, autreEtudiant));
+
+        List<StagiaireDTO> result = assignationProfesseurService.listTousLesStagiaires();
+
+        assertEquals(2, result.size());
+        assertEquals("bib@a.com", result.get(0).email());
+        assertEquals(7L, result.get(0).professeurId());
+        assertEquals("john@a.com", result.get(1).email());
+        assertNull(result.get(1).professeurId());
+    }
+
+    @Test
+    @DisplayName("listTousLesStagiaires() retourne une liste vide s'il n'y a aucun étudiant")
+    void listTousLesStagiaires_aucunEtudiant() {
+        when(etudiantRepository.findAll()).thenReturn(List.of());
+
+        assertTrue(assignationProfesseurService.listTousLesStagiaires().isEmpty());
     }
 }
