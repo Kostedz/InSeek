@@ -39,7 +39,8 @@ public class EntrevueService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public EntrevueDTO scheduleInterview(HttpServletRequest request, CreateEntrevueDTO interviewDTO) throws BadRequestException, NotFoundException {
+    public EntrevueDTO scheduleInterview(HttpServletRequest request, CreateEntrevueDTO interviewDTO)
+            throws BadRequestException, NotFoundException {
         validateRequiredFields(interviewDTO);
         validateFutureDate(interviewDTO);
 
@@ -62,13 +63,7 @@ public class EntrevueService {
             if (!interview.getEmployer().getId().equals(employer.getId())) {
                 throw new BadRequestException("Vous ne pouvez pas remplacer cette entrevue.");
             }
-            interview.setDateInterview(interviewDTO.DateAndTime());
-            interview.setModeInterview(interviewDTO.mode());
-            interview.setLocationOrLink(interviewDTO.locationOrLink());
-            interview.setMessage(interviewDTO.message());
-            interview.setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
-            interview.setInvitationResponseDate(null);
-            interview.setMessageWhenRejected(null);
+            updateInterviewDetails(interview, interviewDTO);
             interview = interviewRepository.save(interview);
         } else {
             interview = createInterview(employer, student, internshipOffer, interviewDTO);
@@ -79,13 +74,11 @@ public class EntrevueService {
         eventPublisher.publishEvent(NotificationEvent.convocation(interview, false));
 
         return EntrevueDTO.of(interview);
-
-
     }
 
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
-    public void checkPastInterviews(){
+    public void checkPastInterviews() {
         LocalDateTime now = LocalDateTime.now();
         List<Entrevue> pastInterviews = interviewRepository.findByDateInterviewBefore(now);
         for (Entrevue interview : pastInterviews) {
@@ -94,7 +87,8 @@ public class EntrevueService {
                 interview.setInterviewInvitationStatus(StatutConvocationEntrevue.EXPIRED);
                 interviewRepository.save(interview);
             }
-            if(interview.getInterviewInvitationStatus() == StatutConvocationEntrevue.ACCEPTED && student.getStatutRecherche() == StatutRechercheEtudiant.INVITED_TO_INTERVIEW){
+            if (interview.getInterviewInvitationStatus() == StatutConvocationEntrevue.ACCEPTED
+                    && student.getStatutRecherche() == StatutRechercheEtudiant.INVITED_TO_INTERVIEW) {
                 student.setStatutRecherche(StatutRechercheEtudiant.WAITING_FOR_RESPONSE);
                 userRepository.save(student);
             }
@@ -102,11 +96,12 @@ public class EntrevueService {
     }
 
     @Transactional
-    public EntrevueDTO updateInterview(HttpServletRequest request, CreateEntrevueDTO dto) throws BadRequestException, NotFoundException {
+    public EntrevueDTO updateInterview(HttpServletRequest request, CreateEntrevueDTO dto)
+            throws BadRequestException, NotFoundException {
         validateRequiredFields(dto);
         validateFutureDate(dto);
 
-        String employerEmail = jwtTokenProvider.getEmailFromJWT(request.getHeader("Authorization").substring(7));
+        String employerEmail = getEmailFromRequest(request);
         Employeur employer = findEmployerByEmail(employerEmail);
 
         Entrevue interview = interviewRepository
@@ -117,13 +112,7 @@ public class EntrevueService {
             throw new BadRequestException("Vous ne pouvez pas modifier cette entrevue.");
         }
 
-        interview.setDateInterview(dto.DateAndTime());
-        interview.setModeInterview(dto.mode());
-        interview.setLocationOrLink(dto.locationOrLink());
-        interview.setMessage(dto.message());
-        interview.setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
-        interview.setInvitationResponseDate(null);
-        interview.setMessageWhenRejected(null);
+        updateInterviewDetails(interview, dto);
 
         updateStudent(interview.getStudent(), dto);
 
@@ -146,7 +135,8 @@ public class EntrevueService {
                 .toList();
     }
 
-    public EntrevueDTO getInterviewDetails(Long interviewId, HttpServletRequest request) throws NotFoundException, BadRequestException {
+    public EntrevueDTO getInterviewDetails(Long interviewId, HttpServletRequest request)
+            throws NotFoundException, BadRequestException {
         String studentEmail = getEmailFromRequest(request);
         Etudiant student = findStudentByEmail(studentEmail);
         Entrevue interview = findInterview(interviewId);
@@ -157,7 +147,11 @@ public class EntrevueService {
     }
 
     @Transactional
-    public EntrevueDTO respondToInterviewInvitation(Long interviewId, RepondreConvocationDTO repondreConvocationDTO, HttpServletRequest request) throws NotFoundException, BadRequestException, ConflictException {
+    public EntrevueDTO respondToInterviewInvitation(
+            Long interviewId,
+            RepondreConvocationDTO repondreConvocationDTO,
+            HttpServletRequest request
+    ) throws NotFoundException, BadRequestException, ConflictException {
         validateInvitationStatus(repondreConvocationDTO);
 
         String studentEmail = getEmailFromRequest(request);
@@ -188,16 +182,16 @@ public class EntrevueService {
         );
     }
 
-    private void validateRequiredFields(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
-        if (InterviewDTO.studentId() == null || InterviewDTO.offerId() == null ||
-                InterviewDTO.DateAndTime() == null || InterviewDTO.mode() == null ||
-                InterviewDTO.locationOrLink() == null ) {
+    private void validateRequiredFields(CreateEntrevueDTO interviewDTO) throws BadRequestException {
+        if (interviewDTO.studentId() == null || interviewDTO.offerId() == null
+                || interviewDTO.DateAndTime() == null || interviewDTO.mode() == null
+                || interviewDTO.locationOrLink() == null) {
             throw new BadRequestException("tous les champs sont obligatoires.");
         }
     }
 
-    private void validateFutureDate(CreateEntrevueDTO InterviewDTO) throws BadRequestException{
-        if (InterviewDTO.DateAndTime().isBefore(java.time.LocalDateTime.now())) {
+    private void validateFutureDate(CreateEntrevueDTO interviewDTO) throws BadRequestException {
+        if (interviewDTO.DateAndTime().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("La date et l'heure de l'entrevue doivent être dans le futur.");
         }
     }
@@ -261,32 +255,34 @@ public class EntrevueService {
                 .orElseThrow(() -> new NotFoundException("Convocation non trouvée."));
     }
 
-    private Entrevue createInterview(
-            Employeur employer,
-            Etudiant student,
-            OffreDeStage offer,
-            CreateEntrevueDTO InterviewDTO) {
-
+    private Entrevue createInterview(Employeur employer, Etudiant student, OffreDeStage offer, CreateEntrevueDTO interviewDTO) {
         Entrevue interview = Entrevue.builder()
                 .employer(employer)
                 .student(student)
                 .internshipOffer(offer)
-                .dateInterview(InterviewDTO.DateAndTime())
-                .modeInterview(InterviewDTO.mode())
-                .locationOrLink(InterviewDTO.locationOrLink())
-                .message(InterviewDTO.message())
                 .build();
 
+        updateInterviewDetails(interview, interviewDTO);
         return interviewRepository.save(interview);
     }
 
-    private void updateStudent(Etudiant student, CreateEntrevueDTO InterviewDTO) {
-        student.setDateInterview(InterviewDTO.DateAndTime());
+    private void updateInterviewDetails(Entrevue interview, CreateEntrevueDTO interviewDTO) {
+        interview.setDateInterview(interviewDTO.DateAndTime());
+        interview.setModeInterview(interviewDTO.mode());
+        interview.setLocationOrLink(interviewDTO.locationOrLink());
+        interview.setMessage(interviewDTO.message());
+        interview.setInterviewInvitationStatus(StatutConvocationEntrevue.PENDING);
+        interview.setInvitationResponseDate(null);
+        interview.setMessageWhenRejected(null);
+    }
+
+    private void updateStudent(Etudiant student, CreateEntrevueDTO interviewDTO) {
+        student.setDateInterview(interviewDTO.DateAndTime());
         student.setStatutRecherche(StatutRechercheEtudiant.INVITED_TO_INTERVIEW);
     }
 
     private void updateInterviewResponse(Entrevue interview, RepondreConvocationDTO repondreConvocationDTO) {
-        interview.setInterviewInvitationStatus(repondreConvocationDTO.interviewInvitationStatus()); ;
+        interview.setInterviewInvitationStatus(repondreConvocationDTO.interviewInvitationStatus());
         interview.setInvitationResponseDate(LocalDateTime.now());
     }
 
