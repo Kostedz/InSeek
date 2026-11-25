@@ -4,6 +4,7 @@ import com.lacouf.rsbjwt.exception.NotFoundException;
 import com.lacouf.rsbjwt.model.utilisateur.Disciplines;
 import com.lacouf.rsbjwt.model.utilisateur.Etudiant;
 import com.lacouf.rsbjwt.model.utilisateur.Professeur;
+import com.lacouf.rsbjwt.model.utilisateur.StatutRechercheEtudiant;
 import com.lacouf.rsbjwt.model.StatutValidation;
 import com.lacouf.rsbjwt.repository.EtudiantRepository;
 import com.lacouf.rsbjwt.service.dto.ApplicationStageDTO;
@@ -58,6 +59,7 @@ class SuiviEtudiantsServiceTest {
     @Test
     @DisplayName("listEtudiantsDuProfesseur() retourne les étudiants assignés au professeur")
     void listEtudiantsDuProfesseur_retourneEtudiants() {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.INTERNSHIP_FOUND);
         when(etudiantRepository.findByProfesseurEmail(EMAIL_PROFESSEUR)).thenReturn(List.of(etudiant));
 
         List<StagiaireDTO> result = suiviEtudiantsService.listEtudiantsDuProfesseur(EMAIL_PROFESSEUR);
@@ -80,6 +82,7 @@ class SuiviEtudiantsServiceTest {
     @Test
     @DisplayName("listDemandesDeStage() retourne les demandes de l'étudiant du professeur")
     void listDemandesDeStage_succes() throws Exception {
+        etudiant.setStatutRecherche(StatutRechercheEtudiant.INTERNSHIP_FOUND);
         ApplicationStageDTO demande = new ApplicationStageDTO(
                 5L, LocalDate.of(2026, 10, 1),
                 EtudiantDTO.of(etudiant), null,
